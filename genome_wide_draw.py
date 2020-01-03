@@ -48,9 +48,10 @@ def read_Ncov(fname):
 #target_names = ["work/condense_seq/sp10_hg19_chr1", "k9me2"]
 #target_names = ["work/condense_seq/sp10_hg19_chr1", "k9me3"]
 target_names = ["work/condense_seq/sp1_hg19_chr1", "work/condense_seq/sp10_hg19_chr1"]
+target_names = ["data/sp_spd_tests_detail/sp7", "data/sp_spd_tests_detail/sp8",	"data/sp_spd_tests_detail/sp1"]
 #target_names = ["ATcontent"]
 #ID_chr, ID_pos, name_ID_value = load_file.read_anot_file("data/hg19_chr1_167win25step_new_anot.cn", target_names=target_names)
-ID_chr, ID_pos, name_ID_value = load_file.read_anot_file("data/hg19_chr1_167win25step_cov_Bsig.cn", target_names=target_names)
+ID_chr, ID_pos, name_ID_value = load_file.read_anot_file("/home/spark159/../../media/spark159/sw/sp_spd_tests_detail/hg19_chr1_167win25step_cov_Bsig.cn", target_names=target_names)
 print "reading done"
 
 #posID = [[pos, ID] for ID, pos in ID_pos.items()]

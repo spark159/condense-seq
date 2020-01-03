@@ -14,6 +14,17 @@ from scipy.stats import norm
 from matplotlib_venn import venn3
 import itertools
 
+def tuple_cmp (a, b):
+    if a[0] <  b[0]:
+        return -1
+    elif a[0] > b[0]:
+        return 1
+    else:
+        if a[1] < b[1]:
+            return -1
+        elif a[1] > b[1]:
+            return 1
+
 def all_path (N, states='ATCG'):
     if N==1:
         return list(states)
@@ -68,6 +79,22 @@ def get_dincount(seq, din=None):
         din_count[din] += 1
     return din_count
 
+def get_NcoreNcount(seq, core):
+    NN_count = {}
+    length = len(core) + 2
+    seq = seq.upper()
+    for i in range(len(seq)-length+1):
+        kmer = seq[i:i+length]
+        if 'N' in kmer:
+            continue
+        if kmer[1:-1] != core:
+            continue
+        NN = kmer[0] + kmer[-1]
+        if NN not in NN_count:
+            NN_count[NN] = 0
+        NN_count[NN] += 1
+    return NN_count
+
 def categorize (ID_value_list):
     values_IDs = {}
     IDs = ID_value_list[0].keys()
@@ -78,7 +105,8 @@ def categorize (ID_value_list):
         values_IDs[values].append(ID)
     return values_IDs
 
-ID_chr, ID_pos, name_ID_value = load_file.read_anot_file("data/hg19_chr1_171_icdseq_anot.cn")
+path = "/home/spark159/../../media/spark159/sw/dataforcondense//hg19_chr1_171_icdseq_anot.cn"
+ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path)
 ID_score2 = name_ID_value['work/condense_seq/sp10_hg19_chr1']
 ID_seq = name_ID_value['Sequence']
 ID_AT = name_ID_value['ATcontent']
@@ -93,6 +121,9 @@ ID_din_count = {}
 for ID in ID_seq:
     seq = ID_seq[ID]
     din_count = get_dincount(seq)
+    #din_count = get_NcoreNcount(seq, core="TA")
+    #din_count = get_NcoreNcount(seq, core="CG")
+    #din_count = get_NcoreNcount(seq, core="CTAG")
     ID_din_count[ID] = din_count
 
 ID_TA = {}
@@ -132,9 +163,11 @@ cmap = mpl.cm.get_cmap("jet")
 fig = plt.figure()
 plt.axhline(y=0, color='k', linestyle='--')
 
+din_scores = {}
 for i in range(len(all_din)):
     din = all_din[i]
     X_axis, Y_axis = [], []
+    scores = []
     data_count = []
     for AT in AT_IDs:
         IDs = AT_IDs[AT]
@@ -151,21 +184,49 @@ for i in range(len(all_din)):
         X_axis.append(AT[0])
         Y_axis.append(corr)
         data_count.append(len(X))
+        if not np.isnan(corr):
+            scores += [corr]*len(X)
+    din_scores[din] = scores
     temp = list(cmap(color_list[i]))
     rgba_colors = []
     for j in range(len(X_axis)):
         temp[-1] = 0.01 + float(data_count[j]-min(data_count)) / (max(data_count)-min(data_count))
         rgba_colors.append(temp)
     plt.scatter(X_axis, Y_axis, s=5, color=cmap(color_list[i]), marker = marker.next(), label=din)
-
     
 plt.xlabel("AT content (%)")
 plt.ylabel("Correlation")
 plt.title("Condensability VS Dinucleotide count")
+#plt.title("Condensability VS NpTpApN count")
+#plt.title("Condensability VS NpCpGpN count")
+#plt.title("Condensability VS NpCpTpApGpN count")
 plt.legend(markerscale=2, ncol=3)
 plt.savefig("corr_strait_din.png", bbox_inches='tight')
 #plt.colorbar()
-#plt.show()
+plt.show()
+plt.close()
+
+score_din_list = []
+for din, scores in din_scores.items():
+    score_din_list.append((np.mean(scores), din))
+score_din_list = sorted(score_din_list, cmp=tuple_cmp, reverse=True)
+
+X, Y, = [], []
+Z = []
+for score, din in score_din_list:
+    X.append(din)
+    Y.append(score)
+    scores = din_scores[din]
+    Z.append(np.std(scores)/np.sqrt(len(scores)))
+
+fig = plt.figure()
+plt.title("Condensability vs Dinucleotide count stratified correlation")
+#plt.title("Condensability vs NpTpApN count stratified correlation")
+#plt.title("Condensability vs NpCpGpN count stratified correlation")
+#plt.title("Condensability VS NpCpTpApGpN count stratified correlation")
+plt.bar(range(len(Y)), Y, yerr=Z)
+plt.xticks(range(len(X)), X)
+plt.show()
 plt.close()
 
 # Epigenetic markers

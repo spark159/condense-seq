@@ -14,6 +14,7 @@ def bin_count (test_fnames,
                con_fname,
                genome_size,
                win_size,
+               skip_zero,
                bin_GC,
                mm_cutoff,
                min_len,
@@ -26,9 +27,9 @@ def bin_count (test_fnames,
     data, label = [], []
     for fname in test_fnames:
         data.append(fname)
-        label.append(fname.split('.')[0])
+        label.append(fname.rsplit('/')[-1])
     data.append(con_fname)
-    label.append(con_fname.split('.')[0])
+    label.append(con_fname.rsplit('/')[-1])
 
     # partition the genome
     g_count = {}
@@ -133,7 +134,8 @@ def bin_count (test_fnames,
     print >> sys.stderr, "writing bin file"
 
     f = open(out_fname + '_bin.cn', 'w')
-    s = 'SNP\tChromosome\tPhysicalPosition'
+    #s = 'SNP\tChromosome\tPhysicalPosition'
+    s = 'BinID\tChromosome\tStart\tEnd'
     for i in range(len(label)):
         s += '\t' + label[i]
     if bin_GC != None:
@@ -145,15 +147,22 @@ def bin_count (test_fnames,
     Y = []
     for chr in g_count:
         for i in range(len(g_count[chr])):
-            Binpos = i + win_size/2
-            s = str(ID) + "\t" + chr + "\t" + str(Binpos)
+            #Binpos = i + win_size/2
+            #s = str(ID) + "\t" + chr + "\t" + str(Binpos)
+            st, ed = i*win_size, (i+1)*win_size 
+            s = str(ID) + "\t" + chr + "\t" + str(st) + '\t' + str(ed)
+            total = 0
             for j in range(len(out)):
+                total += out[j][chr][i]
                 s += '\t%s' % (out[j][chr][i])
                 if j < len(out) - 1:
                     X_list[j].append(out[j][chr][i])
                 else:
                     Y.append(out[j][chr][i])
+            if skip_zero and total <= 0:
+                continue
             if bin_GC != None:
+                BinID = chr + '_' + str(i)
                 s += '\t%f' % (bin_GC[BinID])
             ID += 1
             print >> f, s
@@ -181,6 +190,14 @@ def bin_count (test_fnames,
     
 
 if __name__ == '__main__':
+    def str2bool(v):
+        if v.lower() in ('yes', 'true', 't', 'y', '1'):
+            return True
+        elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+            return False
+        else:
+            raise argparse.ArgumentTypeError('Boolean value expected.')
+
     parser = ArgumentParser(description='Divide the genome into bins and counts the read number')
     parser.add_argument(metavar='-f1',
                         dest="test_fnames",
@@ -220,11 +237,20 @@ if __name__ == '__main__':
                         type=str,
                         nargs='+',
                         help='tagert chromosome list')
+    parser.add_argument('--skip',
+                        dest="skip_zero",
+                        type=str2bool,
+                        nargs='?',
+                        const=True,
+                        default=False,
+                        help='skip the zero count bins')
     parser.add_argument('--gc',
                         dest="GC_option",
-                        type=bool,
+                        type=str2bool,
+                        nargs='?',
+                        const=True,
                         default=False,
-                        help='GC content option')
+                        help='GC content option')    
     parser.add_argument('-g',
                         dest="graph_option",
                         type=bool,
@@ -300,6 +326,7 @@ if __name__ == '__main__':
                args.con_fname,
                genome_size,
                win_size,
+               args.skip_zero,
                bin_GC,
                args.mm_cutoff,
                args.min_len,

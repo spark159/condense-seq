@@ -31,13 +31,14 @@ def check_acf (x):
         plt.close()
     return 
 
+"""
 x1 = [ random.randint(0,1) for i in range(100)]
 #x2 = [0]*100 + [0]*1 + [0]*100
 #x2 = [0,0,1]*10
 #x2 = [1]*10 + [0.0]*10
 x2 = [i for i in range(100)]
 
-check_acf(x2)
+#check_acf(x2)
 
 acf1 = statis.acf(x1)
 acf2 = statis.acf(x2)
@@ -49,31 +50,50 @@ plt.legend()
 plt.show()
 plt.close()
 
-
 """
+
 def tuple_cmp (a, b):
     if a[0] < b[0]:
         return -1
     else:
         return 1
 
-ID_chr, ID_pos, name_ID_value = load_file.read_anot_file("data/hg19_chr1_167win25step_new_anot.cn", num_max=100000)
-ID_value = name_ID_value["work/condense_seq/sp10_hg19_chr1"]
+    
+path = "/home/spark159/../../media/spark159/sw/sp_spd_tests_detail/"
 
+ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path + "hg19_chr1_167win25step_anot.cn", jump=100)
+
+# order by position
 posID = [[pos, ID] for ID, pos in ID_pos.items()]
 posID = sorted(posID, cmp=tuple_cmp)
-ID_list = [ value[1] for value in posID ]
+IDs = [ value[1] for value in posID ]
 
-value_list = [ID_value[ID] for ID in ID_list]
-acf_list = statis.acf(value_list)
-X = np.asarray([i*25 for i in range(len(acf_list))])
+# get condensability acf
+ID_score1 = name_ID_value['data/sp_spd_tests_detail/sp7']
+value_list = statis.NN_interpolate([ID_score1[ID] for ID in IDs])
+acf1 = statis.acf(value_list)
 random_list = [random.random() for i in range(len(value_list))]
-acf_list2 = statis.acf(random_list)
+acf2 = statis.acf(random_list)
 
+# get chip acfs
+chips = []
+chip_acfs = []
+for name in name_ID_value:
+    if name.startswith('k'):
+        chips.append(name)
+        value_list = [name_ID_value[name][ID] for ID in IDs]
+        acf = statis.acf(value_list)
+        chip_acfs.append(acf)
+
+
+X = np.asarray([i*2500 for i in range(len(acf1))])
 fig = plt.figure()
-plt.plot(np.log10(X+1), acf_list, label="condensability", alpha=0.8)
-plt.plot(np.log10(X+1), acf_list2, label="random", alpha=0.8)
+plt.plot(np.log10(X+1), acf1, label="condensability", alpha=0.8)
+plt.plot(np.log10(X+1), acf2, label="random", alpha=0.8)
+for i in range(len(chips)):
+    chip = chips[i]
+    plt.plot(np.log10(X+1), chip_acfs[i], label=chip, alpha=0.8)
+plt.xlabel("log10(distance(bp))")
 plt.legend()
 plt.show()
 plt.close()
-"""

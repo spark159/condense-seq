@@ -3,12 +3,16 @@ import matplotlib.pyplot as plt
 import load_file
 import statis
 
-def pair_plot (profile1, profile2, offset=-1000, xtick_loc_name=None, xlabel='Distance from TSS (bp)', ylabel1='Condensability (A.U.)', ylabel2="", note=""):
+def pair_plot (profile1, profile2, offset=-1000, xtick_loc_name=None, xlabel='Distance from TSS (bp)', ylabel1='Condensability (A.U.)', ylabel2="", title="", note=""):
     assert len(profile1) == len(profile2)
-    profile1[:100] = [np.NaN]*100
-    profile1[len(profile1)-100:] = [np.NaN]*100
-    profile2[:100] = [np.NaN]*100
-    profile2[len(profile2)-100:] = [np.NaN]*100
+    #profile1[:100] = [np.NaN]*100
+    #profile1[len(profile1)-100:] = [np.NaN]*100
+    #profile2[:100] = [np.NaN]*100
+    #profile2[len(profile2)-100:] = [np.NaN]*100
+    profile1[:10] = [np.NaN]*10
+    profile1[len(profile1)-10:] = [np.NaN]*10
+    profile2[:10] = [np.NaN]*10
+    profile2[len(profile2)-10:] = [np.NaN]*10
     fig, ax1 = plt.subplots(figsize=(10,5))
     #fig, ax1 = plt.subplots()
     X = [ i + offset for i in range(len(profile1))]
@@ -25,23 +29,61 @@ def pair_plot (profile1, profile2, offset=-1000, xtick_loc_name=None, xlabel='Di
         ax2.set_xticks(xtick_locs)
         ax2.set_xticklabels(xtick_names)
     fig.tight_layout()
+    plt.title(title)
     plt.savefig("pair_" + note + ".png",bbox_inches='tight')
     #plt.show()
     plt.close()
 
 
-feature = 'TSS'
-#profile_fname = feature + "_profile.txt"
-#profile_fname = feature + "_gtf_profile.txt"
-profile_fname = "output_profile.txt"
-moving_average_win = 100
-offset = -1000
-#xtick_locs = [-100, 0, 600, 700]
+feature = 'TTS'
+#offset = -33
+#offset = -20
+#offset = -66
+#xtick_locs = [-25, 0, 55]
+#xtick_locs = [-10, 0, 60, 70]
+#xtick_locs = [-55, 0, 25]
+#xtick_names = ["-1kb", "TSS", "2kb"]
 #xtick_names = ["-2.5kb", "TSS", "TTS", "2.5kb"]
-#xtick_loc_name = [xtick_locs, xtick_names]
-xtick_loc_name = None
+#xtick_names = ["-2kb", "TTS", "1kb"]
+xtick_loc_name = [xtick_locs, xtick_names]
 
-name_mean_profile, name_ID_profile = load_file.read_profile(profile_fname)
+#name_mean_profile, name_ID_profile = load_file.read_profile(profile_fname)
+
+#GC_profile = name_mean_profile['GCcontent']
+#control_profile = name_mean_profile["sp_spd_test9.bam"]
+
+for k in range(4):
+    profile_fname = feature
+    if k % 2 == 0:
+        profile_fname += "_NCP"
+    else:
+        profile_fname += "_DNA"
+    if k < 2:
+        profile_fname += "_spermine"
+    else:
+        profile_fname += "_spermidine"
+    profile_fname += "_profile.txt"
+    name_mean_profile, name_ID_profile = load_file.read_profile(profile_fname)
+    GC_profile = name_mean_profile['GCcontent']
+    for i in range(1, 8):
+        name = "sp_spd_test" + str(k*8+i+1) + ".bam"
+        mean_profile = name_mean_profile[name] / name_mean_profile["sp_spd_test" + str(k*8+1) + ".bam"] 
+        pair_plot(mean_profile, GC_profile, offset=offset, xtick_loc_name=xtick_loc_name, ylabel1='Normalized Counts', ylabel2="GC content", title=profile_fname.split('.')[0] + "_" + str(i), note=profile_fname.split('.')[0] + "_" + str(i))
+"""
+for i in range(1, 9):
+    name = "sp_spd_test" + str(i) + ".bam"
+    #if name == 'GCcontent':
+    #    continue
+    #if name == "sp_spd_test1.bam":
+    #    continue
+    mean_profile = name_mean_profile[name]
+#    fig = plt.figure()
+#    plt.plot(mean_profile)
+#    plt.plot(GC_profile, 'r')
+#    plt.title(name)
+#    plt.show()
+    pair_plot(mean_profile, GC_profile, ylabel1='Normalized Counts', ylabel2="GC content", title=name)
+
 #name_mean_occprofile, name_ID_occprofile = load_file.read_profile("data/hg19_chr1_" + feature + "_profile.txt")
 #name_mean_occprofile, name_ID_occprofile = load_file.read_profile(feature + "_occ_gtf_profile.txt")
 #mean_occprofile = statis.moving_average(name_mean_occprofile["work/condense_seq/sp1_hg19"], moving_average_win)
@@ -140,3 +182,4 @@ for name in name_ID_profile:
 #    #img.append(profile[100:len(profile)-100])
     
 
+"""

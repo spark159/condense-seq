@@ -61,7 +61,7 @@ def moving_average (signal, win):
         new_sig.append(0)
     return new_sig
 
-def draw_along_genome (ID_pos, ID_sig_list, win, labels, ylabel, scatt=False, note=""):
+def draw_along_genome (ID_pos, ID_sig_list, win, labels, ylabel, title=None, xlim=None, ylim=None, scatt=False, note=""):
     posID = []
     for ID in ID_pos:
         pos = ID_pos[ID]
@@ -86,11 +86,14 @@ def draw_along_genome (ID_pos, ID_sig_list, win, labels, ylabel, scatt=False, no
     plt.xlabel("Genomic coordinate (bp)")
     plt.ylabel(ylabel)
     plt.legend()
-    #plt.savefig("Gwide_" + note + ".png", bbox_inches='tight')
+    plt.xlim(xlim)
+    plt.ylim(ylim)
+    plt.title(title)
+    plt.savefig("Gwide_" + note + ".png", bbox_inches='tight')
     plt.show()
     plt.close()
 
-def draw_along_genome_pair (ID_pos, ID_sig1, ID_sig2,  win, ylabel1, ylabel2, xlabel="Genomic coordinate (bp)", note=""):
+def draw_along_genome_pair (ID_pos, ID_sig1, ID_sig2,  win, ylabel1, ylabel2, title="", xlabel="Genomic coordinate (bp)", note=""):
     posID = []
     for ID in ID_pos:
         pos = ID_pos[ID]
@@ -100,10 +103,22 @@ def draw_along_genome_pair (ID_pos, ID_sig1, ID_sig2,  win, ylabel1, ylabel2, xl
     Y1, Y2 = [], []
     for pos, ID in posID:
         X.append(pos)
-        Y1.append(ID_sig1[ID])
-        Y2.append(ID_sig2[ID])
+        sig1 = ID_sig1[ID]
+        if sig1 == 'NA':
+            sig1 = 0.0
+        sig2 = ID_sig2[ID]
+        if sig2 == 'NA':
+            sig2 = 0.0
+        Y1.append(sig1)
+        Y2.append(sig2)
     Y1 = signal.fftconvolve(Y1, np.ones((win,))/win, mode='same')
+    space1 = int(len(Y1)*0.05)
+    #Y1[:space1] = Y1[space1]; Y1[len(Y1)-space1:len(Y1)] = Y1[len(Y1)-1]
+    Y1[:space1] = np.NaN; Y1[len(Y1)-space1:len(Y1)] = np.NaN
     Y2 = signal.fftconvolve(Y2, np.ones((win,))/win, mode='same')
+    space2 = int(len(Y2)*0.05)
+    #Y2[:space2] = Y2[space2]; Y2[len(Y2)-space2:len(Y2)] = Y2[len(Y2)-1]
+    Y2[:space2] = np.NaN; Y2[len(Y2)-space2:len(Y2)] = np.NaN
     fig, ax1 = plt.subplots(figsize=(10,5))
     ax1.plot(X, Y1, 'b', alpha=0.5)
     ax1.set_xlabel(xlabel)
@@ -114,8 +129,9 @@ def draw_along_genome_pair (ID_pos, ID_sig1, ID_sig2,  win, ylabel1, ylabel2, xl
     ax2.set_ylabel(ylabel2, color='r')
     ax2.tick_params('y', colors='r')
     fig.tight_layout()
-    #plt.savefig("Gwide_pair_" + note + ".png", bbox_inches='tight')
-    plt.show()
+    plt.title(title)
+    plt.savefig("Gwide_pair_" + note + ".png", bbox_inches='tight')
+    #plt.show()
     plt.close()
 
 
@@ -156,7 +172,7 @@ def Scatter_plot (ID_xvalue, ID_score, xlim=[0, 100], ylim=[-2, 2.5], markersize
     #plt.show()
     plt.close()
 
-def PartitionBoxplot (ID_score, ID_target, frac, xlabel="", ylabel = 'Condensability - GC dependence (A.U.)', note=""):
+def PartitionBoxplot (ID_score, ID_target, frac, xlabel="", ylabel = 'Condensability (A.U.)', title="", note=""):
     frac = sorted(norm(frac), reverse=True)
     group = quantile(ID_target, len(frac), frac=frac)
     boxdata = []
@@ -164,17 +180,21 @@ def PartitionBoxplot (ID_score, ID_target, frac, xlabel="", ylabel = 'Condensabi
         #print len(IDs)
         temp = []
         for ID in IDs:
-            temp.append(ID_score[ID])
+            score = ID_score[ID]
+            if np.isnan(score):
+                continue
+            temp.append(score)
         boxdata.append(temp)
     fig = plt.figure()
     plt.xlabel('Partitions by ' + xlabel)
     plt.ylabel(ylabel)
+    plt.title(title)
     plt.boxplot(boxdata, 0, "")
-    plt.savefig(xlabel + '_vs_' + ylabel + "_" + note + "_pbox.png")
-    #plt.show()
+    #plt.savefig(xlabel + '_vs_' + ylabel + "_" + note + "_pbox.png")
+    plt.show()
     plt.close()
 
-def PartitionScatterplot (ID_xvalue, ID_score, ID_target, frac, xlim=[0, 100], ylim=[-2,2.5], xlabel="AT content (%)", ylabel = 'Condensability (A.U.)', note=""):
+def PartitionScatterplot (ID_xvalue, ID_score, ID_target, frac, xlim=[0, 100], ylim=[-2,2.5], xlabel="AT content (%)", ylabel = 'Condensability (A.U.)', title="", note=""):
     frac = sorted(norm(frac), reverse=True)
     group = quantile(ID_target, len(frac), frac=frac)
     X_list, Y_list = [], []
@@ -200,12 +220,13 @@ def PartitionScatterplot (ID_xvalue, ID_score, ID_target, frac, xlim=[0, 100], y
     #plt.xlim([0, 100])
     plt.xlim(xlim)
     plt.ylim(ylim)
+    plt.title(title)
     leg = plt.legend(loc='best', numpoints=1, prop={'size': 6})
     for lh in leg.legendHandles:
         lh._legmarker.set_markersize(15)
         lh._legmarker.set_alpha(1)
-    plt.savefig(xlabel + '_vs_' + ylabel + "_" + note + "_pscatter.png")
-    #plt.show()
+    #plt.savefig(xlabel + '_vs_' + ylabel + "_" + note + "_pscatter.png")
+    plt.show()
     plt.close()
 
 def PartitionMeanplot (ID_xvalue, ID_score, ID_target, frac, xlim=[0,100], ylim=[-0.8, 0.6], xlabel="AT content (%)", ylabel = 'Condensability (A.U.)', note=""):

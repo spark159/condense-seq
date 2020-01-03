@@ -69,7 +69,8 @@ def read_anot_file(fname):
     ID_chip_list = ID_values[4:]
     return ID_pos, ID_metric_list, ID_AT, ID_me, ID_chip_list, chip_names
 
-ID_dyad, ID_rcount_list, ID_AT, ID_me, chip_list, chip_name = read_anot_file("data/hg19_chr1_171_new_anot.cn")
+path = "/home/spark159/../../media/spark159/sw/sp_spd_tests_detail/"
+ID_dyad, ID_rcount_list, ID_AT, ID_me, chip_list, chip_name = read_anot_file(path+ "hg19_chr1_NCP_anot.cn")
 #ID_dyad, ID_rcount_list, ID_AT, ID_me, chip_list, chip_name = read_anot_file("data/hg19_chr1_1001win_anot.cn")
 ID_rcount1, ID_rcount2 = ID_rcount_list
 win_size = 171
@@ -119,7 +120,7 @@ for AT in AT_rcount2:
     z2.append(np.nanstd(AT_rcount2[AT])/np.sqrt(len(AT_rcount2[AT])))
 
 fig = plt.figure()
-plt.plot(X1,Y1,'k.', alpha=0.01, label='sp9')
+plt.plot(X1,Y1,'k.', alpha=0.01, label='sp6')
 plt.errorbar(x1,y1, yerr=z1, fmt='.')
 plt.plot(x1,y1,'.')
 plt.xlabel('AT content (%)')
@@ -132,11 +133,11 @@ leg = plt.legend(loc='best', numpoints=1, prop={'size': 6})
 for lh in leg.legendHandles:
     lh._legmarker.set_markersize(15)
     lh._legmarker.set_alpha(1)
-plt.savefig(chr_num+'_sp9_' + str(win_size) + '.png')
+plt.savefig(chr_num+'_sp6_' + str(win_size) + '.png')
 plt.close()
 
 fig = plt.figure()
-plt.plot(X2,Y2,'k.', alpha=0.01, label='sp10')
+plt.plot(X2,Y2,'k.', alpha=0.01, label='sp7')
 plt.errorbar(x2,y2, yerr=z2, fmt='.')
 plt.plot(x2,y2,'.')
 plt.xlabel('AT content (%)')
@@ -149,7 +150,7 @@ leg = plt.legend(loc='best', numpoints=1, prop={'size': 6})
 for lh in leg.legendHandles:
     lh._legmarker.set_markersize(15)
     lh._legmarker.set_alpha(1)
-plt.savefig(chr_num+'_sp10_' + str(win_size) + '.png')
+plt.savefig(chr_num+'_sp7_' + str(win_size) + '.png')
 plt.close()
 
 def norm(L):
@@ -199,7 +200,7 @@ cmarks = ['b.', 'gd', 'y*', 'm^', 'rx']
 unit = '%'
 
 
-names = [chr_num + "_sp9_" + str(win_size), chr_num + "_sp10_" + str(win_size)]
+names = [chr_num + "_sp6_" + str(win_size), chr_num + "_sp7_" + str(win_size)]
 for k in range(2):
     ID_rcount = ID_rcount_list[k]
     name = names[k]
@@ -305,7 +306,7 @@ cmarks = ['b.', 'gd', 'y*', 'm^', 'rx']
 unit = 'AU'
 
 #chip_name = ["k27ac", "k9ac", "k4me3"]
-names = [chr_num + "_sp9_" + str(win_size), chr_num + "_sp10_" + str(win_size)]
+names = [chr_num + "_sp6_" + str(win_size), chr_num + "_sp7_" + str(win_size)]
 for u in range(len(chip_list)):
     IDsig = IDsig_list[u]
     binBS_list = quantile(IDsig, num=num, frac=frac)

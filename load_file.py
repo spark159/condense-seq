@@ -1,6 +1,7 @@
 import sys
 import numpy as np
 import Interval_dict
+import statis
 
 def norm(L):
     total = sum(L)
@@ -18,9 +19,10 @@ def read_genome_size(fname):
         genome_size[key] += len(line)
     return genome_size
 
-def read_tabular_file (fname, mode='row'):
+def read_tabular_file (fname, mode='row', jump=None):
     ID_field_value = {}
     First = True
+    counter = -1
     for line in open(fname):
         cols = line.strip().split()
         if First:
@@ -28,6 +30,9 @@ def read_tabular_file (fname, mode='row'):
             First = False
             continue
         ID = cols[0]
+        counter += 1
+        if jump and counter % jump != 0:
+            continue
         if ID not in ID_field_value:
             ID_field_value[ID] = {}
         cols = cols[1:]
@@ -37,6 +42,8 @@ def read_tabular_file (fname, mode='row'):
                 value = float(cols[i])
             except:
                 value = cols[i]
+            if value == 'NA':
+                value = np.NaN
             if field not in ID_field_value[ID]:
                 ID_field_value[ID][field] = value
             else:
@@ -60,11 +67,12 @@ def read_tabular_file (fname, mode='row'):
         return ID_field_value, field_ID_value
             
             
-def read_anot_file(fname, target_names=None, num_max=sys.maxint):
+def read_anot_file(fname, target_names=None, jump=None, num_max=sys.maxint):
     ID_chr, ID_pos = {}, {}
     name_ID_value = {}
     First = True
     count = 0
+    counter = -1
     for line in open(fname):
         if count > num_max:
             break
@@ -72,6 +80,9 @@ def read_anot_file(fname, target_names=None, num_max=sys.maxint):
         if First:
             names = cols[3:]
             First = False
+            continue
+        counter += 1
+        if jump and counter % jump != 0:
             continue
         ID, chr, pos = int(cols[0]), cols[1], int(cols[2])
         ID_chr[ID] = chr
@@ -88,12 +99,14 @@ def read_anot_file(fname, target_names=None, num_max=sys.maxint):
                 value = float(cols[i])
             except:
                 value = cols[i]
+            if value == 'NA':
+                value = np.NaN
             name_ID_value[name][ID] = value
         count += 1
     return ID_chr, ID_pos, name_ID_value
 
 
-def read_profile(fname, name_choice=None, ID_choice=None):
+def read_profile(fname, moving_win=None, name_choice=None, ID_choice=None):
     name_ID_profile = {}
     First = True
     for line in open(fname):
@@ -122,6 +135,8 @@ def read_profile(fname, name_choice=None, ID_choice=None):
             profile.append(value)
         #profile = [float(value) for value in cols[6:]]
         profile = np.asarray(profile)
+        if moving_win != None:
+            profile = statis.moving_average(profile, moving_win)
         name_ID_profile[name][ID] = profile
     name_mean_profile = {}
     for name in name_ID_profile:
@@ -131,7 +146,7 @@ def read_profile(fname, name_choice=None, ID_choice=None):
         name_mean_profile[name] = mean_profile
     return name_mean_profile, name_ID_profile
 
-def read_hgtable(fname, chr_target, mode='gene'):
+def read_hgtable(fname, chr_list=None, mode='gene'):
     ID_field_values = {}   
     First = True
     for line in open(fname):
@@ -139,7 +154,7 @@ def read_hgtable(fname, chr_target, mode='gene'):
         if First:
             First = False
         _, geneID, chr, strand, TSS, TTS, CSS, CTS = cols[:8]
-        if chr != chr_target:
+        if chr_list and chr not in chr_list:
             continue
         exon_num, exon_starts, exon_ends = cols[8:11]
         exon_num = int(exon_num)
@@ -244,7 +259,7 @@ def read_hgtable(fname, chr_target, TSS_range=1000, TTS_range=1000, Prom_range=5
     return feature_ID_interval
 """
 
-def read_GTF (fname, chr_target, mode="gene"):
+def read_GTF (fname, chr_list=None, mode="gene"):
     ID_field_values = {}
     for line in open(fname):
         if line.startswith("#"):
@@ -252,7 +267,7 @@ def read_GTF (fname, chr_target, mode="gene"):
         cols = line.strip().split('\t')
         chrnum, source, feature, start, end, score, strand, frame, attribute = cols
         chr = "chr" + chrnum
-        if chr != chr_target:
+        if chr_list and chr not in chr_list:
             continue
         if feature not in ["gene", "exon", "start_codon", "stop_codon"]:
             continue
@@ -345,8 +360,8 @@ def read_GTF (fname, chr_target, mode="gene"):
     if mode == "both":
         return ID_field_values, field_ID_values
 
-def read_RPKM (fname, gtf_fname, chr_target):
-    gID_field_values, field_gID_values = read_GTF (gtf_fname, chr_target, mode="both")
+def read_RPKM (fname, gtf_fname, chr_list=None):
+    gID_field_values, field_gID_values = read_GTF (gtf_fname, chr_list=chr_list, mode="both")
     
     gID_exons = field_gID_values['exons']
     gID_exonlen = {}

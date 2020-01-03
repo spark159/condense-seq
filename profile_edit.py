@@ -388,6 +388,7 @@ def Profiling (sig_fname,
             stpt = 0 
             edpt = 0
             prev_chr = chr
+            order = 2
         if math.log10(pos+1) > order:
             print >> sys.stderr, chr + " pos " + str(pos) +" is reading"
             order += 1
@@ -525,12 +526,12 @@ if __name__ == '__main__':
                         dest="up_win",
                         type=int,
                         default=1000,
-                        help='down stream window size (default: 1000 bp)')
+                        help='up stream window size (default: 1000 bp)')
     parser.add_argument('--down',
                         dest="down_win",
                         type=int,
                         default=2000,
-                        help='up stream window size (default: 2000 bp)')
+                        help='down stream window size (default: 2000 bp)')
     parser.add_argument('--data',
                         dest="data_choice",
                         type=str,

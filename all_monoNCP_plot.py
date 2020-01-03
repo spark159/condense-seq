@@ -9,9 +9,10 @@ import numpy as np
 import math
 import Interval_dict
 
+path = "/home/spark159/../../media/spark159/sw/sp_spd_tests_detail/"
 
 #GC/me/PTM analysis
-ID_chr, ID_pos, name_ID_value = load_file.read_anot_file("data/hg19_chr1_171_everything_anot.cn")
+ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+ "hg19_chr1_1001win501step_anot.cn")
 
 """
 #divide into domains
@@ -50,8 +51,8 @@ name_ID_value = temp_name_ID_value
 """
 
 #ID_chr, ID_pos, name_ID_value = load_file.read_anot_file("hg19_chr1_171_anot.cn")
-ID_score1 = name_ID_value['work/condense_seq/sp9_hg19_chr1']
-ID_score2 = name_ID_value['work/condense_seq/sp10_hg19_chr1']
+ID_score1 = name_ID_value['data/sp_spd_tests_detail/sp7']
+ID_score2 = name_ID_value['data/sp_spd_tests_detail/sp8']
 ID_AT = name_ID_value['ATcontent']
 ID_CpG = name_ID_value['CpGNumber']
 ID_me = name_ID_value['meGCNumber']
@@ -81,24 +82,25 @@ for ID in ID_CpG:
     ID_meGCfrac[ID] = float(me)/GC
 """
 
-new_ID_score2 = statis.neutralize_score_by_target(ID_score2, ID_AT)
+#new_ID_score2 = statis.neutralize_score_by_target(ID_score2, ID_AT)
 
-#graphics.Scatter_plot(ID_AT, ID_score1, note='sp9')
-graphics.Scatter_plot(ID_AT, ID_score2, note='sp10')
+#graphics.Scatter_plot(ID_AT, ID_score1, note='sp6')
+#graphics.Scatter_plot(ID_AT, ID_score2, note='sp10')
 
-frac = [(4**i) for i in range(1,11)]
+#frac=[(4**i) for i in range(1,11)]
+frac=[1 for i in range(10)]
 frac = frac[::-1]
 
 
-#graphics.PartitionMeanplot(ID_AT, ID_score1, ID_me, frac, note="sp9_me")
-graphics.PartitionMeanplot(ID_AT, ID_score2, ID_me, frac, note="sp10_me")
-graphics.PartitionScatterplot(ID_AT, ID_score2, ID_me, frac, note="sp10_me")
-graphics.PartitionBoxplot(new_ID_score2, ID_me, frac, note="sp10_me")
+#graphics.PartitionMeanplot(ID_AT, ID_score1, ID_me, frac, note="sp6_me")
+#graphics.PartitionMeanplot(ID_AT, ID_score2, ID_me, frac, note="sp7_me")
+#graphics.PartitionScatterplot(ID_AT, ID_score1, ID_me, frac, note="sp6_me")
+graphics.PartitionBoxplot(ID_score1, ID_CpG, frac, xlabel='CpG number', note="sp6_CpG")
 
 for i in range(len(ID_chip_list)):
     ID_chip = ID_chip_list[i]
     name = chip_names[i]
-    #graphics.PartitionMeanplot(ID_AT, ID_score1, ID_chip, frac, note="sp9_" + name)
-    graphics.PartitionMeanplot(ID_AT, ID_score2, ID_chip, frac, note="sp10_" + name)
-    graphics.PartitionScatterplot(ID_AT, ID_score2, ID_chip, frac, note="sp10_" + name)
-    graphics.PartitionBoxplot(new_ID_score2, ID_chip, frac, note="sp10_" + name)
+    #graphics.PartitionMeanplot(ID_AT, ID_score1, ID_chip, frac, note="sp6_" + name)
+    #graphics.PartitionMeanplot(ID_AT, ID_score2, ID_chip, frac, note="sp7_" + name)
+    #graphics.PartitionScatterplot(ID_AT, ID_score1, ID_chip, frac, note="sp6_" + name)
+    graphics.PartitionBoxplot(ID_score1, ID_chip, frac, xlabel=name, note="sp6_" + name)

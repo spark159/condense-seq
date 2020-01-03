@@ -64,22 +64,22 @@ def get_dincount(seq, din=None):
     return din_count
 
 #ID_chr, ID_pos, name_ID_value = load_file.read_anot_file("data/hg19_chr1_171_everything_anot.cn")
-ID_chr, ID_pos, name_ID_value = load_file.read_anot_file("data/hg19_chr1_171_icdseq_anot.cn")
-ID_score1 = name_ID_value['work/condense_seq/sp9_hg19_chr1']
-ID_score2 = name_ID_value['work/condense_seq/sp10_hg19_chr1']
+ID_chr, ID_pos, name_ID_value = load_file.read_anot_file("/home/spark159/../../media/spark159/sw/sp_spd_tests_detail/hg19_chr1_167win25step_anot.cn")
+ID_score1 = name_ID_value["data/sp_spd_tests_detail/sp7"]
+ID_score2 = name_ID_value["data/sp_spd_tests_detail/sp8"]
 ID_AT = name_ID_value['ATcontent']
 ID_seq = name_ID_value['Sequence']
 
 # define sticky and fluffy nucleosomes
-new_ID_score2 = statis.neutralize_score_by_target(ID_score2, ID_AT)
-fluffy_IDs, middle_IDs, sticky_IDs = statis.quantile (new_ID_score2, 3, [5, 90, 5])
+#new_ID_score2 = statis.neutralize_score_by_target(ID_score2, ID_AT)
+fluffy_IDs, middle_IDs, sticky_IDs = statis.quantile (ID_score1, 3, [5, 90, 5])
 total_IDs = ID_pos.keys()
 
 for ID in ID_AT:
     ID_AT[ID] = 100*ID_AT[ID]
 
-graphics.Scatter_plot (ID_AT, ID_score2, ylim=[-3, 3.5], note='raw')
-graphics.Scatter_plot (ID_AT, new_ID_score2, ylim=[-5, 5.5], ylabel='Condensability - AT dependence (A.U.)', note='neutral')
+graphics.Scatter_plot (ID_AT, ID_score1, ylim=[-3, 3.5], note='raw')
+#graphics.Scatter_plot (ID_AT, new_ID_score2, ylim=[-5, 5.5], ylabel='Condensability - AT dependence (A.U.)', note='neutral')
 
 X1, Y1 = [], []
 for ID in sticky_IDs:
@@ -103,7 +103,7 @@ for lh in leg.legendHandles:
     lh._legmarker.set_markersize(10)
     lh._legmarker.set_alpha(1)
 plt.xlabel('AT content (%)')
-plt.ylabel("Condensability - AT dependence (A.U.)")
+plt.ylabel("Condensability (A.U.)")
 #plt.title("Chromosome 1")
 plt.xlim([0, 100])
 plt.ylim([-5, 5.5])

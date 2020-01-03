@@ -12,6 +12,9 @@ def norm(L):
 
 def get_corr(x, y):
     assert len(x) == len(y)
+    x, y = np.asarray(x), np.asarray(y)
+    selected = (~np.isnan(x))*(~np.isnan(y))
+    x, y = x[selected], y[selected]
     n = len(x)
     assert n > 0
     avg_x = np.average(x)
@@ -23,10 +26,6 @@ def get_corr(x, y):
         xdiff = x[idx] - avg_x
         ydiff = y[idx] - avg_y
         diffprod += xdiff * ydiff
-        if np.isnan(diffprod):
-            print idx
-            print x[idx], y[idx]
-            break
         xdiff2 += xdiff * xdiff
         ydiff2 += ydiff * ydiff
     return diffprod / np.sqrt(xdiff2 * ydiff2)
@@ -141,9 +140,10 @@ def slow_moving_average (signal, win):
         new_sig.append(0)
     return new_sig
 
-def moving_average (input_signal, win):
+def moving_average (input_signal, win, interpolate=True):
     if np.isnan(input_signal).any():
-        input_signal = NN_interpolate(input_signal)
+        if interpolate:
+            input_signal = NN_interpolate(input_signal)
     return signal.fftconvolve(input_signal, np.ones((win,))/win, mode='same')
 
 

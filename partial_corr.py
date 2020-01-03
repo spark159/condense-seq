@@ -67,8 +67,8 @@ def get_dincount(seq, din=None):
         din_count[din] += 1
     return din_count
 
-ID_chr, ID_pos, name_ID_value = load_file.read_anot_file("data/hg19_chr1_171_icdseq_anot.cn")
-ID_score2 = name_ID_value['work/condense_seq/sp10_hg19_chr1']
+ID_chr, ID_pos, name_ID_value = load_file.read_anot_file("/home/spark159/../../media/spark159/sw/sp_spd_tests_detail/hg19_chr1_NCP_ics_anot.cn")
+ID_score2 = name_ID_value['data/sp_spd_tests_detail/sp7']
 ID_seq = name_ID_value['Sequence']
 ID_AT = name_ID_value['ATcontent']
 ID_CpG = name_ID_value['CpGNumber']
@@ -94,8 +94,18 @@ for ID in ID_seq:
     count = get_dincount(seq, din="TA")
     ID_TA[ID] = count
 
+ID_mefrac = {}
+for ID in ID_CpG:
+    CpG = ID_CpG[ID]
+    if CpG <= 0:
+        ID_mefrac[ID] = np.NaN
+        continue
+    me = ID_me[ID]
+    mefrac = float(me) / (2*CpG)
+    ID_mefrac[ID] = mefrac
+
 # correlation and p-correlation matrix
-names = ["Condensability", "AT content", "Poly-A", "CG count", "TA count", "CpG me", "k4me3", "k27ac", "k9ac", "k36me3", "k9me2", "k9me3", "k27me3"]
+names = ["Condensability", "AT content", "Poly-A", "CpG count", "TpA count", "meCpG density", "k4me3", "k27ac", "k9ac", "k36me3", "k9me2", "k9me3", "k27me3"]
 ID_value_list = [ID_score2, ID_AT, ID_Alen, ID_CpG, ID_TA, ID_me, name_ID_value['k4me3'], name_ID_value['k27ac'], name_ID_value['k9ac'], name_ID_value['k36me3_2'], name_ID_value['k9me2_2'], name_ID_value['k9me3_2'], name_ID_value['k27me3a_2']]
 
 IDs = ID_seq.keys()
