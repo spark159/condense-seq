@@ -464,7 +464,7 @@ def mean_contact_matrix (IDs, Trace, burn_in=0):
     return mean/(len(Trace)-burn_in)
 
 """
-fname = "single_100_23_-10:33_-4_rgs"
+fname = "almost_100_-10_23:1_-14_23_rgs"
 #fname = 'homo_100_23_-4_rca'
 #fname = 'check_rgs'
 ctprob_fname = fname + '_ctprob.txt'
@@ -486,6 +486,7 @@ plt.plot(range(1, len(ID_size_dist['0'])+1), ID_size_dist["0"], 'k--')
 plt.show()
 plt.close()
 
+
 IDs, matrix = read_ctprob (ctprob_fname)
 fig = plt.figure()
 current_cmap = matplotlib.cm.get_cmap()
@@ -495,7 +496,7 @@ plt.colorbar()
 plt.show()
 plt.close()
 """
-
+"""
 # pure case
 N = 100
 volume = 10**7
@@ -503,23 +504,22 @@ volume = 10**7
 energy_list_list = []
 P_list_list = []
 pred_list_list = []
-S_list_list = []
 gel_point_list = []
-for v in [2]:
+mean_size_list_list = []
+for v in range(10):
     f = 3 + 10*v
-    #f = 23
     gel_point = math.log(N) + math.log(f) + 2*math.log(f-2) - math.log(volume) - math.log(f-1)
     gel_point_list.append(gel_point)
     energy_list = []
     P_list = []
     pred_list = []
-    S_list = []
+    mean_size_list = []
     for i in range(10):
         E = - 2*i
-        fname = 'homo_' + str(N) + '_' + str(f) + '_' + str(E)
+        fname = 'pure_' + str(N) + '_' + str(E) + '_' + str(f)
         ID_size_dist = read_cluster (fname + "_rgs_cluster.txt")
         cluster_list = ID_size_dist['total']
-
+        mean_size = mean_cluster_size(cluster_list)
         #fig = plt.figure()
         #plt.plot(cluster_list, '--')
         #plt.plot(FS_size_dist(N, f, E, volume), '.', markersize=3)
@@ -528,37 +528,50 @@ for v in [2]:
         #plt.show()
         #plt.close()
         
-        #cluster_list = read_ctnum (fname + "_rca_cluster.txt")
         P = number_count(cluster_list[:10])/float(N)
-        #P = sum(ID_size_dist['0'][:10])
-        Nc = volume*(f-1)*np.exp(E) / float(f*((f-2)**2))
-        S = sum([cluster_list[k]*float(k+1) for k in range(len(cluster_list))])
-        predict = 1.7*Nc/float(N)
-        #predict = number_count(FS_size_dist(N, f, E, volume)[:10])/float(N)
+        predict = 2.5*volume*np.exp(E)/float(f*f*N)
         energy_list.append(E)
         P_list.append(P)
         pred_list.append(predict)
-        S_list.append(S)
+        mean_size_list.append(mean_size)
     energy_list_list.append(energy_list)
     P_list_list.append(P_list)
     pred_list_list.append(pred_list)
-    S_list_list.append(S_list)
+    mean_size_list_list.append(mean_size_list)
 
+# check gelation point
 color_list = np.linspace(0.01, 1, num=len(energy_list_list))
 cmap = mpl.cm.get_cmap("jet")
 fig = plt.figure()
 for i in range(len(energy_list_list)):
     f = 3 + 10*i
-    #if f not in [23, 13]:
-    #    continue
+    energy_list = energy_list_list[i]
+    mean_size_list = mean_size_list_list[i]
+    gel_point = gel_point_list[i]
+    plt.plot(energy_list, mean_size_list, '.-', color=cmap(color_list[i]), label='f=' + str(f))
+    plt.axvline(x=gel_point, color=cmap(color_list[i]), linestyle='--', alpha=0.5)
+    #plt.plot(energy_list, mean_size_list, '.-', color=cmap(color_list[i]), label='simulation (f=' +str(f)+')'  )
+    #plt.axvline(x=gel_point, color=cmap(color_list[i]), linestyle='--', label='FS theory (f='+str(f)+')')
+plt.xlabel("Interaction energy (kT)")
+plt.ylabel("Average cluster size")
+plt.title("Flory-Stockmayer simulations, " + "N=" + str(N))
+plt.legend()
+plt.savefig("FS_simulation_pure_gelpoint.png")
+plt.show()
+plt.close()
+
+# check survival probabiltiy 
+color_list = np.linspace(0.01, 1, num=len(energy_list_list))
+cmap = mpl.cm.get_cmap("jet")
+fig = plt.figure()
+for i in range(len(energy_list_list)):
+    f = 3 + 10*i
     gel_point = gel_point_list[i]
     energy_list = energy_list_list[i]
     P_list = P_list_list[i]
     pred_list = pred_list_list[i]
-    S_list = S_list_list[i]
     plt.plot(energy_list, P_list, '.', color=cmap(color_list[i]), label='f=' + str(f))
     plt.plot(energy_list, pred_list, '--', color=cmap(color_list[i]), alpha=0.5)
-    #plt.plot(energy_list, S_list, color=cmap(color_list[i]))
     plt.axvline(x=gel_point, color=cmap(color_list[i]), linestyle='-.', alpha=0.25)
 plt.xlabel("Interaction energy (kT)")
 plt.ylabel("Survival probability")
@@ -568,6 +581,7 @@ plt.yscale('log')
 #plt.ylim([-5, 60])
 #plt.xlim([-18.5, -5])
 plt.legend()
+plt.savefig("FS_simulation_pure_survival.png")
 plt.show()
 plt.close()
 
@@ -578,33 +592,24 @@ volume = 10**7
 f = 23
 E = -10
 gel_point = math.log(N) + math.log(f) + 2*math.log(f-2) - math.log(volume) - math.log(f-1)
-alpha = 1.0/float(f-1)
-Nc = volume*(f-1)*np.exp(E) / float(f*((f-2)**2))
-#Nc = volume*np.exp(E) / float((f)**2)
-Pm = 1.7*Nc/float(N)
-#Po = float(volume)*np.exp(E-1) / float(N*f*(f-1))
-Po = (volume/N) * (np.exp(E)/f) * ((f-2)**(f-2)) / ((f-1)**(f-1))
-Sm = Pm + (N-Nc)*(1.0-Pm)
+Po = 2.5*volume*np.exp(E)/float(f*f*N)
 
 energy_list_list = []
 P_list_list = []
-pred_list_list = []
-S_list_list = []
+pred_list_list1 = []
+pred_list_list2 = []
 for v in range(10):
     f_single = 3 + 10*v
-    #f_single = 23
     energy_list = []
     P_list = []
-    pred_list = []
-    S_list = []
+    pred_list1 = []
+    pred_list2 = []
     for i in range(10):
         E_single = - 2*i
-        fname = 'single_' + str(N) + '_' + str(f) + '_' + str(E) + ':' + str(f_single) + '_' + str(E_single)
-        ID_size_dist = read_cluster (fname + "_rca_cluster.txt")
-        ID_energy, ID_valency = read_anot(fname + "_anot.cn")
-        #ID_size_dist = read_cluster (fname + "_rgs_cluster.txt")
-        #ID_energy, ID_valency = read_anot(fname + "_para.cn")
-        dE = E_single - E -4.5
+        fname = 'almost_' + str(N) + '_' + str(E) + '_' + str(f) + ':' + str(1) + '_' + str(E_single) + '_' + str(f_single)
+        ID_size_dist = read_cluster (fname + "_rgs_cluster.txt")
+        ID_energy, ID_valency = read_anot(fname + "_para.cn")
+        dE = E_single - E
         Pg = number_count(ID_size_dist['total'][:10])/float(N)
 
         #fig = plt.figure()
@@ -615,59 +620,223 @@ for v in range(10):
         #plt.close()
 
         P = sum(ID_size_dist['0'][:10])
-        #P = ID_size_dist['0'][0]
-        S = sum([ID_size_dist['0'][k]*float(k+1) for k in range(len(ID_size_dist['0']))])
-        P = (P)
-        #C = ((float(f)/f_single))*((1+1.0/float(f-1))**(f-1))/((1+np.exp(-0.5*dE)/float(f-1))**(f_single-1))
-        C = ((float(f)/f_single)*(float(f-1)/(f-2))**(f-1))/((1+np.exp(-0.5*dE)/float(f-2))**(f_single-1))
-        #C = ((float(f)/f_single)*np.exp(0.5*dE+2))/((1+np.exp(-0.5*dE-1)/float(f-1))**(f_single-1))
-        #Co = np.exp(2)/((1+np.exp(-1)/float(f-1))**(f-1))
-        #predict = Pm*(Po*(1-C) + np.sqrt((Po*(1-C))**2 + 4*Po*C))/(Po*(1-Co) + np.sqrt((Po*(1-Co))**2 + 4*Po*Co))
-        predict = 0.5*(Po*(1-C) + np.sqrt((Po*(1-C))**2 + 4*Po*C))
-        #predict = np.exp(np.exp(0.5*dE*(f_single/float(f))))
-        #predict = 1.0 / (1.0 + (float(alpha)/(1-alpha))*np.exp(-0.5*dE))**f_single
-        #predict = Pm*(float(f)/f_single)*np.exp(0.5*dE)
-        #predict = np.log((float(f)/f_single)*np.exp(0.5*dE))
-        #predict = Pm*(float(f)/(f_single))*(np.exp(0.5*dE)*(1.0-alpha)+alpha)
-        #predict = (float(f)/(f_single))*(np.exp(0.5*dE)*(1.0-alpha)+alpha)
-        #predict = Pm*((float(f-1)/(f-2))**f)*((float(f-2)/(f-2 + np.exp(-0.5*dE)))**f_single) + 10**-10
-        #predict = Pm*(1+f_single*((float(f-2)**(f-2))/(float(f-1)**(f-1)))*np.exp(-0.5*dE))/(1+np.exp(-0.5*dE)/float(f-2))**f_single
-        #predict = (float(f)/(f_single))*(np.exp(0.5*dE)*(1.0-alpha)+alpha)
-        #predict = ((1.0 + f_single*(float(f-2)**(f-2))/((f-1)**(f-1))*np.exp(-0.5*dE))*((1.0+1.0/(f-2))**f))/(((1.0 + np.exp(-0.5*dE)/(f-2))**f_single)*(1.0 + f*(float(f-2)**(f-2))/((f-1)**(f-1))))
+        C1 = np.exp(0.5*dE)*((float(f)/f_single)*(float(f-1)/(f-2))**(f-1))/((1+np.exp(-0.5*dE)/float(f-2))**(f_single-1))
+        C2 = np.exp(0.5*dE)*np.exp(1-(float(f_single)/f)*np.exp(-0.5*dE))*((float(f)/f_single))
+        predict1 = Po*((C1)**0.5)
+        predict2 = Po*((C2)**0.5)
+        #predict = 0.5*(Po*Po*(1-C) + np.sqrt((Po*Po*(1-C))**2 + 4*Po*Po*C))
         energy_list.append(E_single)
         P_list.append(P)
-        pred_list.append(predict)
-        S_list.append(S)
+        pred_list1.append(predict1)
+        pred_list2.append(predict2)
     energy_list_list.append(energy_list)
     P_list_list.append(P_list)
-    pred_list_list.append(pred_list)
-    S_list_list.append(S_list)
+    pred_list_list1.append(pred_list1)
+    pred_list_list2.append(pred_list2)
 
 color_list = np.linspace(0.01, 1, num=len(energy_list_list))
 cmap = mpl.cm.get_cmap("jet")
 fig = plt.figure()
 for i in range(len(energy_list_list)):
     f_single = 3 + 10*i
-    #if f not in [23, 13]:
-    #    continue
     energy_list = energy_list_list[i]
     dE_list = [energy - E for energy in energy_list]
     df = f_single - f 
     P_list = P_list_list[i]
-    pred_list = pred_list_list[i]
-    S_list = S_list_list[i]
+    pred_list1 = pred_list_list1[i]
+    pred_list2 = pred_list_list2[i]
     plt.plot(dE_list, P_list, '.', color=cmap(color_list[i]), label='$\Delta$f=' + str(df))
-    plt.plot(dE_list, pred_list, '--', color=cmap(color_list[i]), alpha=0.5)
-    #plt.plot(dE_list, S_list, color=cmap(color_list[i]))
+    plt.plot(dE_list, pred_list1, '--', color=cmap(color_list[i]), alpha=0.5)
+    #plt.plot(dE_list, pred_list2, '--', color=cmap(color_list[i]), alpha=0.5)
 plt.axvline(x=gel_point-E, color='k', linestyle='-.', alpha=0.25)
-plt.xlabel("$\Delta$Interaction energy (kT)")
+plt.xlabel("$\Delta$ Interaction energy (kT)")
 plt.ylabel("Survival probability")
 plt.title("Almost pure solution (F-S theory vs simulation)")
 plt.yscale('log')
-#plt.ylim([-0.02, 0.2])
+plt.ylim([10**-5, 1])
 #plt.ylim([-5, 60])
 #plt.xlim([-8.5, 5])
 plt.legend()
+plt.savefig("FS_simulation_almost_survival.png")
 plt.show()
 plt.close()
+"""
+
+# heterogenous case
+def P_to_energy (ID_P, f, volume, Em=None):
+    # adjust P
+    for ID, P in ID_P.items():
+        if P <= 0:
+            P = sys.float_info.min
+            ID_P[ID] = P
+        elif P >= 1:
+            P = 1.0 - sys.float_info.min
+            ID_P[ID] = P
+    # find Pm and Em
+    N = len(ID_P)
+    if Em == None:
+        Pm = 0.0
+        for ID in ID_P:
+            P = ID_P[ID]
+            Pm += np.log(P)
+        Pm = (np.exp(Pm/float(N)))
+        print np.mean(ID_P.values())
+        print Pm
+        Em = np.log(f*f) + np.log(N) + np.log(Pm) - np.log(2.5*volume)
+    else:
+        Pm = 2.5*volume*np.exp(Em)/float(f*f*N)
+    # find E
+    ID_energy = {}
+    for ID in ID_P:
+        P = ID_P[ID]
+        energy = Em + 2*np.log(float(P)/Pm)
+        ID_energy[ID] = energy
+    return ID_energy
+
+def P_to_valency (ID_P, E, volume, fm=None):
+    # adjust P
+    for ID, P in ID_P.items():
+        if P <= 0:
+            P = sys.float_info.min
+            ID_P[ID] = P
+        elif P >= 1:
+            P = 1.0 - sys.float_info.min
+            ID_P[ID] = P
+    # find Pm and fm
+    N = len(ID_P)
+    if fm == None:
+        Pm = 0.0
+        for ID in ID_P:
+            P = ID_P[ID]
+            Pm += 1.0/P
+        Pm = float(N) / Pm
+        fm = (2.5*volume*np.exp(E)/(N*Pm))**0.5
+    else:
+        Pm = 2.5*volume*np.exp(E)/float(fm*fm*N)
+    # find f
+    ID_valency = {}
+    for ID in ID_P:
+        P = ID_P[ID]
+        f = fm* (2.0/(1.0+(float(P)/Pm)**2))
+        ID_valency[ID] = f
+    return ID_valency
+
+def residuals (ID_trues, ID_preds):
+    output = []
+    for ID in ID_trues:
+        x, y = ID_trues[ID], ID_preds[ID]
+        #total += float(abs(x-y))/math.sqrt(2)
+        output.append(abs(x-y))
+    return output
+
+# check energy
+ID_size_dist = read_cluster("heteroE_100_-10_23_rgs_cluster.txt")
+ID_energy, ID_valency = read_anot("heteroE_100_-10_23_para.cn")
+Em, fm = np.mean(ID_energy.values()), np.mean(ID_valency.values())
+
+N = len(ID_size_dist) - 1
+volume = 10**7
+
+ID_P = {}
+for ID in ID_size_dist:
+    if ID == 'total':
+        continue
+    P = sum(ID_size_dist[ID][:10]) / float(sum(ID_size_dist[ID]))
+    ID_P[ID] = P
+ID_pred_energy = P_to_energy(ID_P, ID_valency['0'], volume)
+
+IDs = ID_energy.keys()
+X = [ID_energy[ID] for ID in IDs]
+Y = [ID_pred_energy[ID] for ID in IDs]
+Z = [ID_valency[ID] for ID in IDs]
+
+fig = plt.figure()
+plt.scatter(X, Y, s=5, label=r'$E\approx-10, f=23$', color='blue')
+plt.plot([min(X)-10, max(X)+10], [min(X)-10, max(X)+10], 'k--', alpha=0.7)
+plt.xlim([min(X)-10, max(X)+10])
+plt.ylim([min(X)-10, max(X)+10])
+plt.title("Heterogeneous mixture (Energy prediction)")
+plt.xlabel("Energy used for simulation")
+plt.ylabel("MF theory prediction")
+plt.legend()
+#plt.savefig("FS_simulation_heteroE_survival.png")
+#plt.show()
+plt.close()
+
+fig, ax1 = plt.subplots()
+left, bottom, width, height = [0.2, 0.65, 0.2, 0.2]
+ax2 = fig.add_axes([left, bottom, width, height])
+
+ax1.plot(X, Y, 'b.')
+ax1.plot([min(X)-10, max(X)+10], [min(X)-10, max(X)+10], 'k--', alpha=0.7)
+ax1.set_xlim([min(X)-10, max(X)+10])
+ax1.set_ylim([min(X)-10, max(X)+10])
+ax1.set_title("Heterogeneous mixture (Energy prediction)")
+ax1.set_xlabel("Energy used for simulation")
+ax1.set_ylabel("MF theory prediction")
+
+ax2.hist(X, alpha=0.5, label='True value')
+ax2.hist(Y, alpha=0.5, label='Prediction')
+ax2.set_xlabel("Sampled energies")
+ax2.legend(prop={'size': 6}, loc='upper right', bbox_to_anchor=(1.7, 1))
+plt.savefig("FS_simulation_heteroE_survival.png")
+plt.show()
+plt.close()
+
+# check valency
+ID_size_dist = read_cluster("heterof_100_-10_23_rgs_cluster.txt")
+ID_energy, ID_valency = read_anot("heterof_100_-10_23_para.cn")
+Em, fm = np.mean(ID_energy.values()), np.mean(ID_valency.values())
+
+N = len(ID_size_dist) - 1
+volume = 10**7
+
+ID_P = {}
+for ID in ID_size_dist:
+    if ID == 'total':
+        continue
+    P = sum(ID_size_dist[ID][:10]) / float(sum(ID_size_dist[ID]))
+    ID_P[ID] = P
+ID_pred_valency = P_to_valency (ID_P, ID_energy['0'], volume)
+
+IDs = ID_energy.keys()
+X = [ID_valency[ID] for ID in IDs]
+Y = [ID_pred_valency[ID] for ID in IDs]
+Z = [ID_energy[ID] for ID in IDs]
+
+fig = plt.figure()
+plt.scatter(X, Y, s=5, label=r'E=-10, $f\approx23$', color='red')
+plt.plot([min(X)-10, max(X)+10], [min(X)-10, max(X)+10], 'k--', alpha=0.7)
+plt.xlim([min(X)-10, max(X)+10])
+plt.ylim([min(X)-10, max(X)+10])
+plt.title("Heterogeneous mixture (Valency prediction)")
+plt.xlabel("Valency used for simulation")
+plt.ylabel("MF theory prediction")
+plt.legend()
+#plt.savefig("FS_simulation_heterof_survival.png")
+#plt.show()
+plt.close()
+
+fig, ax1 = plt.subplots()
+left, bottom, width, height = [0.2, 0.65, 0.2, 0.2]
+#left, bottom, width, height = [0.65, 0.23, 0.2, 0.2]
+ax2 = fig.add_axes([left, bottom, width, height])
+
+ax1.plot(X, Y, 'r.')
+ax1.plot([min(X)-10, max(X)+10], [min(X)-10, max(X)+10], 'k--', alpha=0.7)
+ax1.set_xlim([min(X)-10, max(X)+10])
+ax1.set_ylim([min(X)-10, max(X)+10])
+ax1.set_title("Heterogeneous mixture (Valency prediction)")
+ax1.set_xlabel("Valency used for simulation")
+ax1.set_ylabel("MF theory prediction")
+
+ax2.hist(X, alpha=0.5, label='True value')
+ax2.hist(Y, alpha=0.5, label='Prediction')
+ax2.set_xlabel("Sampled valanecies")
+ax2.legend(prop={'size': 6}, loc='upper right', bbox_to_anchor=(1.7, 1))
+ax2.set_xticks(range(10,45,5), [str(i) for i in range(10,45,5)])
+plt.savefig("FS_simulation_heterof_survival.png")
+#plt.show()
+plt.close()
+
 

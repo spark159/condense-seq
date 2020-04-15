@@ -10,6 +10,8 @@ def write_temp_para (fname, energy_list, valency_list):
 
 
 """
+# pure case
+
 N = 100
 energy_list = []
 valency_list = []
@@ -20,28 +22,21 @@ write_temp_para ("test_N100_V23_E-100", energy_list, valency_list)
 """
 
 
+# heterogenous case
 
-"""
 N = 100
 energy_list = []
 valency_list = []
 for i in range(N):
-    if i == 0:
-        energy = -13
-        valency = 56
-    else:
-        energy = -10
-        valency = 23
+    energy = -10
     #energy = -10 + random.gauss(0,5)
-    #energy = -10
-    #valency = 23
     energy_list.append(energy)
+    #valency = 23
     #valency = 23 + int(random.randint(-5,5))
-    #valency = 23 + int(random.gauss(0,5))
+    valency = 23 + int(random.gauss(0,5))
     valency_list.append(valency)
-write_temp_anot2 ("hetero_100_23_-10", energy_list, valency_list)
-#write_temp_anot2 ("Just", energy_list, valency_list)
-"""
+write_temp_para ("hetero_100_23_-10", energy_list, valency_list)
+
 
 """
 N = 100
@@ -78,9 +73,10 @@ for i in [4]:
     fname = "homo_" + str(N) + '_' + str(valency) + '_' + str(energy)
     write_temp_para (fname, [energy]*N, [valency]*N)
     subprocess.call(['python', 'rgs_submit.py', fname + '_para.cn', '--bethe', '-o', fname, '--cycle', str(20000), '--replica', str(10), '--max-root', str(100), '--sigma', str(1), '--burn', str(12000)])
-
 """
 
+
+"""
 N = 100
 f = 23
 E = -10
@@ -93,3 +89,4 @@ for v in [3]:
         fname = 'single_' + str(N) + '_' + str(f) + '_' + str(E) + ':' + str(f_single) + '_' + str(E_single)
         write_temp_para (fname, energy_list, valency_list)
         subprocess.call(['python', 'rgs_submit.py', fname + '_para.cn', '--bethe', '-o', fname, '--cycle', str(100000), '--replica', str(10), '--max-root', str(100), '--sigma', str(1)])
+"""
