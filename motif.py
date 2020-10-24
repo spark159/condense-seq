@@ -114,7 +114,7 @@ def NCP_count (peak_fname,
     f = open(out_fname + '_motif.txt', 'w')
     s = 'Sample\tID\tChromosome\tPhysicalPosition\tStrand\tWeight\tSequence'
     print >> f, s
-
+OA
     # read genome to get sequence
     print >> sys.stderr, "reading reference genome file"
     chrhit_count = 0

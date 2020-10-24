@@ -1,9 +1,173 @@
+import sys
 import Interval_dict
 import numpy as np
 import matplotlib.pyplot as plt
 import load_file
 import statis
 
+def read_CpGTable (fname, chr_choice=None):
+    id = 0
+    id_field_values = {}
+    for line in open(fname):
+        cols = line.strip().split('\t')
+        _, chr, st, ed, name, length, cpgNum, gcNum, perCpg, perGC, obsExp = cols
+        if chr_choice and chr not in chr_choice:
+            continue
+        #num = int(num.strip().split(":_")[1])
+        interval = (int(st), int(ed))
+        id_field_values[id] = {}
+        id_field_values[id]["num"] = int(cpgNum)
+        id_field_values[id]["interval"] = interval
+        id +=1
+    return id_field_values
+
+path = './data/'
+
+# find CpG promoter
+gID_field_values, field_gID_values = load_file.read_GTF (path+"Homo_sapiens.GRCh37.87.gtf", chr_list=["chr1"], mode="both")
+
+gID_ginterval = {}
+for gID in gID_field_values:
+    TSS = gID_field_values[gID]['TSS']
+    TTS = gID_field_values[gID]['TTS']
+    strand = gID_field_values[gID]['strand']
+    #interval = (TSS-500, TSS+500)
+    if strand == '+':
+        #interval = (TSS, TTS)
+        interval = (TSS-1000, TSS+500)
+        #interval = (TSS, TSS+2500)
+    else:
+        #interval = (TTS, TSS)
+        interval = (TSS-500, TSS+1000)
+        #interval = (TSS-2500, TSS)
+    gID_ginterval[gID] = interval
+
+ginterval_dict = Interval_dict.double_hash(gID_ginterval, 10000, 250000000)
+CpGID_field_values = read_CpGTable(path+"cpgIslandExt.txt", chr_choice=["chr1"])
+
+CpG_genes = []
+for CpGID in CpGID_field_values:
+    st, ed = CpGID_field_values[CpGID]["interval"]
+    IDs = ginterval_dict.find_range(st, ed)
+    CpG_genes += IDs
+
+CpG_genes = set(CpG_genes)
+NonCpG_genes = set(gID_ginterval.keys()) - CpG_genes
+CpG_genes, NonCpG_genes = list(CpG_genes), list(NonCpG_genes)
+
+print "completed to sort CpG genes"
+print "CpG genes: ", len(CpG_genes)
+print "Non CpG genes: ", len(NonCpG_genes)
+
+#sys.exit(1)
+
+# plot profile
+def single_plot (profiles, offset=-1000, xtick_loc_name=None, xlabel='Distance from TSS (bp)', ylabel='Nucleosome Occupancy', names=None, title="", note=""):
+    for profile in profiles:
+        pad_len = int(len(profile)*0.1)
+        profile[:pad_len] = [np.NaN]*pad_len
+        profile[len(profile)-pad_len:] = [np.NaN]*pad_len
+    fig, ax = plt.subplots(figsize=(10,5))
+    #fig, ax1 = plt.subplots()
+    X = [ i + offset for i in range(len(profiles[0]))]
+    for k in range(len(profiles)):
+        profile = profiles[k]
+        if names !=None:
+            ax.plot(X, profile, label=names[k])
+        else:
+            ax.plot(X. profile)
+    if xtick_loc_name:
+        xtick_locs, xtick_names = xtick_loc_name
+        ax.set_xticks(xtick_locs)
+        ax.set_xticklabels(xtick_names)
+    fig.tight_layout()
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    plt.title(title)
+    if names != None:
+        plt.legend()
+    plt.savefig("single_" + note + ".png",bbox_inches='tight')
+    plt.show()
+    plt.close()
+
+
+def pair_plot (profile1, profile2, offset=-1000, xtick_loc_name=None, xlabel='Distance from TSS (bp)', ylabel1='Condensability (A.U.)', ylabel2="", title="", note=""):
+    assert len(profile1) == len(profile2)
+    pad_len = int(len(profile1)*0.1)
+    profile1[:pad_len] = [np.NaN]*pad_len
+    profile1[len(profile1)-pad_len:] = [np.NaN]*pad_len
+    profile2[:pad_len] = [np.NaN]*pad_len
+    profile2[len(profile2)-pad_len:] = [np.NaN]*pad_len
+    fig, ax1 = plt.subplots(figsize=(10,5))
+    #fig, ax1 = plt.subplots()
+    X = [ i + offset for i in range(len(profile1))]
+    ax1.plot(X, profile1, 'b')
+    #ax1.scatter(X, profile1, s=3, color='b')
+    ax1.set_xlabel(xlabel)
+    ax1.set_ylabel(ylabel1, color='b')
+    ax1.tick_params('y', colors='b')
+    ax2 = ax1.twinx()
+    ax2.plot(X, profile2, 'r')
+    #ax2.scatter(X, profile2, s=3, color='r')
+    ax2.set_ylabel(ylabel2, color='r')
+    ax2.tick_params('y', colors='r')
+    if xtick_loc_name:
+        xtick_locs, xtick_names = xtick_loc_name
+        ax2.set_xticks(xtick_locs)
+        ax2.set_xticklabels(xtick_names)
+    fig.tight_layout()
+    plt.title(title)
+    plt.savefig("pair_" + note + ".png",bbox_inches='tight')
+    #plt.show()
+    plt.close()
+
+# mean TSS plot
+feature = 'TSS'
+ID_choice = NonCpG_genes
+profile_fname = path + 'hg19_chr1_gtf_' + feature + "_profile.txt"
+#profile_fname = path + 'hg19_chr1_' + feature + "_check_profile.txt"
+occprofile_fname = path + 'hg19_chr1_gtf_' + feature + "_occ_profile.txt"
+#occprofile_fname = path + 'hg19_chr1_' + feature + "_occ_check_profile.txt"
+moving_average_win = 100
+offset = -1000
+xtick_loc_name = None
+
+name_mean_profile, name_ID_profile = load_file.read_profile(profile_fname, ID_choice=ID_choice)
+for name in name_mean_profile:
+    name_mean_profile[name] = statis.moving_average(name_mean_profile[name], moving_average_win)
+
+name_mean_occprofile, name_ID_occprofile = load_file.read_profile(occprofile_fname, ID_choice=ID_choice)
+mean_occprofile = statis.moving_average(name_mean_occprofile["data/sp_spd_tests_detail/sp1"], moving_average_win)
+mean_occprofile2 = statis.moving_average(name_mean_occprofile["data/sp_spd_tests_detail/sp7"], moving_average_win)
+mean_occprofile3 = statis.moving_average(name_mean_occprofile["data/sp_spd_tests_detail/sp8"], moving_average_win)
+#mean_occprofile = name_mean_occprofile["data/sp_spd_tests_detail/sp1"]
+ID_occprofile = name_ID_occprofile["data/sp_spd_tests_detail/sp1"]
+
+occprofiles = [mean_occprofile/sum(mean_occprofile),mean_occprofile2/sum(mean_occprofile2), mean_occprofile3/sum(mean_occprofile3)]
+single_plot(occprofiles, names=['Input', 'Sp6', 'Sp7'])
+
+# average plot of all genes
+mean_score1_profile = name_mean_profile["data/sp_spd_tests_detail/sp7"]
+pair_plot(mean_score1_profile, mean_occprofile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="Occupancy", xtick_loc_name = xtick_loc_name, note="Occ" + '_' + feature)
+
+for name in sorted(name_mean_profile):
+    if name in  ["data/sp_spd_tests_detail/sp7", "data/sp_spd_tests_detail/sp8"]:
+        continue
+    mean_profile = name_mean_profile[name]
+    pair_plot(mean_score1_profile, mean_profile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2=name,  xtick_loc_name = xtick_loc_name, note=name.split('/')[-1] + '_' + feature)
+
+mean_meCpGfrac_profile = name_mean_profile["meGCNumber"] / (2*name_mean_profile["CpGNumber"])
+pair_plot(mean_score1_profile, mean_meCpGfrac_profile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="meCpG frac",  xtick_loc_name = xtick_loc_name, note="meCpGfrac" + '_' + feature)
+
+
+
+
+
+
+
+
+
+"""
 def pair_plot (profile1, profile2, offset=-1000, xtick_loc_name=None, xlabel='Distance from TSS (bp)', ylabel1='Condensability (A.U.)', ylabel2="", note=""):
     assert len(profile1) == len(profile2)
     profile1[:100] = [np.NaN]*100
@@ -29,58 +193,6 @@ def pair_plot (profile1, profile2, offset=-1000, xtick_loc_name=None, xlabel='Di
     plt.savefig("pair_" + note + ".png",bbox_inches='tight')
     #plt.show()
     plt.close()
-
-def read_CpGTable (fname, chr_choice=None):
-    id = 0
-    id_field_values = {}
-    for line in open(fname):
-        line = line.strip().split()
-        chr, st, ed, num = line
-        if chr_choice and chr not in chr_choice:
-            continue
-        num = int(num.strip().split(":_")[1])
-        interval = (int(st), int(ed))
-        id_field_values[id] = {}
-        id_field_values[id]["num"] = num
-        id_field_values[id]["interval"] = interval
-        id +=1
-    return id_field_values
-
-# find CpG promoter
-gID_field_values, field_gID_values = load_file.read_GTF ("data/Homo_sapiens.GRCh37.87.gtf", "chr1", mode="both")
-gID_ginterval = {}
-for gID in gID_field_values:
-    TSS = gID_field_values[gID]['TSS']
-    TTS = gID_field_values[gID]['TTS']
-    strand = gID_field_values[gID]['strand']
-    #interval = (TSS-500, TSS+500)
-    if strand == '+':
-        #interval = (TSS, TTS)
-        interval = (TSS-1000, TSS+500)
-        #interval = (TSS, TSS+2500)
-    else:
-        #interval = (TTS, TSS)
-        interval = (TSS-500, TSS+1000)
-        #interval = (TSS-2500, TSS)
-    gID_ginterval[gID] = interval
-
-ginterval_dict = Interval_dict.double_hash(gID_ginterval, 10000, 250000000)
-
-CpGID_field_values = read_CpGTable("data/CpGTables.txt", chr_choice=["chr1"])
-
-CpG_genes = []
-for CpGID in CpGID_field_values:
-    st, ed = CpGID_field_values[CpGID]["interval"]
-    IDs = ginterval_dict.find_range(st, ed)
-    CpG_genes += IDs
-
-CpG_genes = set(CpG_genes)
-NonCpG_genes = set(gID_ginterval.keys()) - CpG_genes
-CpG_genes, NonCpG_genes = list(CpG_genes), list(NonCpG_genes)
-
-print "completed to sort CpG genes"
-print "CpG genes: ", len(CpG_genes)
-print "Non CpG genes: ", len(NonCpG_genes)
 
 # plot profile
 feature = 'TSS'
@@ -169,3 +281,4 @@ for name in name_ID_profile:
     plt.savefig("RPKM_quantile_profile_" + feature + "_" + name.split('/')[-1] + note + ".png",bbox_inches='tight')
     #plt.show()
     plt.close()
+"""

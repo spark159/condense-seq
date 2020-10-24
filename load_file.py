@@ -113,7 +113,7 @@ def read_profile(fname, moving_win=None, name_choice=None, ID_choice=None):
         line = line.strip()
         if not line:
             continue
-        cols = line.split()
+        cols = line.split() 
         if First:
             First = False
             continue
@@ -266,7 +266,10 @@ def read_GTF (fname, chr_list=None, mode="gene"):
             continue
         cols = line.strip().split('\t')
         chrnum, source, feature, start, end, score, strand, frame, attribute = cols
-        chr = "chr" + chrnum
+        if not chrnum.startswith('chr'):
+            chr = "chr" + chrnum
+        else:
+            chr = chrnum
         if chr_list and chr not in chr_list:
             continue
         if feature not in ["gene", "exon", "start_codon", "stop_codon"]:
@@ -280,7 +283,10 @@ def read_GTF (fname, chr_list=None, mode="gene"):
             value = value.strip('"')
             tag_value[tag] = value
         geneID = tag_value["gene_id"]
-        geneType = tag_value["gene_biotype"]
+        try:
+            geneType = tag_value["gene_biotype"]
+        except:
+            geneType = tag_value["gene_type"]
         if geneID not in ID_field_values:
             ID_field_values[geneID] = {}
         if "chr" not in ID_field_values[geneID]:

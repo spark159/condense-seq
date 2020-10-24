@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import load_file
@@ -62,9 +63,10 @@ def pair_plot (profile1, profile2, offset=-1000, xtick_loc_name=None, xlabel='Di
     #plt.show()
     plt.close()
 
-path = "/home/spark159/../../media/spark159/sw/sp_spd_tests_detail/"
+#path = "/home/spark159/../../media/spark159/sw/sp_spd_tests_detail/"
+path = "./data/"
 
-
+"""
 # mean TSS plot
 feature = 'TSS'
 profile_fname = path + 'hg19_chr1_gtf_' + feature + "_profile.txt"
@@ -87,11 +89,11 @@ mean_occprofile3 = statis.moving_average(name_mean_occprofile["data/sp_spd_tests
 ID_occprofile = name_ID_occprofile["data/sp_spd_tests_detail/sp1"]
 
 occprofiles = [mean_occprofile/sum(mean_occprofile),mean_occprofile2/sum(mean_occprofile2), mean_occprofile3/sum(mean_occprofile3)]
-single_plot(occprofiles, names=['Input', 'Sp6', 'Sp7'])
+#single_plot(occprofiles, names=['Input', 'Sp6', 'Sp7'])
 
 # average plot of all genes
 mean_score1_profile = name_mean_profile["data/sp_spd_tests_detail/sp7"]
-pair_plot(mean_score1_profile, mean_occprofile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="Occupancy", xtick_loc_name = xtick_loc_name, note="Occ" + '_' + feature)
+#pair_plot(mean_score1_profile, mean_occprofile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="Occupancy", xtick_loc_name = xtick_loc_name, note="Occ" + '_' + feature)
 
 for name in sorted(name_mean_profile):
     if name in  ["data/sp_spd_tests_detail/sp7", "data/sp_spd_tests_detail/sp8"]:
@@ -100,13 +102,14 @@ for name in sorted(name_mean_profile):
     pair_plot(mean_score1_profile, mean_profile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2=name,  xtick_loc_name = xtick_loc_name, note=name.split('/')[-1] + '_' + feature)
 
 mean_meCpGfrac_profile = name_mean_profile["meGCNumber"] / (2*name_mean_profile["CpGNumber"])
-pair_plot(mean_score1_profile, mean_meCpGfrac_profile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="meCpG frac",  xtick_loc_name = xtick_loc_name, note="meCpGfrac" + '_' + feature)
+#pair_plot(mean_score1_profile, mean_meCpGfrac_profile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="meCpG frac",  xtick_loc_name = xtick_loc_name, note="meCpGfrac" + '_' + feature)
 
 
 # paritions according to gene expression
-gID_RPKM = load_file.read_RPKM ("/home/spark159/../../media/spark159/sw/dataforcondense/GSE63124_all_gene_raw_readcounts.txt", "/home/spark159/../../media/spark159/sw/dataforcondense/Homo_sapiens.GRCh37.87.gtf", "chr1")
+gID_RPKM = load_file.read_RPKM (path+"GSE63124_all_gene_raw_readcounts.txt", path+"Homo_sapiens.GRCh37.87.gtf", "chr1")
 ID_profile = name_ID_profile["data/sp_spd_tests_detail/sp7"]
 name_ID_profile['Occ'] = name_ID_occprofile["data/sp_spd_tests_detail/sp1"]
+
 
 for name in name_ID_profile:
     ID_profile = name_ID_profile[name]
@@ -139,9 +142,64 @@ for name in name_ID_profile:
     plt.xlabel('Distance from ' + feature +' (bp)')
     plt.title(name)
     plt.legend()
-    plt.savefig("RPKM_quantile_profile_" + feature + "_" + name.split('/')[-1] + ".png",bbox_inches='tight')
+    #plt.savefig("RPKM_quantile_profile_" + feature + "_" + name.split('/')[-1] + ".png",bbox_inches='tight')
     #plt.show()
     plt.close()
+
+
+# heatmap plot by gene expression level
+name_list = ['data/sp_spd_tests_detail/sp7', 'k27ac', 'k4me3', 'k9ac', 'Occ']
+#name_list = ['data/sp_spd_tests_detail/sp7']
+
+common_IDs = set(gID_RPKM)
+for name in name_list:
+    ID_profile = name_ID_profile[name]
+    common_IDs = common_IDs & set(ID_profile)
+
+RPKMgID = []
+for ID in common_IDs:
+    RPKM = gID_RPKM[ID]
+    RPKMgID.append([RPKM, ID])
+
+RPKMgID = sorted(RPKMgID)
+
+name_img = {}
+for name in name_list:
+    ID_profile = name_ID_profile[name]
+    img = []
+    # smoothing
+    for RPKM, ID in RPKMgID:
+        profile = ID_profile[ID]
+        profile = statis.moving_average(profile, moving_average_win)
+        profile[:100] = [profile[100]]*100
+        profile[len(profile)-100:] = [profile[len(profile)-101]]*100
+        img.append(profile)
+    img = np.asarray(img)
+    # rescaling
+    if not name.split('/')[-1].startswith('sp'):
+        mini = np.min(img)
+        img = np.log2(img - mini + 1)
+    else:
+        img = 2*img
+        
+    name_img[name] = img
+
+cmap_list = ['rainbow', 'YlOrRd', 'YlGn', 'Purples', 'Greys', 'Blues', 'Oranges']
+vlim_list = [ [-4, 4], [None, None], [None, None], [None, None], [None, None], [None, None]]
+xtick_labels = [ str(k + offset) for k in range(0, len(profile), 1000)]
+for i in range(len(name_list)):
+    name = name_list[i]
+    img = name_img[name]
+    #fig = plt.figure(figsize=(5,10))
+    fig = plt.figure(figsize=(6.5,10))
+    plt.imshow(img, aspect='auto', cmap=cmap_list[i], vmin=vlim_list[i][0], vmax=vlim_list[i][1])
+    #plt.imshow(img, aspect='auto', cmap='jet')
+    #plt.title(name)
+    plt.xticks(range(0, len(profile), 1000), xtick_labels)
+    plt.savefig("heatmap_profile_byRPKM_" + feature + "_" + name.split('/')[-1] + ".png",bbox_inches='tight')
+    #plt.show()
+    plt.close()
+
 
 
 #scoregID = sorted(scoregID, reverse=True)
@@ -244,7 +302,7 @@ for name in name_ID_profile:
     plt.savefig("RPKM_quantile_profile_" + feature + "_" + name.split('/')[-1] + ".png",bbox_inches='tight')
     #plt.show()
     plt.close()
-
+"""
 
 # mean TSS-TTS plot
 feature = 'TSS_TTS'
@@ -267,22 +325,33 @@ ID_occprofile = name_ID_occprofile["data/sp_spd_tests_detail/sp1"]
 
 # average plot of all genes
 mean_score1_profile = name_mean_profile["data/sp_spd_tests_detail/sp7"]
-pair_plot(mean_score1_profile, mean_occprofile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="Occupancy", xtick_loc_name = xtick_loc_name, note="Occ" + '_' + feature)
+#pair_plot(mean_score1_profile, mean_occprofile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="Occupancy", xtick_loc_name = xtick_loc_name, note="Occ" + '_' + feature)
 
 for name in sorted(name_mean_profile):
     if name in  ["data/sp_spd_tests_detail/sp7", "data/sp_spd_tests_detail/sp8"]:
         continue
     mean_profile = name_mean_profile[name]
-    pair_plot(mean_score1_profile, mean_profile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2=name,  xtick_loc_name = xtick_loc_name, note=name.split('/')[-1] + '_' + feature)
+    #pair_plot(mean_score1_profile, mean_profile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2=name,  xtick_loc_name = xtick_loc_name, note=name.split('/')[-1] + '_' + feature)
 
 mean_meCpGfrac_profile = name_mean_profile["meGCNumber"] / (2*name_mean_profile["CpGNumber"])
-pair_plot(mean_score1_profile, mean_meCpGfrac_profile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="meCpG frac",  xtick_loc_name = xtick_loc_name, note="meCpGfrac" + '_' + feature)
+#pair_plot(mean_score1_profile, mean_meCpGfrac_profile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="meCpG frac",  xtick_loc_name = xtick_loc_name, note="meCpGfrac" + '_' + feature)
 
 # paritions according to gene expression
-gID_RPKM = load_file.read_RPKM ("/home/spark159/../../media/spark159/sw/dataforcondense/GSE63124_all_gene_raw_readcounts.txt", "/home/spark159/../../media/spark159/sw/dataforcondense/Homo_sapiens.GRCh37.87.gtf", "chr1")
+gID_RPKM = load_file.read_RPKM (path+"GSE63124_all_gene_raw_readcounts.txt", path+"Homo_sapiens.GRCh37.87.gtf", "chr1")
 ID_profile = name_ID_profile["data/sp_spd_tests_detail/sp7"]
 name_ID_profile['Occ'] = name_ID_occprofile["data/sp_spd_tests_detail/sp1"]
 
+ID_meCpGfrac_profile = {}
+for ID in (set(name_ID_profile["meGCNumber"].keys()) & set(name_ID_profile["CpGNumber"].keys())):
+    #meGC_profile = statis.moving_average(name_ID_profile["meGCNumber"][ID], moving_average_win)
+    #CpG_profile = statis.moving_average(name_ID_profile["CpGNumber"][ID], moving_average_win)
+    meGC_profile = np.asarray(statis.NN_interpolate(name_ID_profile["meGCNumber"][ID]))
+    CpG_profile = np.asarray(statis.NN_interpolate(name_ID_profile["CpGNumber"][ID]))
+    meCpGfrac_profile =  (meGC_profile+1) / (2*CpG_profile+1)
+    ID_meCpGfrac_profile[ID] = meCpGfrac_profile
+name_ID_profile['meCpGfrac'] = ID_meCpGfrac_profile
+
+"""
 for name in name_ID_profile:
     ID_profile = name_ID_profile[name]
     IDs = list(set(ID_profile) & set(gID_RPKM))
@@ -317,4 +386,85 @@ for name in name_ID_profile:
     plt.savefig("RPKM_quantile_profile_" + feature + "_" + name.split('/')[-1] + ".png",bbox_inches='tight')
     #plt.show()
     plt.close()
+"""
 
+
+# heatmap plot by gene expression level
+#name_list = ['data/sp_spd_tests_detail/sp7', 'ATcontent', 'k36me3', 'k9me2', 'k27ac', 'k4me3', 'k9ac', 'Occ']
+#name_list = ['data/sp_spd_tests_detail/sp7']
+name_list = ['data/sp_spd_tests_detail/sp7', 'meCpGfrac', 'k36me3', 'ATcontent']
+#name_list = ['data/sp_spd_tests_detail/sp7', 'ATcontent', 'k36me3', 'k9me2']
+
+common_IDs = set(gID_RPKM)
+for name in name_list:
+    #if name == 'meCpGfrac':
+    #    continue
+    ID_profile = name_ID_profile[name]
+    common_IDs = common_IDs & set(ID_profile)
+
+#if 'meCpGfrac' in name_list:
+#    common_IDs = common_IDs & set(name_ID_profile['CpGNumber'])
+#    common_IDs = common_IDs & set(name_ID_profile['meGCNumber'])
+
+RPKMgID = []
+for ID in common_IDs:
+    RPKM = gID_RPKM[ID]
+    RPKMgID.append([RPKM, ID])
+
+RPKMgID = sorted(RPKMgID)
+
+name_img = {}
+for name in name_list:
+    ID_profile = name_ID_profile[name]
+    img = []
+    # smoothing
+    for RPKM, ID in RPKMgID:
+        profile = ID_profile[ID]
+        profile = statis.moving_average(profile, moving_average_win)
+        profile[:50] = [profile[50]]*50
+        profile[len(profile)-50:] = [profile[len(profile)-51]]*50
+        img.append(profile)
+    img = np.asarray(img)
+    # rescaling
+    if not name.split('/')[-1].startswith('sp') or name in ['meCpGfrac', 'ATcontent']:
+        mini = np.min(img)
+        img = np.log2(img - mini + 1)
+    else:
+        img = 2*img
+        
+    name_img[name] = img
+
+#if 'meCpGfrac' in name_list:
+#    ID_meCpGfrac_profile = {}
+#    for ID in common_IDs:
+#        meGC_profile = statis.moving_average(name_ID_profile["meGCNumber"][ID], moving_average_win)
+#        CpG_profile = statis.moving_average(name_ID_profile["CpGNumber"][ID], moving_average_win)
+#        meCpGfrac_profile =  meGC_profile / (2*CpG_profile+1)
+#        ID_meCpGfrac_profile[ID] = meCpGfrac_profile
+#    img = []
+#    for RPKM, ID in RPKMgID:
+#        profile = ID_meCpGfrac_profile[ID]
+#        profile[:100] = [profile[100]]*100
+#        profile[len(profile)-100:] = [profile[len(profile)-101]]*100
+#        img.append(profile)
+#    img = np.asarray(img)
+#    mini = np.min(img)
+#    img = np.log2(img - mini + 1)
+#    name_img['meCpGfrac'] = img
+
+cmap_list = ['rainbow', 'cool', 'viridis', 'hot']
+vlim_list = [ [-3, 3], [None, None], [None, None], [None, None], [None, None], [None, None]]
+for i in range(len(name_list)):
+    name = name_list[i]
+    img = name_img[name]
+    #fig = plt.figure(figsize=(5,10))
+    fig = plt.figure(figsize=(6.5,10))
+    plt.imshow(img, aspect='auto', cmap=cmap_list[i], vmin=vlim_list[i][0], vmax=vlim_list[i][1])
+    #plt.imshow(img, aspect='auto', cmap='jet')
+    #plt.title(name)
+    xtick_locs, xtick_names = xtick_loc_name
+    plt.xticks(np.asarray(xtick_locs) - offset, xtick_names)
+    #plt.xticks(range(0, len(profile), 1000), xtick_labels)
+    plt.savefig("heatmap_profile_byRPKM_" + feature + "_" + name.split('/')[-1] + ".png",bbox_inches='tight')
+    #plt.show()
+    plt.close()

@@ -10,8 +10,8 @@ import math
 import Interval_dict
 from sklearn import linear_model
 from scipy.stats import norm
-from matplotlib_venn import venn3
-from npeet import entropy_estimators as ee
+#from matplotlib_venn import venn3
+#from npeet import entropy_estimators as ee
 
 def all_path (N, states='ATCG'):
     if N==1:
@@ -68,7 +68,8 @@ def get_dincount(seq, din=None):
         din_count[din] += 1
     return din_count
 
-ID_chr, ID_pos, name_ID_value = load_file.read_anot_file("/home/spark159/../../media/spark159/sw/sp_spd_tests_detail/hg19_chr1_NCP_ics_anot.cn")
+path = './data/'
+ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+"hg19_chr1_NCP_ics_anot.cn")
 ID_score1 = name_ID_value['data/sp_spd_tests_detail/sp7']
 ID_seq = name_ID_value['Sequence']
 ID_AT = name_ID_value['ATcontent']
@@ -114,7 +115,7 @@ for ID in ID_CpG:
 
 # collect all features
 names = ["AT content", "Poly-G", "CpG count", "TpA count", "meCpG density", "k4me3", "k27ac", "k9ac", "k36me3", "k9me2", "k9me3", "k27me3"]
-ID_value_list = [ID_AT, ID_polyGC, ID_CpG, ID_TA, ID_me, name_ID_value['k4me3'], name_ID_value['k27ac'], name_ID_value['k9ac'], name_ID_value['k36me3_2'], name_ID_value['k9me2_2'], name_ID_value['k9me3_2'], name_ID_value['k27me3a_2']]
+ID_value_list = [ID_AT, ID_polyGC, ID_CpG, ID_TA, ID_mefrac, name_ID_value['k4me3'], name_ID_value['k27ac'], name_ID_value['k9ac'], name_ID_value['k36me3_2'], name_ID_value['k9me2_2'], name_ID_value['k9me3_2'], name_ID_value['k27me3a_2']]
 
 ID_state = {}
 for ID in ID_seq:
@@ -170,10 +171,12 @@ plt.title("Partial correlation with Condensability")
 plt.savefig("bar_pcorr.png",bbox_inches='tight')
 plt.show()
 plt.close()
+"""
 
 # conditinoal correlation
 print "Conditional correlation"
 cdcorr_list = []
+weights_list, corrs_list = [], []
 for i in range(len(names)):
     rstate_IDs = {}
     for ID in ID_state:
@@ -184,6 +187,7 @@ for i in range(len(names)):
         rstate_IDs[rstate].append(ID)
     total = 0
     cdcorr = 0.0
+    weights, corrs = [], []
     for IDs in rstate_IDs.values():
         if len(IDs) < 5:
             continue
@@ -192,23 +196,52 @@ for i in range(len(names)):
         corr = statis.get_corr (X, Y)
         if np.isnan(corr):
             continue
+        weights.append(len(IDs))
+        corrs.append(corr)
         total += len(IDs)
         cdcorr += len(IDs)*corr
     if total > 0:
-        cdcorr = cdcorr/total
+        cdcorr = cdcorr/float(total)
+        #weights = [value/float(total) for value in weights]
     name = names[i]
     cdcorr_list.append(cdcorr)
+    weights_list.append(weights)
+    corrs_list.append(corrs)
     print name, cdcorr
 
+# state vs corr list with weight
+fig = plt.figure()
+mweight_list = [ max(weights_list[i]) for i in range(len(weights_list)) ]
+max_weight = max(mweight_list)
+for i in range(len(names)):
+    corrs = np.asarray(corrs_list[i])
+    weights = np.asarray(weights_list[i]) #/ float(max_weight)
+    order = np.argsort(weights)
+    #plt.plot([i]*len(corrs), corrs, '.', alpha=weights)
+    plt.scatter([i]*len(corrs), corrs[order], s=100*weights[order]/max_weight, c=weights[order], cmap='hot_r', alpha=0.2)
+    #plt.scatter([i]*len(corrs), corrs, s=100*weights, c=corrs, cmap='seismic', vmin=-1, vmax=1, alpha=0.5)
+plt.axhline(y=0, linestyle='--', color='k')
+plt.xticks(range(len(names)), names, rotation=90)
+plt.ylabel("Pearson correlation")
+cbar = plt.colorbar()
+cbar.ax.set_ylabel('stratified sample size', rotation=-90, va="bottom")
+plt.tight_layout()
+plt.show()
+plt.close()
+    
+# state vs conditional corr
 fig = plt.figure()
 plt.bar(range(len(cdcorr_list)), cdcorr_list, width=0.5, color='g')
 plt.xticks(range(len(cdcorr_list)), names, rotation=90)
 plt.ylabel("Pearson correlation")
 plt.axhline(y=0, color='k', linestyle='--')
-plt.title("Conditional correlation with Condensability")
-plt.savefig("bar_cdcorr.png",bbox_inches='tight')
+#plt.title("Conditional correlation with Condensability")
+plt.tight_layout()
+#plt.savefig("bar_cdcorr.png",bbox_inches='tight')
 plt.show()
 plt.close()
+
+
 """
 # conditional mutual information
 print "Conditional mutual information"
@@ -262,3 +295,4 @@ plt.title("Conditional mutual information with Condensability")
 plt.savefig("bar_cdminfo.png",bbox_inches='tight')
 plt.show()
 plt.close()
+"""

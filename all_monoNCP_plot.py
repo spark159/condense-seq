@@ -8,11 +8,71 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 import Interval_dict
+from scipy.stats import gaussian_kde
 
-path = "/home/spark159/../../media/spark159/sw/sp_spd_tests_detail/"
+#path = "/home/spark159/../../media/spark159/sw/sp_spd_tests_detail/"
+path='./data/'
 
 #GC/me/PTM analysis
-ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+ "hg19_chr1_1001win501step_anot.cn")
+#ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+ "hg19_chr1_1001win501step_anot.cn")
+ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+ "hg19_chr1_NCP_anot.cn")
+
+ID_score1 = name_ID_value["data/sp_spd_tests_detail/sp7"]
+ID_score2 = name_ID_value["data/sp_spd_tests_detail/sp8"]
+ID_AT = name_ID_value['ATcontent']
+
+for ID in ID_AT:
+    ID_AT[ID] = 100*ID_AT[ID]
+
+X, Y = [], []
+xvalue_scores = {}
+for ID in ID_score1.keys():
+    xvalue = ID_AT[ID]
+    score = ID_score1[ID]
+    X.append(xvalue)
+    Y.append(score)
+    if xvalue not in xvalue_scores:
+        xvalue_scores[xvalue] = []
+    xvalue_scores[xvalue].append(score)
+    
+Xmean, Ymean, Yerr = [], [], []
+for xvalue in xvalue_scores:
+    if len(xvalue_scores[xvalue]) <= 1:
+        continue
+    Xmean.append(xvalue)
+    Ymean.append(np.mean(xvalue_scores[xvalue]))
+    Yerr.append(np.std(xvalue_scores[xvalue]/np.sqrt(len(xvalue_scores[xvalue]))))
+ 
+# Calculate the point density
+X, Y = np.asarray(X), np.asarray(Y)
+XY = np.vstack([X,Y])
+Z = gaussian_kde(XY)(XY)
+
+# Sort the points by density, so that the densest points are plotted last
+order = np.argsort(Z)
+X, Y, Z = X[order], Y[order], Z[order]
+
+fig = plt.figure()
+plt.scatter(X, Y, c=Z, s=5, cmap='jet', edgecolor='', alpha=0.1)
+plt.errorbar(Xmean, Ymean, yerr=Yerr, fmt='k.')
+plt.plot(Xmean, Ymean,'k.')
+plt.xlabel("AT content (%)")
+plt.ylabel("Condensability (A.U.)")
+plt.ylim([-3, 3.5])
+plt.show()
+plt.close()
+
+#with open("X.pickle", "wb") as f:
+#    pickle.dump(X, f)
+#with open("Y.pickle", "wb") as f:
+#    pickle.dump(Y, f)
+#with open("Z.pickle", "wb") as f:
+#    pickle.dump(Z, f)
+
+
+sys.exit(1)
+
+#graphics.Scatter_plot (ID_AT, ID_score1, ylim=[-3, 3.5], note='raw')
 
 """
 #divide into domains

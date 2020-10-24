@@ -132,7 +132,7 @@ im = plt.matshow(corr_matrix, cmap='bwr', fignum=1, vmin=-0.6, vmax=0.6)
 for i in range(len(corr_matrix)):
     for j in range(len(corr_matrix[i])):
         plt.text(i, j, str(round(corr_matrix[i][j], 2)), ha="center", va="center", fontsize=10, color="k")
-
+        
 plt.xticks(range(len(names)), names, rotation=90, fontsize=15)
 plt.yticks(range(len(names)), names, fontsize=15)
 plt.colorbar(im,fraction=0.046, pad=0.04)

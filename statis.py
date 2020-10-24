@@ -4,7 +4,7 @@ import copy
 import matplotlib.pyplot as plt
 from sklearn import linear_model
 from scipy import signal
-from scipy.fftpack import fft, ifft, ifftshift
+from scipy.fftpack import fft, ifft, ifftshift, fftshift
 
 def norm(L):
     total = sum(L)
@@ -16,7 +16,9 @@ def get_corr(x, y):
     selected = (~np.isnan(x))*(~np.isnan(y))
     x, y = x[selected], y[selected]
     n = len(x)
-    assert n > 0
+    if n <= 0:
+        return np.nan
+    #assert n > 0
     avg_x = np.average(x)
     avg_y = np.average(y)
     diffprod = 0
@@ -31,9 +33,10 @@ def get_corr(x, y):
     return diffprod / np.sqrt(xdiff2 * ydiff2)
 
 def acf(x):
-    xp = ifftshift((x - np.average(x))/np.std(x))
+    #xp = ifftshift((x - np.average(x))/np.std(x))
+    xp = fftshift((x - np.average(x))/np.std(x))
     n, = xp.shape
-    xp = np.r_[xp[:n//2], np.zeros_like(xp), xp[n//2:]]
+    xp = np.r_[xp[:n//2], np.zeros_like(xp), xp[n//2:]] # zero-padding
     f = fft(xp)
     p = np.absolute(f)**2
     pi = ifft(p)
@@ -139,6 +142,16 @@ def slow_moving_average (signal, win):
     for i in range(win/2):
         new_sig.append(0)
     return new_sig
+
+def slow_moving_average2 (signal, win):
+    assert win % 2 != 0
+    new_sig = []
+    for i in range(len(signal)):
+        neighbors = np.asarray(signal[max(0, i-win/2):min(i+win/2+1, len(signal))])
+        neighbors = neighbors[~np.isnan(neighbors)]
+        new_sig.append(np.mean(neighbors))
+    return new_sig
+
 
 def moving_average (input_signal, win, interpolate=True):
     if np.isnan(input_signal).any():
