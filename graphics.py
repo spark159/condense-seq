@@ -79,10 +79,12 @@ def draw_along_genome (ID_pos, ID_sig_list, win, labels, ylabel, title=None, xli
     if scatt:
         for i in range(len(Y_list)):
             Y = Y_list[i]
-            plt.plot(X, Y, 'k.', alpha=0.2)
+            #plt.plot(X, Y, 'k.', alpha=0.2)
+            plt.plot(X, Y, '.', color='orange', alpha=0.15)
     for i in range(len(Y_list)):
         Y = signal.fftconvolve(Y_list[i], np.ones((win,))/win, mode='same')
-        plt.plot(X, Y, label = labels[i])
+        #plt.plot(X, Y, label = labels[i])
+        plt.plot(X, Y, label = labels[i], color='k')
     plt.xlabel("Genomic coordinate (bp)")
     plt.ylabel(ylabel)
     plt.legend()

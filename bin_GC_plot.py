@@ -2,7 +2,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
-import seaborn as sns
+#import seaborn as sns
 import copy
 import math
 from scipy import signal
@@ -59,8 +59,12 @@ def read_bincountfile (fname, chr_list=None):
             chr_binID_count[chr].append(data)
     return names, chr_binID_counts, chr_binID_range, chr_binID_GC
 
-fname = "DNA_Spermine(4+)_1kb"
-names, chr_binID_counts, chr_binID_range, chr_binID_GC = read_bincountfile("/home/spark159/Downloads/" + fname + "_bin.cn")
+#fname = "DNA_Spermine(4+)_1kb"
+#names, chr_binID_counts, chr_binID_range, chr_binID_GC = read_bincountfile("/home/spark159/Downloads/" + fname + "_bin.cn")
+
+fname = "H1_NCP-new_spd_10kb_bin.cn"
+names, chr_binID_counts, chr_binID_range, chr_binID_GC = read_bincountfile(fname)
+
 
 X = []
 Ys = [[] for i in range(len(names)-1)]
@@ -105,10 +109,10 @@ for i in range(len(Ys)):
     plt.title(name)
     plt.xlabel("GC content (%)")
     plt.ylabel("Normalized Counts")
-    #plt.ylim([-0.5, 4])
+    plt.ylim([-0.5, 4])
     #plt.ylim([-5, 15])
-    #plt.savefig(fname + "_" + str(i+1) +".png")
-    plt.show()
+    plt.savefig(fname + "_" + str(i+1) +".png")
+    #plt.show()
     plt.close()
 
 

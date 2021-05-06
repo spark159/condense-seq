@@ -9,6 +9,13 @@ import numpy as np
 import math
 import Interval_dict
 
+def state_cmp (a, b):
+    num1 = int(a.split('_')[0])
+    num2 = int(b.split('_')[0])
+    if num1 < num2:
+        return -1
+    return 1
+
 def tuple_cmp (a, b):
     if a[0] <= b[0]:
         return -1
@@ -54,7 +61,7 @@ def read_chromHMM(fname, chr_list=None, change=False):
     chr_state_intervals = {}
     for line in open(fname):
         cols = line.strip().split()
-        chr, st, ed, state = cols
+        chr, st, ed, state = cols[:4]
         if chr_list!=None and chr not in chr_list:
             continue
         if chr not in chr_state_intervals:
@@ -119,14 +126,24 @@ def pair_boxplot (key_values1, key_values2, ylabel1='', ylabel2='Condensability 
     plt.show()
     plt.close('all')
 
-fname = "NCP_Spermine(4+)_1kb"
-bin_size = 1000
-names, chr_binID_counts, chr_binID_range, chr_binID_GC = read_bincountfile("/home/spark159/Downloads/" + fname + "_bin.cn")
+#fname = "NCP_Spermine(4+)_1kb"
+#bin_size = 1000
+#names, chr_binID_counts, chr_binID_range, chr_binID_GC = read_bincountfile("/home/spark159/Downloads/" + fname + "_bin.cn")
+#chr_binID_control = chr_binID_counts[-1]
+
+fname = "H1_NCP-new_spd_10kb_bin.cn"
+bin_size = 10000
+names, chr_binID_counts, chr_binID_range, chr_binID_GC = read_bincountfile(fname)
 chr_binID_control = chr_binID_counts[-1]
 
-name_dict = {'E1':'TssBiv', 'E2':'TssA', 'E3':'EnhA', 'E4':'TxWk', 'E5':'Tx', 'E6':'me3Het', 'E7':'Quies', 'E8':'me2Het', 'E9':'PcWk', 'E10':'Pc'}
-chr_state_intervals = read_chromHMM("/home/spark159/../../media/spark159/sw/dataforcondense/38-Per_10_segments.bed", change=name_dict)
+#name_dict = {'E1':'TssBiv', 'E2':'TssA', 'E3':'EnhA', 'E4':'TxWk', 'E5':'Tx', 'E6':'me3Het', 'E7':'Quies', 'E8':'me2Het', 'E9':'PcWk', 'E10':'Pc'}
+#chr_state_intervals = read_chromHMM("/home/spark159/../../media/spark159/sw/dataforcondense/38-Per_10_segments.bed", change=name_dict)
 
+#chr_state_intervals = read_chromHMM("wgEncodeBroadHmmH1hescHMM.bed", change=False)
+#chr_state_intervals = read_chromHMM("wgEncodeAwgSegmentationChromhmmH1hesc.bed", change=False)
+chr_state_intervals = read_chromHMM("wgEncodeAwgSegmentationCombinedH1hesc.bed", change=False)
+
+ 
 chr_binID_states = {}
 for chr in chr_state_intervals:
     state_intervals = chr_state_intervals[chr]
@@ -181,11 +198,14 @@ for i in range(len(names)-1):
             state_rcounts[state].append(rcount)
     state_rcounts_list.append(state_rcounts)
 
-states = ['TssA', 'EnhA', 'Tx', 'TxWk', 'TssBiv', 'me2Het', 'me3Het', 'PcWk', 'Pc', 'Quies']
+#states = ['TssA', 'EnhA', 'Tx', 'TxWk', 'TssBiv', 'me2Het', 'me3Het', 'PcWk', 'Pc', 'Quies']
+#states = sorted(state_rcounts_list[0].keys(), cmp=state_cmp)
+states = sorted(state_rcounts_list[0].keys())
 for i in range(len(state_rcounts_list)):
     name = names[i]
     state_rcounts = state_rcounts_list[i]
     pair_boxplot (state_GCs, state_rcounts, ylabel1='GC content(%)', ylabel2='Normalized Counts', title='Titration ' +str(i+1), keys=states, note='HMM_bin_' + fname + '_' + str(i+1), rotation=75)
+    #pair_boxplot (state_GCs, state_rcounts, ylabel1='GC content(%)', ylabel2='Normalized Counts', title='Titration ' +str(i+1), keys=None, note='HMM_bin_' + fname + '_' + str(i+1), rotation=75)
 
 """
 dID_interval = {}

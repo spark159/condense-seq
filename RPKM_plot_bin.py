@@ -45,6 +45,20 @@ def read_bincountfile (fname, chr_list=None):
             chr_binID_count[chr].append(data)
     return names, chr_binID_counts, chr_binID_range, chr_binID_GC
 
+def read_tsv (fname, chr_choices=None):
+    First = True
+    geneID_FPKM = {}
+    for line in open(fname):
+        if First:
+            First = False
+            continue
+        cols = line.strip().split()
+        geneID, FPKM = cols[0], float(cols[6])
+        geneID = geneID.split('.')[0]
+        #assert geneID not in geneID_FPKM
+        geneID_FPKM[geneID] = FPKM
+    return geneID_FPKM
+
 def get_corr(x, y):
     assert len(x) == len(y)
     n = len(x)
@@ -63,8 +77,9 @@ def get_corr(x, y):
     return diffprod / np.sqrt(xdiff2 * ydiff2)
 
 # RPKM analysis
-gID_field_values, field_gID_values = load_file.read_GTF ("/home/spark159/../../media/spark159/sw/dataforcondense/Homo_sapiens.GRCh37.87.gtf", mode="both")
+gID_field_values, field_gID_values = load_file.read_GTF ("Homo_sapiens.GRCh37.87.gtf", mode="both")
 
+"""
 gID_exons = field_gID_values['exons']
 gID_exonlen = {}
 for gID in gID_exons:
@@ -95,6 +110,18 @@ for gID in gID_exonlen:
     #if RPKM <= 0:
     #    continue
     gID_RPKM[gID] = RPKM
+"""
+
+#gID_RPKM = read_tsv("ENCFF146JOZ.tsv")
+gID_RPKM = read_tsv("ENCFF910OBU.tsv")
+temp_dict = {}
+for gID in gID_RPKM:
+    if gID in gID_field_values:
+        RPKM = gID_RPKM[gID]
+        if RPKM <= 0:
+            continue
+        temp_dict[gID] = gID_RPKM[gID]
+gID_RPKM = temp_dict
 
 gID_ginterval = {}
 for gID in gID_RPKM.keys():
@@ -102,6 +129,7 @@ for gID in gID_RPKM.keys():
     TTS = gID_field_values[gID]['TTS']
     strand = gID_field_values[gID]['strand']
     interval = (TSS-500, TSS+500)
+    #interval = (TSS-1000, TSS+1000)
     #if strand == '+':
         #interval = (TSS, TTS)
         #interval = (TSS-250, TSS)
@@ -112,9 +140,11 @@ for gID in gID_RPKM.keys():
         #interval = (TSS-2500, TSS)
     gID_ginterval[gID] = interval
 
-fname = "NCP_Spermidine(3+)_1kb"
+#fname = "NCP_Spermidine(3+)_1kb"
 bin_size = 1000
-names, chr_binID_counts, chr_binID_range, chr_binID_GC = read_bincountfile("/home/spark159/Downloads/" + fname + "_bin.cn")
+#names, chr_binID_counts, chr_binID_range, chr_binID_GC = read_bincountfile("/home/spark159/Downloads/" + fname + "_bin.cn")
+fname = "H1_NCP-new_sp_1kb_bin.cn"
+names, chr_binID_counts, chr_binID_range, chr_binID_GC = read_bincountfile(fname)
 chr_binID_control = chr_binID_counts[-1]
 
 gID_rcounts = []
@@ -184,8 +214,8 @@ for i in range(len(names)-1):
     plt.xlabel("log Normalized Counts")
     plt.ylabel("log RPKM")
     plt.title("Titration " + str(i+1))
-    plt.savefig(fname+"_"+str(i+1)+".png")
-    #plt.show()
+    #plt.savefig(fname+"_"+str(i+1)+".png")
+    plt.show()
     plt.close()
 
                 
