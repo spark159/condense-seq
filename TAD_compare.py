@@ -14,14 +14,16 @@ from sklearn import linear_model
 from scipy.special import expit
 
 # read annotation file
-path = "./data/"
-ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+"hg19_chr1_NCP_ics_anot.cn")
-ID_score1 = name_ID_value["data/sp_spd_tests_detail/sp7"]
-ID_score2 = name_ID_value["data/sp_spd_tests_detail/sp8"]
-ID_seq = name_ID_value['Sequence']
+#path = "./data/"
+path = ""
+ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+"H1_NCP_sp_chr1_anot.cn")
+ID_score1 = name_ID_value["work/2021_06_07_H1_sp_detail/H1-NCP-sp-4"]
+ID_score2 = name_ID_value["work/2021_06_07_H1_sp_detail/H1-NCP-sp-8"]
+#ID_seq = name_ID_value['Sequence']
 ID_AT = name_ID_value['ATcontent']
-ID_CG = name_ID_value['CpGNumber']
-ID_me = name_ID_value['meGCNumber']
+#ID_CG = name_ID_value['CpGNumber']
+#ID_me = name_ID_value['meGCNumber']
+
 
 # read TAD domain annotation file
 def read_TADfile (fname):
@@ -37,7 +39,8 @@ def read_TADfile (fname):
         id +=1
     return TAD_interval
 
-TAD_interval = read_TADfile(path + "WT_contact_domain_list/5000_blocks.bedpe")
+#TAD_interval = read_TADfile(path + "WT_contact_domain_list/5000_blocks.bedpe"
+TAD_interval = read_TADfile(path + "TAD_chr1_5kb.bedpe")
 
 TADinterval_dict = Interval_dict.double_hash(TAD_interval, 100000, 250000000)
 
@@ -50,7 +53,8 @@ for ID in ID_pos:
     else:
         InTAD_IDs.append(ID)
 
-box_data = [[ID_score1[ID] for ID in OutTAD_IDs], [ID_score1[ID] for ID in InTAD_IDs]]
+#box_data = [[ID_score2[ID] for ID in OutTAD_IDs], [ID_score2[ID] for ID in InTAD_IDs]]
+box_data = [[ID_AT[ID] for ID in OutTAD_IDs], [ID_AT[ID] for ID in InTAD_IDs]]
 fig = plt.figure()
 plt.boxplot(box_data, 0, "", positions=[1, 1.5])
 #plt.xlabel('Partitions')
@@ -59,9 +63,11 @@ plt.xticks([1,1.5], ['Outside of TAD', 'Inside of TAD'])
 plt.xlim([1-0.3,1.5+0.3])
 plt.title('Single-nucleosome condensability')
 #plt.savefig("ATcontent"+"_pbox.png")
-#plt.show()
+plt.show()
 plt.close()
 
+
+"""
 # read A/B compartment annotation file
 def read_eigenfile (fname, bin_size=1000000):
     eigen_list = []
@@ -82,10 +88,11 @@ def read_eigenfile (fname, bin_size=1000000):
         i +=1
     return eigen_list, interval_list
 
-fnames = ['eigen_WT_50kb.txt', 'eigen_CohesinKO_50kb.txt']
+#fnames = ['eigen_WT_50kb.txt', 'eigen_CohesinKO_50kb.txt']
+fnames = ['eigen_H1_100kb.txt']
 box_data_list = []
 for fname in fnames:
-    eigen_list, interval_list = read_eigenfile(path+fname, bin_size=50000)        
+    eigen_list, interval_list = read_eigenfile(path+fname, bin_size=100000)        
     eID_interval = {i:interval_list[i] for i in range(len(interval_list))}
     eID_dict = Interval_dict.double_hash(eID_interval, 100000, 250000000)
     A_IDs, B_IDs = [], []
@@ -100,25 +107,28 @@ for fname in fnames:
             else:
                 B_IDs.append(ID)
 
-    box_data = [[ID_score1[ID] for ID in A_IDs], [ID_score1[ID] for ID in B_IDs]]
+    box_data = [[ID_score2[ID] for ID in A_IDs], [ID_score2[ID] for ID in B_IDs]]
     box_data_list.append(box_data)
 
 fig = plt.figure()
-box1 = plt.boxplot([box_data_list[0][0],box_data_list[1][0]], 0, "", positions=[1-0.1, 1.75-0.1], patch_artist=True)
+#box1 = plt.boxplot([box_data_list[0][0],box_data_list[1][0]], 0, "", positions=[1-0.1, 1.75-0.1], patch_artist=True)
+box1 = plt.boxplot([box_data_list[0][0]], 0, "", positions=[1-0.15], patch_artist=True)
 for patch in box1['boxes']:
     patch.set_facecolor('tab:red')
-box2 = plt.boxplot([box_data_list[0][1],box_data_list[1][1]], 0, "", positions=[1+0.1, 1.75+0.1], patch_artist=True)
+#box2 = plt.boxplot([box_data_list[0][1],box_data_list[1][1]], 0, "", positions=[1+0.1, 1.75+0.1], patch_artist=True)
+box2 = plt.boxplot([box_data_list[0][1]], 0, "", positions=[1+0.15], patch_artist=True)
 for patch in box2['boxes']:
     patch.set_facecolor('tab:blue')
 #plt.xlabel('Partitions')
-plt.xticks([1,1.75],['WT', 'Cohesin KO'])
-plt.xlim([1-0.5,1.75+0.5])
+#plt.xticks([1,1.75],['WT', 'Cohesin KO'])
+plt.xlim([0,2])
+plt.xticks([],[])
 plt.ylabel('Condensability(A.U.)')
 plt.title('Single-nucleosome condensability')
 #plt.title('')
 #plt.savefig("ATcontent"+"_pbox.png")
 plt.legend([box1["boxes"][0], box2["boxes"][0]], ['A compartment', 'B compartment'], loc='upper right')
-#plt.show()
+plt.show()
 plt.close()
 
 # read A/B subcompartment annotation file
@@ -159,3 +169,4 @@ fig = plt.figure()
 plt.boxplot(box_data, 0, "")
 plt.show()
 plt.close()
+"""

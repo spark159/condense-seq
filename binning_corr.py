@@ -14,18 +14,19 @@ from sklearn import linear_model
 from scipy.special import expit
 
 # read annotation file
-path = "./data/"
-field_ID_value = load_file.read_tabular_file (path + "hg19_chr1_167win25step_anot.cn", mode='col', jump=10)
+#path = "./data/"
+path = ""
+field_ID_value = load_file.read_tabular_file (path + "H1_NCP_sp_chr1_167win25step_anot.cn", mode='col', jump=10)
 
 ID_pos = field_ID_value['PhysicalPosition']
 ID_AT = field_ID_value['ATcontent']
-ID_k27ac = field_ID_value['k27ac']
-ID_score1 = field_ID_value["data/sp_spd_tests_detail/sp7"]
-ID_score2 = field_ID_value["data/sp_spd_tests_detail/sp8"]
+ID_k27ac = field_ID_value['H3k27ac']
+ID_score1 = field_ID_value["work/2021_06_07_H1_sp_detail/H1-NCP-sp-4"]
+ID_score2 = field_ID_value["work/2021_06_07_H1_sp_detail/H1-NCP-sp-8"]
 
 # binning parameters and choice of data
 #names = ['data/sp_spd_tests_detail/sp7', 'ATcontent', 'CpGNumber', 'k27ac', 'k9ac', 'k4me3', 'k36me3', 'k9me2', 'k9me3', 'k27me3']
-names = ['data/sp_spd_tests_detail/sp7', 'Compartments']
+names = ["work/2021_06_07_H1_sp_detail/H1-NCP-sp-8", 'Compartments']
 
 #step_size = 50000 # sampling step size
 
@@ -35,7 +36,8 @@ names = ['data/sp_spd_tests_detail/sp7', 'Compartments']
 #blur_win = int(4*i + 1)
 #bin_num = int(max(ID_pos.values()))/bin_size + 1
 
-bin_size = int(50000)
+#bin_size = int(50000)
+bin_size = 100000
 bin_num = int(max(ID_pos.values()))/bin_size + 1
 #blur_win = int(1)
 
@@ -69,8 +71,11 @@ for name in name_binID_mean:
 
 # read RPKM file
 if 'Gene density' in names or 'Gene activity' in names:
-    geneID_field_values, field_geneID_values = load_file.read_GTF (path + "Homo_sapiens.GRCh37.87.gtf", chr_list=['chr1'], mode="both")
-    geneID_RPKM = load_file.read_RPKM (path+"GSE63124_all_gene_raw_readcounts.txt", path+"Homo_sapiens.GRCh37.87.gtf", "chr1")
+    #geneID_field_values, field_geneID_values = load_file.read_GTF (path + "Homo_sapiens.GRCh37.87.gtf", chr_list=['chr1'], mode="both")
+    #geneID_RPKM = load_file.read_RPKM (path+"GSE63124_all_gene_raw_readcounts.txt", path+"Homo_sapiens.GRCh37.87.gtf", "chr1")
+
+    geneID_field_values, field_geneID_values = load_file.read_GTF ("ENCFF159KBI.gtf", chr_list=[chr_choice], mode="both")
+    geneID_RPKM = read_tsv("ENCFF174OMR.tsv")
 
     geneID_pos = {}
     for geneID in geneID_field_values:
@@ -127,10 +132,11 @@ if 'Compartments' in names:
             i +=1
         return eigen_list, interval_list
 
-    fnames = ['eigen_WT_50kb.txt', 'eigen_CohesinKO_50kb.txt'] 
+    #fnames = ['eigen_WT_50kb.txt', 'eigen_CohesinKO_50kb.txt'] 
+    fnames = ['eigen_H1_100kb.txt']
     for i in range(len(fnames)):
         fname = fnames[i]
-        eigen_list, interval_list = read_eigenfile(path+fname, bin_size=50000)
+        eigen_list, interval_list = read_eigenfile(path+fname, bin_size=bin_size)
 
         binID_eigens = {}
         for value, interval in zip(eigen_list, interval_list):
@@ -168,37 +174,41 @@ for name in name_binID_mean:
 X = []
 Y1, Y2 = [], []
 for i in range(bin_num):
-    x = name_sig['data/sp_spd_tests_detail/sp7'][i]
-    y1, y2 = name_sig['Compartments0'][i], name_sig['Compartments1'][i]
-    if np.isnan(x) or np.isnan(y1) or np.isnan(y2):
+    x = name_sig["work/2021_06_07_H1_sp_detail/H1-NCP-sp-8"][i]
+    #y1, y2 = name_sig['Compartments0'][i], name_sig['Compartments1'][i]
+    y1  = name_sig['Compartments0'][i]
+    #if np.isnan(x) or np.isnan(y1) or np.isnan(y2):
+    if np.isnan(x) or np.isnan(y1):
         continue
     X.append(x)
     Y1.append(y1)
-    Y2.append(y2)
+    #Y2.append(y2)
 
 def func(x, a, b, c):
     return float(a) / (1 + np.exp(-b*(x-c))) - a*0.5
 
 X_test = np.linspace(-1, 1, num=1000)
 popt1, pcov1 = curve_fit(func, X, Y1)
-popt2, pcov2 = curve_fit(func, X, Y2)
+#popt2, pcov2 = curve_fit(func, X, Y2)
 Y1_predict = func(X_test, *popt1)
-Y2_predict = func(X_test, *popt2)
+#Y2_predict = func(X_test, *popt2)
 
 fig = plt.figure()
-plt.plot(X, Y1, 'o', markersize=2, alpha=0.2)
-plt.plot(X_test, Y1_predict, 'b', linewidth=2, label='WT')
-plt.plot(X, Y2, 'o', markersize=2, alpha=0.2)
-plt.plot(X_test, Y2_predict, 'r', linewidth=2, label='Cohesin KO')
-leg = plt.legend()
+plt.plot(X, Y1, 'o', markersize=2, alpha=0.25)
+plt.plot(X_test, Y1_predict, 'k', linewidth=2)
+#plt.plot(X_test, Y1_predict, 'k', linewidth=2, label='WT')
+#plt.plot(X, Y2, 'o', markersize=2, alpha=0.2)
+#plt.plot(X_test, Y2_predict, 'r', linewidth=2, label='Cohesin KO')
+#leg = plt.legend()
 #for lh in leg.legendHandles:
 #    lh._legmarker.set_markersize(15)
 #    lh._legmarker.set_alpha(1)
 plt.xlim([-1,1])
-plt.ylim([-0.025,0.03])
+plt.ylim([-0.033,0.04])
 plt.xlabel("Condensability (A.U.)")
 plt.ylabel("Eigenvector")
-plt.title("50kb window")
+#plt.title("50kb window")
+plt.title("100kb window")
 plt.show()
 plt.close()    
 
@@ -216,8 +226,5 @@ def make_bedgraph (fname, binID_value, header=None):
         print >> f, "chr1\t" + "%d\t%d\t%f" % (st, ed, value)
     f.close()
 
-binID_value = name_sig["data/sp_spd_tests_detail/sp7"]
-make_bedgraph("condensabiltiy.bedgraph", binID_value)
-
-
-    
+binID_value = name_sig["work/2021_06_07_H1_sp_detail/H1-NCP-sp-8"]
+make_bedgraph("H1-NCP-sp-8.bedgraph", binID_value)

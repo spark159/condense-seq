@@ -11,6 +11,24 @@ from sklearn import linear_model
 import random
 import matplotlib.cm as cm
 
+def make_bedgraph (fname, values, bin_size, header=None):
+    f = open(fname, 'w')
+    if header == None:
+        header = 'track type=bedGraph name="BedGraph Format" description="BedGraph format" visibility=full color=200,100,0 altColor=0,100,200 priority=20'
+        print >> f, header
+    for i in range(len(values)):
+        st, ed = i*bin_size, (i+1)*bin_size
+        value = float(values[i])
+        try:
+            value = float(value)
+        except:
+            continue
+        if np.isnan(value):
+            continue
+        print >> f, "chr1\t" + "%d\t%d\t%f" % (st, ed, value)
+    f.close()
+
+
 def read_Gband (fname, chr_choices=None):
     chr_ID_Gband = {}
     ID = 0
@@ -120,6 +138,26 @@ def read_hgTable (fname, chr_choices=None):
         ID +=1
     return ID_pos, ID_sig
 
+# read A/B compartment annotation
+def read_eigenfile (fname, bin_size=1000000):
+    eigenBinID_value = []
+    eigenBinID_interval = []
+    i = 0
+    for line in open(fname):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            value = float(line)
+        except:
+            value = np.nan
+        st = i*bin_size
+        ed = (i+1)*bin_size
+        eigenBinID_value.append(value)
+        eigenBinID_interval.append((st,ed))
+        i +=1
+    return eigenBinID_value, eigenBinID_interval
+
 #def read_bedGraph (fname, chr_choices=None):
     
 
@@ -148,7 +186,7 @@ for chr_choice in chr_choices:
     
     #path = "./data/"
     #field_ID_value = load_file.read_tabular_file (path + "hg19_" + chr_choice + "_167win25step_anot.cn", mode='col', jump=10)
-    field_ID_value = load_file.read_tabular_file ("H1_NCP-new_sp_10kb_anot.cn", mode='col')
+    field_ID_value = load_file.read_tabular_file ("H1_NCP_sp_10kb_anot.cn", mode='col')
     ID_pos = field_ID_value['PhysicalPosition']
     
     #ID_pos = field_ID_value['PhysicalPosition']
@@ -157,29 +195,40 @@ for chr_choice in chr_choices:
     #ID_score1 = field_ID_value["data/sp_spd_tests_detail/sp7"]
     #ID_score2 = field_ID_value["data/sp_spd_tests_detail/sp8"]
 
-    geneID_field_values, field_geneID_values = load_file.read_GTF ("Homo_sapiens.GRCh37.87.gtf", chr_list=[chr_choice], mode="both")
+    #geneID_field_values, field_geneID_values = load_file.read_GTF ("Homo_sapiens.GRCh37.87.gtf", chr_list=[chr_choice], mode="both")
+    geneID_field_values, field_geneID_values = load_file.read_GTF ("ENCFF159KBI.gtf", chr_list=[chr_choice], mode="both")
+
     #geneID_RPKM = load_file.read_RPKM (path+"GSE63124_all_gene_raw_readcounts.txt", path+"Homo_sapiens.GRCh37.87.gtf", chr_choice)
-    geneID_RPKM = read_tsv("ENCFF146JOZ.tsv")
+    geneID_RPKM = read_tsv("ENCFF174OMR.tsv")
+    #geneID_RPKM = read_tsv("ENCFF146JOZ.tsv")
     #geneID_RPKM = read_tsv("ENCFF910OBU.tsv")
 
     geneID_pos = {}
     for geneID in geneID_field_values:
-        pos = geneID_field_values[geneID]['TSS']
-        geneID_pos[geneID] = pos
+        try:
+            pos = geneID_field_values[geneID]['TSS']
+            geneID_pos[geneID] = pos
+        except:
+            continue
 
     #names = ['data/sp_spd_tests_detail/sp7', 'ATcontent', 'CpGNumber', 'k27ac', 'k9ac', 'k4me3', 'k36me3_2', 'k9me2_2', 'k9me3_2', 'k27me3a_2']
     #names = ['data/sp_spd_tests_detail/sp7', 'ATcontent', 'CpGNumber', 'k27ac', 'k9ac', 'k4me3', 'k36me3', 'k9me2', 'k9me3', 'k27me3']
     #cmap_list = ['rainbow', 'hot_r', 'viridis_r', 'YlOrRd', 'Purples', 'Oranges', 'Greens', 'Blues', 'YlGnBu', 'pink_r']
     #names = copy.deepcopy(target_names)
-    target_names = ["H1-NCP-new-sp-5.bam"]
+    #target_names = ["H1-NCP-sp-4.bam", "H1-NCP-sp-8.bam"]
+    target_names = ["H1-NCP-sp-8.bam"]
+
     #feature_names = ["H2AZ", "H3k27ac", "H3k27me3", "H3k36me3", "H3k4me1", "H3k4me3", "H3k9ac", "H3k9me3"]
     #feature_names = ["H3k27ac"]
-    feature_names = ["Gene activity"]
+    #feature_names = ["Gene activity"]
+    feature_names = ['eigen']
     names = target_names + feature_names
     cmap_list = ['rainbow']
 
     i = 20
     bin_size = int(0.5*(10**6) / i)
+    #bin_size = int(0.5*(10**5) / i)
+    #blur_win = 1
     #blur_win = int(2*i + 1)
     blur_win = int(4*i + 1)
     #blur_win = int(6*i + 1)
@@ -253,6 +302,29 @@ for chr_choice in chr_choices:
     #    except:
     #        name_binID_mean['k9ac'][binID] = np.nan
 
+
+    # eigenvector signal
+    eigenbinID_value, eigenbinID_interval = read_eigenfile("eigen_H1_100kb.txt", bin_size=100000)
+
+    binID_eigens = {}
+    for value, interval in zip(eigenbinID_value, eigenbinID_interval):
+        st, ed = interval
+        st_binID, ed_binID = st / bin_size, ed / bin_size
+        for binID in range(st_binID, ed_binID):
+            if binID not in binID_eigens:
+                binID_eigens[binID] = []
+            binID_eigens[binID].append(value)
+
+    binID_eigen = {}
+    for binID in binID_eigens:
+        try:
+            binID_eigen[binID] = np.mean(binID_eigens[binID])
+        except:
+            binID_eigen[binID] = np.nan
+
+    name_binID_mean['eigen'] = binID_eigen
+
+
     # G-banding ideogram
     gID_size = {}
     gband_img = []
@@ -291,9 +363,19 @@ for chr_choice in chr_choices:
                 sig += [binID_mean[binID] for k in range(size)]
             except:
                 sig += [np.nan for k in range(size)]
-        sig = statis.slow_moving_average2(sig, blur_win)
+        if name == 'eigen':
+            sig = statis.slow_moving_average2(sig, int(4*i/5.0 + 1))
+        else:
+            sig = statis.slow_moving_average2(sig, blur_win)
         name_sig[name] = sig
         name_img[name] = [[value] for value in sig]
+
+    tempsig = name_sig["H1-NCP-sp-8.bam"]
+    for c in range(len(tempsig)):
+        if not np.isnan(tempsig[c]) and tempsig[c] > 0.6:
+            tempsig[c] = np.nan
+    make_bedgraph("H1-NCP-sp-8.bedgraph", tempsig, bin_size=bin_size)
+    make_bedgraph("eigen_H1_100kb.bedgraph", name_sig['eigen'], bin_size=bin_size)
 
     aspect = (0.05*bin_size) / (10**6)
     """
@@ -406,16 +488,32 @@ for chr_choice in chr_choices:
         ax1.set_ylabel(target_name, color='blue')
         ax1.tick_params('y', colors='blue')
         ax1.set_xlim([0, len(gband_img)+1])
-        ax1.set_ylim([-0.3, 0.6])
+        #ax1.set_ylim([0.05, 0.35])
+        #ax1.set_ylim([0.1, 0.4])
+        #ax1.set_ylim([-0.15, 0.25])
+        #ax1.set_ylim([0.1, 0.4])
+        #ax1.set_ylim([0.05, 0.5])
+        ax1.set_ylim([-0.4, 0.6])
+        #ax1.set_ylim([0, 0.4])
+        #ax1.set_ylim([0.1, 0.3])
+        #ax1.set_ylim([-0.3, 0.6])
+        #ax1.set_ylim([-0.3, 0.3])
+        #ax1.set_ylim([-0.3, 0.5])
+        #ax1.set_ylim([-1.2, 2.0])
+        #ax1.set_ylim([-0.7, 0.5])
+        #ax1.set_ylim([-0.7, 0.4])
         #ax1.legend(loc='upper left')
 
         ax1p = ax1.twinx()
         feature_name = feature_names[i]
-        ax1p.plot(name_sig[feature_name], '#d62728', alpha=0.5)
+        #ax1p.plot(name_sig[feature_name], '#d62728', alpha=0.5)
+        ax1p.plot(name_sig[feature_name], 'tab:orange', alpha=0.8)
         #ax1p.plot(np.log(-1*np.asarray(name_sig[feature_name])), '#d62728', alpha=0.5)
-        ax1p.set_ylabel(feature_name, color='r')
-        ax1p.tick_params('y', colors='#d62728')
-        #ax1p.set_ylim([20, 22])
+        #ax1p.set_ylabel(feature_name, color='r')
+        ax1p.set_ylabel('Eigenvector', color='orangered')
+        #ax1p.tick_params('y', colors='#d62728')
+        ax1p.tick_params('y', colors='orangered')
+        ax1p.set_ylim([-0.05, 0.05])
 
         ax2.imshow(np.transpose(gband_img), cmap='Greys', aspect=0.3/aspect)
         ax2.imshow(np.transpose(gband_cenimg), cmap ='Reds', vmin=0, vmax=20, aspect=0.3/aspect)
@@ -428,7 +526,7 @@ for chr_choice in chr_choices:
 
         plt.tight_layout()
         plt.savefig("Gwide_" + chr_choice + '_' + target_name + '_' + feature_name + ".png", bbox_inches='tight', dpi=1000)
-        plt.show()
+        #plt.show()
         plt.close()
 
     sys.exit(1)        

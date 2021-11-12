@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from sklearn import linear_model
 from scipy import signal
 from scipy.fftpack import fft, ifft, ifftshift, fftshift
+import scipy.stats
 
 def norm(L):
     total = sum(L)
@@ -31,6 +32,14 @@ def get_corr(x, y):
         xdiff2 += xdiff * xdiff
         ydiff2 += ydiff * ydiff
     return diffprod / np.sqrt(xdiff2 * ydiff2)
+
+def get_spearman_corr (X, Y):
+    assert len(X) == len(Y)
+    X, Y = np.asarray(X), np.asarray(Y)
+    selected = (~np.isnan(X))*(~np.isnan(Y))
+    X, Y = X[selected], Y[selected]
+    return scipy.stats.spearmanr(X, Y)[0]
+
 
 def acf(x):
     #xp = ifftshift((x - np.average(x))/np.std(x))
@@ -91,13 +100,14 @@ def quantile (ID_score, num, frac=None):
         size_list[-1] += 1
     assert sum(size_list) == len(IDscore)
     output = []
-    ed = 0
+    #ed = 0
     for i in range(num):
-        #st = i*size
-        #ed = min((i+1)*size,len(IDscore))
         size = size_list[i]
-        st = ed             
-        ed = st + size
+        st = i*size
+        ed = min((i+1)*size,len(IDscore))
+        #size = size_list[i]
+        #st = ed             
+        #ed = st + size
         temp = [IDscore[j][0] for j in range(st,ed)]
         output.append(temp)
     return output

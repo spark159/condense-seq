@@ -10,8 +10,8 @@ import math
 import Interval_dict
 from sklearn import linear_model
 from scipy.stats import norm
-from matplotlib_venn import venn3
-from npeet import entropy_estimators as ee
+#from matplotlib_venn import venn3
+#from npeet import entropy_estimators as ee
 
 def all_path (N, states='ATCG'):
     if N==1:
@@ -67,12 +67,12 @@ def get_dincount(seq, din=None):
         din_count[din] += 1
     return din_count
 
-ID_chr, ID_pos, name_ID_value = load_file.read_anot_file("/home/spark159/../../media/spark159/sw/sp_spd_tests_detail/hg19_chr1_NCP_ics_anot.cn")
-ID_score2 = name_ID_value['data/sp_spd_tests_detail/sp7']
+ID_chr, ID_pos, name_ID_value = load_file.read_anot_file("H1_NCP_sp_chr1_anot.cn")
+ID_score2 = name_ID_value['work/2021_06_07_H1_sp_detail/H1-NCP-sp-8']
 ID_seq = name_ID_value['Sequence']
 ID_AT = name_ID_value['ATcontent']
-ID_CpG = name_ID_value['CpGNumber']
-ID_me = name_ID_value['meGCNumber']
+ID_CpG = name_ID_value['CNumber(CpG)']
+ID_me = name_ID_value['meCNumber(CpG)']
 
 for ID in ID_AT:
     ID_AT[ID] = ID_AT[ID]*100
@@ -101,12 +101,13 @@ for ID in ID_CpG:
         ID_mefrac[ID] = np.NaN
         continue
     me = ID_me[ID]
-    mefrac = float(me) / (2*CpG)
+    #mefrac = float(me) / (2*CpG)
+    mefrac = float(me) / CpG
     ID_mefrac[ID] = mefrac
 
 # correlation and p-correlation matrix
-names = ["Condensability", "AT content", "Poly-A", "CpG count", "TpA count", "meCpG density", "k4me3", "k27ac", "k9ac", "k36me3", "k9me2", "k9me3", "k27me3"]
-ID_value_list = [ID_score2, ID_AT, ID_Alen, ID_CpG, ID_TA, ID_me, name_ID_value['k4me3'], name_ID_value['k27ac'], name_ID_value['k9ac'], name_ID_value['k36me3_2'], name_ID_value['k9me2_2'], name_ID_value['k9me3_2'], name_ID_value['k27me3a_2']]
+names = ["Condensability", "AT content", "Poly-A", "CpG count", "TpA count", "meCpG density", "k4me3", "k27ac", "k9ac", "k36me3", "k9me3", "k27me3"]
+ID_value_list = [ID_score2, ID_AT, ID_Alen, ID_CpG, ID_TA, ID_me, name_ID_value['H3K4me3'], name_ID_value['H3k27ac'], name_ID_value['H3K9ac'], name_ID_value['H3K36me3'], name_ID_value['H3K9me3'], name_ID_value['H3K27me3']]
 
 IDs = ID_seq.keys()
 values_list = []

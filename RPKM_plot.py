@@ -26,9 +26,25 @@ def get_corr(x, y):
         ydiff2 += ydiff * ydiff
     return diffprod / np.sqrt(xdiff2 * ydiff2)
 
-# RPKM analysis
-gID_field_values, field_gID_values = load_file.read_GTF ("/home/spark159/../../media/spark159/sw/dataforcondense/Homo_sapiens.GRCh37.87.gtf", chr_list=['chr1'], mode="both")
+def read_tsv (fname, chr_choices=None):
+    First = True
+    geneID_FPKM = {}
+    #for fname in fnames:
+    for line in open(fname):
+        if First:
+            First = False
+            continue
+        cols = line.strip().split()
+        geneID, FPKM = cols[0], float(cols[6])
+        geneID = geneID.split('.')[0]
+        #assert geneID not in geneID_FPKM
+        geneID_FPKM[geneID] = FPKM
+    return geneID_FPKM
 
+
+# RPKM analysis
+gID_field_values, field_gID_values = load_file.read_GTF ("ENCFF159KBI.gtf", chr_list=['chr1'], mode="both")
+"""
 gID_exons = field_gID_values['exons']
 gID_exonlen = {}
 for gID in gID_exons:
@@ -57,13 +73,30 @@ for gID in gID_exonlen:
     except:
         continue
     gID_RPKM[gID] = RPKM
+"""
+gID_RPKM = read_tsv("ENCFF174OMR.tsv")
+#gID_RPKM = read_tsv("ENCFF910OBU.tsv")
+#gID_RPKM = read_tsv("ENCFF395XDK.tsv")
+
+#temp_dict = {}
+#for gID in gID_RPKM:
+#    if gID in gID_field_values:
+#        RPKM = gID_RPKM[gID]
+#        if RPKM <= 0:
+#            continue
+#        temp_dict[gID] = gID_RPKM[gID]
+#gID_RPKM = temp_dict
 
 gID_ginterval = {}
 for gID in gID_RPKM.keys():
-    TSS = gID_field_values[gID]['TSS']
-    TTS = gID_field_values[gID]['TTS']
+    try:
+        TSS = gID_field_values[gID]['TSS']
+    except:
+        continue
+    #TTS = gID_field_values[gID]['TTS']
     strand = gID_field_values[gID]['strand']
     interval = (TSS-2500, TSS+2500)
+    #interval = (TSS-500, TSS+500)
     #if strand == '+':
         #interval = (TSS, TTS)
         #interval = (TSS-250, TSS)
@@ -76,18 +109,18 @@ for gID in gID_RPKM.keys():
 
 ginterval_dict = Interval_dict.double_hash(gID_ginterval, 100000, 250000000)
 
-#nID_chr, nID_pos, name_nID_value = load_file.read_anot_file("/home/spark159/../../media/spark159/sw/sp_spd_tests_detail/hg19_chr1_NCP_anot.cn")
-nID_chr, nID_pos, name_nID_value = load_file.read_anot_file("/home/spark159/../../media/spark159/sw/sp_spd_tests_detail/hg19_chr1_167win25step_anot.cn")
+nID_chr, nID_pos, name_nID_value = load_file.read_anot_file("H1_NCP_sp_chr1_anot.cn")
+#nID_chr, nID_pos, name_nID_value = load_file.read_anot_file("/home/spark159/../../media/spark159/sw/sp_spd_tests_detail/hg19_chr1_167win25step_anot.cn")
 
-nID_CG = name_nID_value['CpGNumber']
-nID_me = name_nID_value['meGCNumber']
+nID_CG = name_nID_value['CNumber(CpG)']
+nID_me = name_nID_value['meCNumber(CpG)']
 nID_mefrac = {}
 for nID in nID_CG:
     CG = nID_CG[nID]
     if CG <= 0:
         continue
     me = nID_me[nID]
-    mefrac = float(me) / (2*CG)
+    mefrac = float(me) / CG
     nID_mefrac[nID] = mefrac
 name_nID_value['meCpG density'] = nID_mefrac
 
@@ -98,6 +131,8 @@ for nID in nID_pos:
     if len(gIDs) <= 0:
         continue
     for name in name_nID_value:
+        if name == 'Sequence':
+            continue
         if name not in name_gID_values:
             name_gID_values[name] = {}
         try:
@@ -126,15 +161,20 @@ for i in range(len(names)):
     name = names[i]
     X, Y = [], []
     for gID in gID_RPKM:
-        counts = gID_counts[gID]
+        #counts = gID_counts[gID]
         #if counts <= 0:
             #continue
         RPKM = gID_RPKM[gID]
+        if RPKM <= 0:
+            continue
+        #logRPKM = RPKM
         logRPKM = math.log(RPKM)
+        #logRPKM = math.log(RPKM+1)
         try:
             mean = name_gID_mean[name][gID]
         except:
             continue
+        #X.append(RPKM)
         X.append(logRPKM)
         #if name.startswith('k'):
         #    Y.append(math.log(mean+1))
@@ -149,10 +189,10 @@ corr_list = []
 name_list = []
 for i in range(len(names)):
     name = names[i].split('/')[-1]
-    if name == 'sp8':
-        continue
-    if name == 'sp7':
-        name = 'Condensability'
+    #if name == 'H1-NCP-sp4':
+    #    continue
+    #if name == 'H1-NCP-sp8':
+    #    name = 'Condensability'
     name_list.append(name)
     X, Y = X_list[i], Y_list[i]
     corr = get_corr(X, Y)
@@ -169,7 +209,9 @@ for i in range(len(names)):
     plt.plot(X, Ypred, 'r--')
     xloc, yloc = np.mean([np.median(X), max(X)]), np.mean([np.median(Y), max(Y)])
     plt.text(xloc, yloc, str(round(corr,3)), fontsize=20, va='center', ha='center')
-    plt.xlabel("logRPKM")
+    #plt.xlabel("logRPKM")
+    plt.xlabel("logFPKM")
+    #plt.xscale('log', basex=2)
     plt.ylabel(name)
     plt.title("Near TSS (5kb)")
     plt.savefig("RPKM_nearTSS_scatter_" + name + ".png",bbox_inches='tight')

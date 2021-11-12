@@ -57,6 +57,47 @@ def read_bincountfile (fname, chr_list=None):
             chr_binID_count[chr].append(data)
     return names, chr_binID_counts, chr_binID_range, chr_binID_GC
 
+def read_bintlenfile (fname, chr_list=None):
+    First = True
+    for line in open(fname):
+        if First:
+            cols = line.strip().split()
+            names = [name.rsplit('.')[-2] for name in cols[4:-2]]
+            chr_binID_counts = [{} for i in range(len(names))]
+            chr_binID_range = {}
+            chr_binID_GC = {}
+            chr_binID_tlen = {}
+            First = False
+            continue
+        line = line.strip()
+        if not line:
+            continue
+        cols = line.strip().split()
+        ID, chr, st, ed = cols[:4]
+        if chr_list != None and chr not in chr_list:
+            continue
+        ID = int(ID)
+        st, ed = int(st), int(ed)
+        GC = float(cols[-2])
+        tlen = float(cols[-1])
+        if chr not in chr_binID_range:
+            chr_binID_range[chr] = []
+        chr_binID_range[chr].append((st, ed))
+        if chr not in chr_binID_GC:
+            chr_binID_GC[chr] = []
+        chr_binID_GC[chr].append(GC)
+        if chr not in chr_binID_tlen:
+            chr_binID_tlen[chr] = []
+        chr_binID_tlen[chr].append(tlen)
+        datas = cols[4:-2]
+        for i in range(len(datas)):
+            data = float(datas[i])
+            chr_binID_count = chr_binID_counts[i]
+            if chr not in chr_binID_count:
+                chr_binID_count[chr] = []
+            chr_binID_count[chr].append(data)
+    return names, chr_binID_counts, chr_binID_range, chr_binID_GC, chr_binID_tlen
+
 def read_chromHMM(fname, chr_list=None, change=False):
     chr_state_intervals = {}
     for line in open(fname):
@@ -122,8 +163,8 @@ def pair_boxplot (key_values1, key_values2, ylabel1='', ylabel2='Condensability 
     ax2.set_xticklabels(keys, rotation=rotation)
     plt.xlim([-0.5, len(keys)-0.5])
     fig.tight_layout()
-    #plt.savefig("pairbox_" + note + ".png",bbox_inches='tight')
-    plt.show()
+    plt.savefig("pairbox_" + note + ".png",bbox_inches='tight')
+    #plt.show()
     plt.close('all')
 
 #fname = "NCP_Spermine(4+)_1kb"
@@ -131,9 +172,25 @@ def pair_boxplot (key_values1, key_values2, ylabel1='', ylabel2='Condensability 
 #names, chr_binID_counts, chr_binID_range, chr_binID_GC = read_bincountfile("/home/spark159/Downloads/" + fname + "_bin.cn")
 #chr_binID_control = chr_binID_counts[-1]
 
-fname = "H1_NCP-new_spd_10kb_bin.cn"
-bin_size = 10000
-names, chr_binID_counts, chr_binID_range, chr_binID_GC = read_bincountfile(fname)
+#fname = "H1_DNA_sp_10kb_bin.cn"
+#fname = "H1_NCP_sp_10kb_bin.cn"
+#fname = "H1_DNA_spd_10kb_bin.cn"
+#fname = "H1_NCP_spd_10kb_bin.cn"
+#fname = "H1_DNA_CoH_10kb_bin.cn"
+#fname = "H1_NCP_CoH_10kb_bin.cn"
+#fname = "H1_DNA_PEG_10kb_bin.cn"
+#fname = "H1_NCP_PEG_10kb_bin.cn"
+#fname = "H1_NCP_Mg_10kb_bin.cn"
+#fname = "H1_NCP_Ca_10kb_bin.cn"
+fname = "H1_NCP_sp_1kb_tlen_bin.cn"
+
+
+#bin_size = 10000
+#names, chr_binID_counts, chr_binID_range, chr_binID_GC = read_bincountfile(fname)
+#chr_binID_control = chr_binID_counts[-1]
+
+bin_size = 1001
+names, chr_binID_counts, chr_binID_range, chr_binID_GC, chr_binID_tlen = read_bintlenfile(fname)
 chr_binID_control = chr_binID_counts[-1]
 
 #name_dict = {'E1':'TssBiv', 'E2':'TssA', 'E3':'EnhA', 'E4':'TxWk', 'E5':'Tx', 'E6':'me3Het', 'E7':'Quies', 'E8':'me2Het', 'E9':'PcWk', 'E10':'Pc'}
@@ -141,8 +198,22 @@ chr_binID_control = chr_binID_counts[-1]
 
 #chr_state_intervals = read_chromHMM("wgEncodeBroadHmmH1hescHMM.bed", change=False)
 #chr_state_intervals = read_chromHMM("wgEncodeAwgSegmentationChromhmmH1hesc.bed", change=False)
-chr_state_intervals = read_chromHMM("wgEncodeAwgSegmentationCombinedH1hesc.bed", change=False)
+#chr_state_intervals = read_chromHMM("wgEncodeAwgSegmentationCombinedH1hesc.bed", change=False)
 
+name_dict = {"E1":"Polycomb repressed",
+             "E2":"Poised promoter",
+             "E3":"Weak promoter",
+             "E4":"Strong enhancer",
+             "E5":"Active promoter",
+             "E6":"Weak enhancer",
+             "E7":"Quiescence1",
+             "E8":"Quiescence2",
+             "E9":"Heterochromatin",
+             "E10":"Tx elongation",
+             "E11":"Weak Tx",
+             "E12":"Insulator"}
+
+chr_state_intervals = read_chromHMM("H1_12_segments.bed", change=name_dict)
  
 chr_binID_states = {}
 for chr in chr_state_intervals:
@@ -154,6 +225,10 @@ for chr in chr_state_intervals:
             st, ed = interval
             st_binID = int(st) / bin_size
             ed_binID = int(ed) / bin_size
+            if st_binID > len(chr_binID_range[chr]) - 1:
+                continue
+            if ed_binID > len(chr_binID_range[chr]) - 1:
+                continue
             if st_binID == ed_binID:
                 value = ed - st
                 if st_binID not in chr_binID_states[chr]:
@@ -179,6 +254,15 @@ for chr in chr_binID_states:
             state_GCs[state] = []
         GC = chr_binID_GC[chr][binID]
         state_GCs[state].append(GC*100)
+
+state_tlens = {}
+for chr in chr_binID_states:
+    for binID in chr_binID_states[chr]:
+        state = sorted(chr_binID_states[chr][binID], cmp=tuple_cmp, reverse=True)[0][1]
+        if state not in state_tlens:
+            state_tlens[state] = []
+        tlen = chr_binID_tlen[chr][binID]
+        state_tlens[state].append(tlen)
                     
 state_rcounts_list = []
 for i in range(len(names)-1):
@@ -200,11 +284,15 @@ for i in range(len(names)-1):
 
 #states = ['TssA', 'EnhA', 'Tx', 'TxWk', 'TssBiv', 'me2Het', 'me3Het', 'PcWk', 'Pc', 'Quies']
 #states = sorted(state_rcounts_list[0].keys(), cmp=state_cmp)
-states = sorted(state_rcounts_list[0].keys())
+#states = sorted(state_rcounts_list[0].keys())
+states = ["Active promoter", "Weak promoter", "Poised promoter", "Strong enhancer", "Weak enhancer", "Tx elongation", "Weak Tx", "Insulator", "Polycomb repressed", "Heterochromatin", "Quiescence1", "Quiescence2"]
 for i in range(len(state_rcounts_list)):
     name = names[i]
     state_rcounts = state_rcounts_list[i]
-    pair_boxplot (state_GCs, state_rcounts, ylabel1='GC content(%)', ylabel2='Normalized Counts', title='Titration ' +str(i+1), keys=states, note='HMM_bin_' + fname + '_' + str(i+1), rotation=75)
+    pair_boxplot (state_GCs, state_rcounts, ylabel1='GC content(%)', ylabel2='Normalized Counts', title='Titration ' +str(i+1), keys=states, note='HMM_bin_GC' + fname + '_' + str(i+1), rotation=75)
+    pair_boxplot (state_tlens, state_rcounts, ylabel1='Read length (bp)', ylabel2='Normalized Counts', title='Titration ' +str(i+1), keys=states, note='HMM_bin_tlen' + fname + '_' + str(i+1), rotation=75)
+    pair_boxplot (state_GCs, state_tlens, ylabel1='GC content(%)', ylabel2='Read length (bp)', title='Titration ' +str(i+1), keys=states, note='HMM_bin_GCvstlen' + fname + '_' + str(i+1), rotation=75)
+
     #pair_boxplot (state_GCs, state_rcounts, ylabel1='GC content(%)', ylabel2='Normalized Counts', title='Titration ' +str(i+1), keys=None, note='HMM_bin_' + fname + '_' + str(i+1), rotation=75)
 
 """

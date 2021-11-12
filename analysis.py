@@ -463,8 +463,42 @@ def compare_map (key_slider1, key_slider2):
     return key_coeff
 
 
+def Silhouette (key_cID, cID_keys, key1_key2_dist):
+    key_cID_dists = {}
+    for key in key_cID:
+        for cID in cID_keys:
+            for other_key in cID_keys[cID]:
+                if key == other_key:
+                    continue
+                dist = key1_key2_dist[key][other_key]
+                if key not in key_cID_dists:
+                    key_cID_dists[key] = {}
+                if cID not in key_cID_dists[key]:
+                    key_cID_dists[key][cID] = []
+                key_cID_dists[key][cID].append(dist)
 
+    key_cID_mdist = {}
+    for key in key_cID_dists:
+        for cID in key_cID_dists[key]:
+            mdist = np.mean(key_cID_dists[key][cID])
+            if key not in key_cID_mdist:
+                key_cID_mdist[key] = {}
+            key_cID_mdist[key][cID] = mdist
 
-    
+    key_s = {}
+    for key in key_cID_mdist:
+        cID = key_cID[key]
+        cID_mdist = key_cID_mdist[key]
+        a = cID_mdist[cID]
+        b = np.min([cID_mdist[i] for i in list(set(cID_mdist.keys())-set([cID]))])
+        if a < b:
+            s = 1.0 - float(a)/b
+        elif a > b:
+            s = float(b)/a - 1.0
+        else:
+            assert a == b
+            s = 0
+        key_s[key] = s
 
-
+    return key_s
+            

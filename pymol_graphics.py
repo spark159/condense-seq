@@ -7,6 +7,7 @@ import math
 import copy
 import pickle
 import pymol
+import pytms
 
 AA_dict = {'CYS': 'C', 'ASP': 'D', 'SER': 'S', 'GLN': 'Q', 'LYS': 'K',
            'ILE': 'I', 'PRO': 'P', 'THR': 'T', 'PHE': 'F', 'ASN': 'N', 
@@ -105,6 +106,22 @@ class Molecules:
             print("chain %s" % (chain), file=sys.stderr)
             print(self.chain_seq[chain], file=sys.stderr)
 
+    def selection_string (self,
+                          chain_resi):
+        selections = []
+        for chain in chain_resi:
+            select = []
+            for resi in chain_resi[chain].keys():
+                if resi < 0:
+                    select.append('\\' + str(resi))
+                else:
+                    select.append(str(resi))
+            select = ','.join(select)
+            selections.append("(" + "chain " + chain + " and " + "resi " + select + ")")
+        selections = " or ".join(selections)
+        return selections
+        
+
     def remove_ions(self):
         # remove waters and ions
         pymol.cmd.remove('resn hoh')
@@ -170,7 +187,6 @@ class Molecules:
         return
         
 
-
     def spectrum(self,
                  chain_resi_value,
                  color_list=[],
@@ -204,6 +220,11 @@ class Molecules:
         pymol.cmd.save("%s.pse" % (fname))
         return
 
+    def save_pdb (self, note=None):
+        if note != None:
+            note = '_' + note
+        pymol.cmd.save("%s%s.pdb" % (self.code, note)) 
+
     def clear_up (self):
         pymol.cmd.delete('all')
         return
@@ -212,7 +233,34 @@ class Molecules:
         pymol.cmd.quit()
         return
 
+    def acetylate (self, chain_resi):
+        selections = self.selection_string(chain_resi)
+        pytms.acetylate(selection)
+        return
+
+    def methylate (self, chain_resi):
+        selections = self.selection_string(chain_resi)
+        pytms.methylate(selection)
+        return
+
+    def phosphorylate (self, chain_resi):
+        selections = self.selection_string(chain_resi)
+        pytms.phosphorylate(selection)
+        return
+
     
+# add PTM modifications
+#NCP = Molecules("1kx5")
+#pymol.cmd.remove('resn hoh')
+#pymol.cmd.remove('resn mn')
+#pymol.cmd.remove('resn cl')
+#pymol.cmd.hide('all')
+#pytms.acetylate(selection="chain F and resi 77")
+#pymol.cmd.extend(pytms.acetylate)
+#pymol.cmd.acetylate("chain F and resi 77")
+#pymol.cmd.show('sphere', "chain F and resi 77")
+#NCP.save_session("PTM_test")
+#NCP.save_pdb("ac")
 
 # load structure
 #NCP = Molecules("1kx5")

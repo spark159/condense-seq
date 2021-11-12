@@ -171,14 +171,15 @@ def stat_Kmer(seq_list, NCPlen, knum, bnum):
     return freq, sample_num, mean, std, stdz_freq
 
 
-path = './data/'
-ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+"hg19_chr1_NCP_ics_anot.cn")
-ID_score1 = name_ID_value["data/sp_spd_tests_detail/sp7"]
-ID_score2 = name_ID_value["data/sp_spd_tests_detail/sp8"]
+#path = './data/'
+path = ''
+ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+"H1_NCP_sp_chr1_anot.cn")
+ID_score1 = name_ID_value["work/2021_06_07_H1_sp_detail/H1-NCP-sp-8"]
+#ID_score2 = name_ID_value["work/2021_06_07_H1_sp_detail/H1-NCP-sp-8"]
 ID_seq = name_ID_value['Sequence']
 ID_AT = name_ID_value['ATcontent']
-ID_CG = name_ID_value['CpGNumber']
-ID_me = name_ID_value['meGCNumber']
+ID_CG = name_ID_value['CNumber(CpG)']
+ID_me = name_ID_value['meCNumber(CpG)']
 
 # Partition by score
 med = np.median(ID_score1.values())
@@ -229,7 +230,7 @@ for ID in ID_score1:
             break
     p_IDs[i].append(ID)
 
-"""
+
 # Compare sequence feature
 for ID in ID_AT:
     ID_AT[ID] = ID_AT[ID]*100
@@ -267,7 +268,7 @@ for i in range(p_num):
             if din not in din_p_sigs:
                 din_p_sigs[din] = [[] for k in range(p_num)]
             din_p_sigs[din][i].append(din_count[din])
-"""
+
 NCPlen = 147
 MMfreq_list = []
 for i in range(p_num):
@@ -286,7 +287,7 @@ for i in range(p_num):
 
 print "Sequence feature reading is done"
 
-"""
+
 fig = plt.figure()
 plt.xlabel('Partitions')
 plt.ylabel('%')
@@ -317,7 +318,7 @@ for poly in poly_p_sigs:
     plt.savefig('_'.join(poly.split('/'))+"_pbox.png")
     #plt.show()
     plt.close()
-"""
+
 
 def get_ATGC_sig (freq_MM1):
     #freq_MM1 = freq['MM1']
@@ -365,9 +366,9 @@ plt.xticks([147/2 + 10*i for i in range(-7, 8)], [str(10*i) for i in range(-7,8)
 #plt.ylabel("Relative frequency")
 #plt.legend()
 #plt.ylim([0.22, 0.28])
-#plt.savefig('ATGCperiod_' + "slide" + '.png')
+plt.savefig('ATGCperiod_' + "slide" + '.png')
 plt.title("Dinucleotide periodicity")
-plt.show()
+#plt.show()
 plt.close()
 
 fig = plt.figure()
@@ -381,11 +382,11 @@ ax = plt.gca()
 ax.yaxis.tick_right()
 #plt.tick_params(axis='y', which='both', labelleft='off', labelright='on')
 plt.xticks([])
-plt.show()
+#plt.show()
 
 
     
-sys.exit(1)
+#sys.exit(1)
 
 # calculate z-scores
 img1 = []
@@ -417,7 +418,7 @@ for ID in ID_CG:
     if CG <= 0:
         continue
     me = ID_me[ID]
-    mefrac = float(me) / (2*CG)
+    mefrac = float(me) / (CG)
     ID_mefrac[ID] = mefrac
     
 
@@ -433,7 +434,7 @@ for i in range(p_num):
         except:
             continue
         for name in name_ID_value:
-            if not name.startswith('k'):
+            if not name.startswith('H'):
                 continue
             if name not in chip_p_sigs:
                 chip_p_sigs[name] = [[] for k in range(p_num)]
@@ -446,7 +447,7 @@ for me in me_p_sigs:
     p_sigs = me_p_sigs[me]
     fig = plt.figure()
     plt.xlabel('Partitions')
-    if me == 'meCpG Denssity':
+    if me == 'meCpG Density':
         plt.ylabel('Fraction')
     else:
         plt.ylabel('Counts')
@@ -480,7 +481,8 @@ for me in me_names:
 
 chip_p_zscores = {}
 #chip_names = ['k27ac', 'k9ac', 'k4me3', 'k36me3_2', 'k9me2_2', 'k9me3_2', 'k27me3a_2']
-chip_names = ['k27ac', 'k9ac', 'k4me3', 'k36me3', 'k9me2', 'k9me3', 'k27me3a']
+#chip_names = ['k27ac', 'k9ac', 'k4me3', 'k36me3', 'k9me2', 'k9me3', 'k27me3a'
+chip_names = ['H3k27ac', 'H3K9ac', 'H3K4me3', 'H2AFZ', 'H3K36me3', 'H3K9me3', 'H3K27me3']
 for chip in chip_names:
     chip_p_zscores[chip] = get_zscore(chip_p_sigs[chip])
     img2.append([np.mean(zscores) for zscores in chip_p_zscores[chip]])
@@ -501,11 +503,11 @@ for ax, img, ylabels, title in zip([ax1, ax2], img_list, ylabel_list, title_list
     ax.set_xticklabels(range(1, p_num+1))
     ax.set_yticklabels(ylabels)
     ax.set_title(title)
-    #plt.tight_layout()
+    plt.tight_layout()
 
 cbar = fig.colorbar(im, cax=cax)
-cbar.ax.tick_params(labelsize=15) 
-cbar.ax.set_ylabel('Z-score', rotation=-90, va="bottom", fontsize=15)
+#cbar.ax.tick_params(labelsize=15) 
+#cbar.ax.set_ylabel('Z-score', rotation=-90, va="bottom", fontsize=15)
 plt.show()
 plt.close()
 

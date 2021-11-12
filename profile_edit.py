@@ -124,22 +124,23 @@ def read_GTF (fname, chr_list, mode="gene"):
         if line.startswith("#"):
             continue
         cols = line.strip().split('\t')
-        chrnum, source, feature, start, end, score, strand, frame, attribute = cols
-        chr = "chr" + chrnum
+        chr, source, feature, start, end, score, strand, frame, attribute = cols[:9]
+        if not chr.startswith('chr'):
+            chr = "chr" + chr
         if chr not in  chr_list:
             continue
         if feature not in ["gene", "exon", "start_codon", "stop_codon"]:
             continue
         start = int(start) - 1
         end = int(end) - 1
-        attcols = attribute.strip(' ;').split(';')
+        attcols = attribute.strip(';').split('; ')
         tag_value = {}
         for item in attcols:
             tag, value = item.strip().split(' ')
             value = value.strip('"')
             tag_value[tag] = value
         geneID = tag_value["gene_id"]
-        geneType = tag_value["gene_biotype"]
+        geneType = tag_value["gene_type"]
         if geneID not in ID_field_values:
             ID_field_values[geneID] = {}
         if "chr" not in ID_field_values[geneID]:
@@ -263,7 +264,10 @@ def Profiling (sig_fname,
     for ID in ID_field_values:
         field_values = ID_field_values[ID]
         chr = field_values['chr']
-        pos1, pos2 = field_values[mark1], field_values[mark2]
+        try:
+            pos1, pos2 = field_values[mark1], field_values[mark2]
+        except:
+            continue
         strand = field_values['strand']
         if strand == '+':
             start = max(0, pos1 - up_win)

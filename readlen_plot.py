@@ -47,7 +47,44 @@ path = ""
 #names = ["H1-DNA-sp-%s" % (i) for i in range(6)] 
 
 #fnames = ["H1_DNA_spd_H1-DNA-spd-%s_rlen.txt" % (i) for i in range(6)]
+#names = ["H1-DNA-sp-%s" % (i) for i in range(6)]
+
+#fnames = ["H1_DNA_sp_H1-DNA-sp-%s_rlen.txt" % (i) for i in range(6)]
 #names = ["H1-DNA-sp-%s" % (i) for i in range(6)] 
+
+#fnames = ["H1_NCP_sp_H1-NCP-sp-%s_rlen.txt" % (i) for i in range(10)]
+#names = ["H1-NCP-sp-%s" % (i) for i in range(10)] 
+
+#fnames = ["H1_DNA_spd_H1-DNA-spd-%s_rlen.txt" % (i) for i in range(6)]
+#names = ["H1-DNA-spd-%s" % (i) for i in range(6)] 
+
+#fnames = ["H1_NCP_spd_H1-NCP-spd-%s_rlen.txt" % (i) for i in range(10)]
+#names = ["H1-NCP-spd-%s" % (i) for i in range(10)] 
+
+#fnames = ["H1_DNA_CoH_H1-DNA-CoH-%s_rlen.txt" % (i) for i in range(6)]
+#names = ["H1-DNA-CoH-%s" % (i) for i in range(6)] 
+
+#fnames = ["H1_NCP_CoH_H1-NCP-CoH-%s_rlen.txt" % (i) for i in range(8)]
+#names = ["H1-NCP-CoH-%s" % (i) for i in range(8)]
+
+#fnames = ["H1_DNA_PEG_H1-DNA-PEG-%s_rlen.txt" % (i) for i in range(7)]
+#names = ["H1-DNA-PEG-%s" % (i) for i in range(7)] 
+
+#fnames = ["H1_NCP_PEG_H1-NCP-PEG-%s_rlen.txt" % (i) for i in range(8)]
+#names = ["H1-NCP-PEG-%s" % (i) for i in range(8)]
+
+#fnames = ["H1_NCP_Mg_H1-NCP-Mg-%s_rlen.txt" % (i) for i in range(8)]
+#names = ["H1-NCP-Mg-%s" % (i) for i in range(8)]
+
+#fnames = ["H1_NCP_Ca_H1-NCP-Ca-%s_rlen.txt" % (i) for i in range(8)]
+#names = ["H1-NCP-Ca-%s" % (i) for i in range(8)]
+
+#fnames = ["H1_NCP_Ca_H1-NCP-Ca-%s_rlen.txt" % (i) for i in range(8)]
+#names = ["H1-NCP-Ca-%s" % (i) for i in range(8)]
+
+fnames = ["H1_NCP_sp_H1-NCP-sp-%s_rlen.txt" % (i) for i in [0, 4, 8]]
+names = ["H1-NCP-sp-%s" % (i) for i in [0, 4, 8]]
+
 
 
 rlen_count_list = []
@@ -68,17 +105,19 @@ fig = plt.figure()
 for i in range(len(names)):
     name = names[i]
     X, Y = X_list[i], Y_list[i]
+    #plt.plot(X, Y, label=name, alpha=1)
     plt.plot(X, Y, color=cmap(color_list[i]), label=name, alpha=1)
     #plt.plot(X, Y, color='b', label=name, alpha=alpha_list[i])
 plt.xticks(range(0,500,50))
+#plt.xticks(range(0,500,10))
 plt.grid(True)
 plt.xlabel("Read length (bp)")
 plt.ylabel("Read counts")
 plt.title("Read length distribution")
 plt.legend()
 #plt.savefig(path+"rlen.png")
-plt.savefig(fname.split('.')[0]+".png")
-#plt.show()
+#plt.savefig(fname.split('.')[0]+".png")
+plt.show()
 plt.close()
 
 """

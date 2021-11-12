@@ -16,6 +16,7 @@ def bin_count (test_fnames,
                win_size,
                skip_zero,
                bin_GC,
+               tlen_option,
                mm_cutoff,
                min_len,
                max_len,
@@ -32,21 +33,24 @@ def bin_count (test_fnames,
     label.append(con_fname.rsplit('/')[-1])
 
     # partition the genome
-    g_count = {}
+    chr_bins = {}
     for chr in genome_size:
-        g_count[chr] = [0] * int(math.ceil(float(genome_size[chr]) / win_size))
-
+        chr_bins[chr] = [0] * int(math.ceil(float(genome_size[chr]) / win_size))
+        
     # output genome count dictionary
-    out = [copy.deepcopy(g_count) for i in range(len(data))]
+    out = [copy.deepcopy(chr_bins) for i in range(len(data))]
+
+    # mean tlen per each bin for control reads
+    if tlen_option:
+        g_tlen = copy.deepcopy(chr_bins)
     
     # open the sam file
-    for i in range(len(data)):
-        g_count = out[i]      
-        filename = data[i]
+    for k in range(len(data)):
+        g_count = out[k]      
+        filename = data[k]
         print >> sys.stderr, "reading %s" % (filename)
         samtools_cmd = ["samtools",  "view", "-F 0x10", filename]
         samtools_proc = subprocess.Popen(samtools_cmd, stdout=subprocess.PIPE, stderr=open("/dev/null", 'w'))
-
         for line in samtools_proc.stdout:
             if line.startswith('@'):
                 continue
@@ -108,10 +112,12 @@ def bin_count (test_fnames,
 
             # get NCP position as the center of full read
             if tlen > 0: # left read
+                # split the center if tlen is even
                 if tlen % 2 != 0:
                     NCPscore = [[pos+tlen/2, 1]]
                 else:
-                    NCPscore = [[pos+tlen/2-1, 0.5], [pos+tlen/2, 0.5]]
+                    #NCPscore = [[pos+tlen/2-1, 0.5], [pos+tlen/2, 0.5]]
+                    NCPscore = [[pos+tlen/2-1, 1]] # don't worry about even tlen case
             else: # right read
                 end_pos = pos
                 cigar_str=re.split('(\d+)',cigar_str)[1:]
@@ -120,15 +126,22 @@ def bin_count (test_fnames,
                     num = int(cigar_str[2*i])
                     if s == 'M' or s == 'D':
                         end_pos += num
+
+                # split the center if tlen is even
                 if tlen % 2 != 0:
                     NCPscore = [[end_pos+tlen/2-1, 1]]
                 else:
-                    NCPscore = [[end_pos+tlen/2-1, 0.5], [pos+tlen/2, 0.5]]
+                    #NCPscore = [[end_pos+tlen/2-1, 0.5], [pos+tlen/2, 0.5]]
+                    NCPscore = [[end_pos+tlen/2-1, 1]] # don't worry about even tlen case
 
             # collect valid data
             for NCPpos, score in NCPscore:
                 index = int(NCPpos) / int(win_size)
                 g_count[ref_id][index] += score
+
+                # record tlen for control
+                if tlen_option and k == len(data)-1:
+                    g_tlen[ref_id][index] += abs(tlen)
 
     # summarize the output
     print >> sys.stderr, "writing bin file"
@@ -140,7 +153,10 @@ def bin_count (test_fnames,
         s += '\t' + label[i]
     if bin_GC != None:
         s += '\t' + 'GCcontent'
+    if tlen_option:
+        s += '\t' + 'Meantlen'
     print >> f, s
+        
 
     ID = 0
     X_list = [[] for i in range(len(data)-1)]
@@ -164,6 +180,12 @@ def bin_count (test_fnames,
             if bin_GC != None:
                 BinID = chr + '_' + str(i)
                 s += '\t%f' % (bin_GC[BinID])
+            if tlen_option:
+                if out[-1][chr][i] > 0:
+                    mean_tlen = float(g_tlen[chr][i])/out[-1][chr][i]
+                else:
+                    mean_tlen = 0
+                s += '\t%f' % (mean_tlen)
             ID += 1
             print >> f, s
     f.close()
@@ -250,7 +272,14 @@ if __name__ == '__main__':
                         nargs='?',
                         const=True,
                         default=False,
-                        help='GC content option')    
+                        help='GC content option')
+    parser.add_argument('--tlen',
+                        dest="tlen_option",
+                        type=str2bool,
+                        nargs='?',
+                        const=True,
+                        default=False,
+                        help='tlen option')    
     parser.add_argument('-g',
                         dest="graph_option",
                         type=bool,
@@ -329,6 +358,7 @@ if __name__ == '__main__':
                win_size,
                args.skip_zero,
                bin_GC,
+               args.tlen_option,
                args.mm_cutoff,
                args.min_len,
                args.max_len,

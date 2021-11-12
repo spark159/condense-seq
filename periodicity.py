@@ -191,14 +191,16 @@ def stat_Kmer(seq_list, NCPlen, knum, bnum):
     return freq, sample_num, mean, std, stdz_freq
 
 
-path = './data/'
-ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+"hg19_chr1_NCP_ics_anot.cn")
-ID_score1 = name_ID_value["data/sp_spd_tests_detail/sp7"]
-ID_score2 = name_ID_value["data/sp_spd_tests_detail/sp8"]
+#path = './data/'
+path = ''
+ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+"H1_NCP_sp_chr1_anot.cn")
+ID_score1 = name_ID_value["work/2021_06_07_H1_sp_detail/H1-NCP-sp-8"]
+#ID_score2 = name_ID_value["work/2021_06_07_H1_sp_detail/H1-NCP-sp-8"]
 ID_seq = name_ID_value['Sequence']
 ID_AT = name_ID_value['ATcontent']
-ID_CG = name_ID_value['CpGNumber']
-ID_me = name_ID_value['meGCNumber']
+ID_CG = name_ID_value['CNumber(CpG)']
+ID_me = name_ID_value['meCNumber(CpG)']
+
 
 # Partition by score
 med = np.median(ID_score1.values())
@@ -315,9 +317,9 @@ plt.xticks([147/2 + 10*i for i in range(-7, 8)], [str(10*i) for i in range(-7,8)
 #plt.ylabel("Relative frequency")
 #plt.legend()
 #plt.ylim([0.22, 0.28])
-#plt.savefig('ATGCperiod_' + "slide" + '.png')
+plt.savefig('ATGCperiod_' + "slide" + '.png')
 plt.title("Dinucleotide periodicity")
-plt.show()
+#plt.show()
 plt.close()
 
 fig = plt.figure()
@@ -331,11 +333,15 @@ ax = plt.gca()
 ax.yaxis.tick_right()
 #plt.tick_params(axis='y', which='both', labelleft='off', labelright='on')
 plt.xticks([])
-plt.show()
+plt.savefig("cbar.png", bbox_inches='tight')
+#plt.show()
+plt.close()
 
 
 # correlation analysis
-def correlate (sig1, sig2, max_dist=sys.maxint, circular=False):
+def correlate (sig1, sig2, max_dist=sys.maxint, circular=False, clip=10):
+    sig1 = sig1[clip:len(sig1)-clip]
+    sig2 = sig2[clip:len(sig2)-clip]
     sig1 = np.asarray(sig1) - np.mean(sig1)
     sig2 = np.asarray(sig2) - np.mean(sig2)
     dist_products = {}
@@ -351,7 +357,8 @@ def correlate (sig1, sig2, max_dist=sys.maxint, circular=False):
         corr_sig[dist] = np.mean(products)
     return corr_sig
 
-def FFT (sig):
+def FFT (sig, clip=10):
+    sig = sig[clip:len(sig)-clip]
     N = len(sig)
     sig_ft = fft(sig)[1:N/2]
     periods = [float(N)/k for k in range(1, N/2)]
@@ -481,7 +488,8 @@ Map = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
 Map.set_array([])
 plt.colorbar(Map, label='Mean frequency')
 plt.tight_layout()
-plt.show()
+plt.savefig("ATGC_amplt_phase.png", bbox_inches='tight')
+#plt.show()
 plt.close()
 
 # check all dinucleotides
@@ -601,7 +609,7 @@ rlabel_list[2] = ''
 rlabel_list[4] = ''
 ax.set_rticks(rtick_list) 
 ax.set_yticklabels(rlabel_list)
-#plt.title("Dinucleotide peridiocity change")
+plt.title("Dinucleotide peridiocity change")
 plt.tight_layout()
 plt.show()
 plt.close()

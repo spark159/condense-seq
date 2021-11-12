@@ -31,10 +31,19 @@ index_seq = read_index("NEB_6N_single_index.csv")
 
 assert len(set(index_seq.values())) == len(index_seq)
 
-left = 'CAAGCAGAAGACGGCATACGAGAT'
-right = 'CCTAGGTCTCTGATGCTG'
+## Oncohistone library
+#left = 'CAAGCAGAAGACGGCATACGAGAT'
+#right = 'CCTAGGTCTCTGATGCTG'
+#prefix = "Oncolib_index"
 
-f = open("Oncolib_index_primers.csv", 'w')
+
+# PTM library
+left = 'CAAGCAGAAGACGGCATACGAGAT'
+right = 'CTGGAGAATCCCGGTG'
+prefix = "PTMlib_index"
+
+
+f = open(prefix+"_primers.csv", 'w')
 print >> f, "%s\t%s\t%s" % ("Well Position", "Name", "Sequence")
 
 pt = 1
@@ -42,10 +51,10 @@ Done = False
 for letter in list('ABCDEFGH'):
     for number in range(1, 13):
         well_position = letter + str(number)
-        name = "Oncolib_index " + str(pt)
+        name = prefix + ' ' + str(pt)
         try:
             seq = left + rev_comp(index_seq[pt]) + right
-            assert len(seq) == 48
+            assert len(seq) == len(left) + len(right) + 6
             print >> f, "%s\t%s\t%s" % (well_position, name, seq)
         except:
             Done = True

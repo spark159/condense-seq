@@ -4,6 +4,14 @@ import math
 import copy
 import time
 
+# get the reverse complementary of sequence
+def rev_cmp (seq):
+    dic={'A':'T', 'T':'A', 'C':'G', 'G':'C', 'N':'N'}
+    output=''
+    for nt in seq:
+        output+=dic[nt]
+    return output[::-1]
+
 # get AT content of sequence
 def AT_content(seq):
     seq = seq.upper()
@@ -13,14 +21,18 @@ def AT_content(seq):
             output += 1.0
     return output/len(seq)
 
-# get CpG motif number
-def CpG_num (seq):
+# get the number of C in the target motif in both strand
+def C_motif (seq, motif='CG', both=True):
     seq = seq.upper()
     num = 0
     for i in range(len(seq)-1):
-        if seq[i:i+2] == 'CG':
+        if seq[i:i+2] == motif:
             num += 1
-    num = 2*num # both strands
+    if both:
+        rev_seq = rev_cmp(seq)
+        for i in range(len(rev_seq)-1):
+            if rev_seq[i:i+2] == motif:
+                num +=1
     return num
 
 def binary_search (sortlist, target):
@@ -429,10 +441,10 @@ def combine_all(Ncov_fname,
                 Int_dict = double_hash(ID_interval, 100000, genome_size[chr])
                 chr_intdic[chr] = Int_dict
 
-    # read bisulfite-seq file and get the number of methylated GC for each NCP
+    # read bisulfite-seq file and get the number of methylated C for each NCP
     def read_BS_file (fname, Int_dict, chr):
-        ID_CpG = {} # num of CpG site
-        ID_me = {}  # num of methylated CpG site
+        ID_C = {} # num of C in the target motif
+        ID_meC = {}  # num of methylated C in the target motif 
         First = True
         line_count = -1
         for line in open(fname):
@@ -441,46 +453,59 @@ def combine_all(Ncov_fname,
             if First:
                 First = False
                 continue
-            chrname, pos, strand, count, total = cols
+            chrname, st, ed, _, _, strand, _, _, _, reads, frac = cols
             if chrname != chr:
                 continue
-            pos = int(pos) - 1
+            pos = int(st)
             findIDs = Int_dict.insert(pos, 1)
-            count, total = int(count), int(total)
-            if total <= 0:
-                sig = 0.5
+            reads, frac = int(reads), 0.01*float(frac)
+            if reads <= 0:
+                sig = 0
+                #sig = 0.5
                 #continue
             else:
-                sig = float(count) / total
+                sig = frac
             for ID in findIDs:
-                if ID not in ID_me:
-                    ID_me[ID] = 0.0
-                ID_me[ID] += sig
-        ID_CpG = Int_dict.get()
-        return ID_CpG, ID_me
+                if ID not in ID_meC:
+                    ID_meC[ID] = 0.0
+                ID_meC[ID] += sig
+        ID_C = Int_dict.get()
+        return ID_C, ID_meC
 
-    ID_CpG = {}
-    ID_me = {}
+    bs_ID_C = {}
+    bs_ID_meC = {}
     if bs_fname:
         for chr in chr_list:
-            intdict = copy.deepcopy(chr_intdic[chr])
-            temp1, temp2 = read_BS_file(bs_fname, intdict, chr)
-            ID_CpG.update(temp1)
-            ID_me.update(temp2)
-        del intdict
+            for bs in bs_fname:
+                intdict = copy.deepcopy(chr_intdic[chr])
+                fname = bs_fname[bs]
+                ID_C, ID_meC = read_BS_file(fname, intdict, chr)
+                if bs not in bs_ID_C:
+                    bs_ID_C[bs] = {}
+                if bs not in bs_ID_meC:
+                    bs_ID_meC[bs] = {}
+                bs_ID_C[bs].update(ID_C)
+                bs_ID_meC[bs].update(ID_meC)
+        del intdict, ID_C, ID_meC
         print >> sys.stderr, "BS reading is done"
 
     # read chip-seq file and get signal for each NCP 
-    def read_chip_file (fname, Int_dict, chr):
+    def read_chip_file (fname, Int_dict, chr, unit='signal'):
         count = -1
         for line in open(fname):
             count += 1
             cols = line.strip().split()
-            chrname, st, ed = cols[0], int(cols[1]), int(cols[2])
+            chrname, st, ed, peakname, _, strand, signal, pvalue, qvalue = cols[:9]
             if chrname != chr:
                 continue
-            score = float(cols[4])
-            Int_dict.insert_range(st, ed+1, score)
+            if unit == 'signal':
+                score = float(signal)
+            elif unit == 'pvalue':
+                score = float(pvalue)
+            elif unit == 'qvalue':
+                score = float(qvalue)
+            st, ed = int(st), int(ed)
+            Int_dict.insert_range(st, ed, score)
         return Int_dict.get()
 
     chip_ID_signal = {}
@@ -492,9 +517,8 @@ def combine_all(Ncov_fname,
                 ID_signal = read_chip_file(fname, intdict, chr)
                 if chip not in chip_ID_signal:
                     chip_ID_signal[chip] = ID_signal
-                else:
-                    chip_ID_signal[chip].update(ID_signal)
-        del intdict
+                chip_ID_signal[chip].update(ID_signal)
+        del intdict, ID_signal
         print >> sys.stderr, "Chip reading is done"
 
     del chr_intdic
@@ -511,9 +535,10 @@ def combine_all(Ncov_fname,
     if full_seq:
         s += '\t' + 'Sequence'
     s += '\t' + 'ATcontent'
-    if bs_fname:
-        s += '\t' + 'CpGNumber'
-        s += '\t' + 'meGCNumber'
+    bs_names = sorted(bs_ID_C.keys())
+    for bs in bs_names:
+        s += '\t' + 'CNumber(%s)' % (bs)
+        s += '\t' + 'meCNumber(%s)' % (bs)
     chip_names = sorted(chip_ID_signal.keys())
     for chip in chip_names:
         s += '\t' + chip
@@ -535,17 +560,17 @@ def combine_all(Ncov_fname,
         if full_seq:
             s += '\t' + seq
         s += '\t' + str(round(AT_content(seq), 5))
-        if bs_fname:
+        for bs in bs_names:
             try:
-                CpG = int(ID_CpG[ID])
+                C = int(bs_ID_C[bs][ID])
             except:
-                CpG = 0
-            s += '\t' + str(CpG)
+                C = 0
+            s += '\t' + str(C)
             try:
-                me = round(ID_me[ID],5)
+                meC = round(bs_ID_meC[bs][ID],5)
             except:
-                me = 0.0
-            s += '\t' + str(me)
+                meC = 0.0
+            s += '\t' + str(meC)
         for chip in chip_names:
             ID_signal = chip_ID_signal[chip]
             try:
@@ -593,12 +618,13 @@ if __name__ == '__main__':
     parser.add_argument('--bs',
                         dest="bs_fname",
                         type=str,
-                        help='bisulfite sequencing file')
+                        nargs='+',
+                        help='bisulfite sequencing files (order: name, bedMethyl file)')
     parser.add_argument('--chip',
                         dest="chip_fname",
                         type=str,
                         nargs='+',
-                        help='chip sequencing files (order: name, file)')
+                        help='chip sequencing files (order: name, peak bed file)')
     parser.add_argument('--full-seq',
                         dest="full_seq",
                         type=str2bool,
@@ -636,6 +662,19 @@ if __name__ == '__main__':
     else:
         chr_list = sorted(args.chr_list)
 
+    bs_fname = {}
+    if args.bs_fname:
+        flen = len(args.bs_fname)
+        if flen % 2 != 0:
+            print >> sys.stderr, "not right order of names or miss name"
+            sys.exit(1)
+        for i in range(flen):
+            if i % 2 == 0:
+                bs = args.bs_fname[i]
+            else:
+                fname = args.bs_fname[i]
+                bs_fname[bs] = fname
+
     chip_fname = {}
     if args.chip_fname:
         flen = len(args.chip_fname)
@@ -663,10 +702,9 @@ if __name__ == '__main__':
                 args.ref_fname,
                 NCP_len,
                 bin_step,
-                args.bs_fname,
+                bs_fname,
                 chip_fname,
                 args.full_seq,
                 chr_list,
                 genome_size,
-                args.out_fname
-               )
+                args.out_fname)

@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import load_file
 import statis
+import sys
 
 def pair_plot (profile1, profile2, offset=-1000, xtick_loc_name=None, xlabel='Distance from TSS (bp)', ylabel1='Condensability (A.U.)', ylabel2="", title="", note=""):
     assert len(profile1) == len(profile2)
@@ -35,40 +36,74 @@ def pair_plot (profile1, profile2, offset=-1000, xtick_loc_name=None, xlabel='Di
     plt.close()
 
 
-feature = 'TTS'
+#feature = 'TTS'
 #offset = -33
 #offset = -20
 #offset = -66
 #xtick_locs = [-25, 0, 55]
 #xtick_locs = [-10, 0, 60, 70]
+#xtick_locs = [-100, 0, 60, 70]
 #xtick_locs = [-55, 0, 25]
 #xtick_names = ["-1kb", "TSS", "2kb"]
 #xtick_names = ["-2.5kb", "TSS", "TTS", "2.5kb"]
 #xtick_names = ["-2kb", "TTS", "1kb"]
-xtick_loc_name = [xtick_locs, xtick_names]
+#xtick_loc_name = [xtick_locs, xtick_names]
 
 #name_mean_profile, name_ID_profile = load_file.read_profile(profile_fname)
 
 #GC_profile = name_mean_profile['GCcontent']
 #control_profile = name_mean_profile["sp_spd_test9.bam"]
 
-for k in range(4):
-    profile_fname = feature
-    if k % 2 == 0:
-        profile_fname += "_NCP"
-    else:
-        profile_fname += "_DNA"
-    if k < 2:
-        profile_fname += "_spermine"
-    else:
-        profile_fname += "_spermidine"
-    profile_fname += "_profile.txt"
-    name_mean_profile, name_ID_profile = load_file.read_profile(profile_fname)
-    GC_profile = name_mean_profile['GCcontent']
-    for i in range(1, 8):
-        name = "sp_spd_test" + str(k*8+i+1) + ".bam"
-        mean_profile = name_mean_profile[name] / name_mean_profile["sp_spd_test" + str(k*8+1) + ".bam"] 
-        pair_plot(mean_profile, GC_profile, offset=offset, xtick_loc_name=xtick_loc_name, ylabel1='Normalized Counts', ylabel2="GC content", title=profile_fname.split('.')[0] + "_" + str(i), note=profile_fname.split('.')[0] + "_" + str(i))
+feature = 'TSS-TTS'
+offset = -200
+xtick_locs = [-100, 0, 600, 700]
+xtick_names = ["-2.5kb", "TSS", "TTS", "2.5kb"]
+xtick_loc_name = [xtick_locs, xtick_names]
+moving_average_win = 20
+
+cells = ['H1']
+samples = ['DNA', 'NCP']
+agents = ['sp', 'spd', 'CoH', 'PEG', 'Mg', 'Ca']
+
+for cell in cells:
+    for sample in samples:
+        for agent in agents:
+            profile_fname = '_'.join([cell, sample, agent, '1kb', feature]) + "_profile.txt"
+            try:
+                name_mean_profile, name_ID_profile = load_file.read_profile(profile_fname)
+            except:
+                break
+            AT_profile = statis.moving_average(name_mean_profile['ATcontent'], moving_average_win)
+            #AT_profile = name_mean_profile['ATcontent']
+            for i in range(1, 10):
+                name = '-'.join([cell, sample, agent, str(i)]) + '.bam'
+                try:
+                    mean_profile = statis.moving_average(name_mean_profile[name], moving_average_win)
+                    #mean_profile = name_mean_profile[name]
+                except:
+                    break
+                pair_plot(mean_profile, AT_profile, offset=offset, xtick_loc_name=xtick_loc_name, ylabel1='Score (A.U.)', ylabel2="AT content", title=profile_fname.split('.')[0] + "_" + str(i), note=profile_fname.split('.')[0] + "_" + str(i))
+
+sys.exit(1)
+
+
+#for k in range(4):
+#    profile_fname = feature
+#    if k % 2 == 0:
+#        profile_fname += "_NCP"
+#    else:
+#        profile_fname += "_DNA"
+#    if k < 2:
+#        profile_fname += "_spermine"
+#    else:
+#        profile_fname += "_spermidine"
+#    profile_fname += "_profile.txt"
+#    name_mean_profile, name_ID_profile = load_file.read_profile(profile_fname)
+#    GC_profile = name_mean_profile['GCcontent']
+#    for i in range(1, 8):
+#        name = "sp_spd_test" + str(k*8+i+1) + ".bam"
+#        mean_profile = name_mean_profile[name] / name_mean_profile["sp_spd_test" + str(k*8+1) + ".bam"] 
+#        pair_plot(mean_profile, GC_profile, offset=offset, xtick_loc_name=xtick_loc_name, ylabel1='Normalized Counts', ylabel2="GC content", title=profile_fname.split('.')[0] + "_" + str(i), note=profile_fname.split('.')[0] + "_" + str(i))
 """
 for i in range(1, 9):
     name = "sp_spd_test" + str(i) + ".bam"

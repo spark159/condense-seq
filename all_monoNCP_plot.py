@@ -11,19 +11,27 @@ import Interval_dict
 from scipy.stats import gaussian_kde
 
 #path = "/home/spark159/../../media/spark159/sw/sp_spd_tests_detail/"
-path='./data/'
+#path='./data/'
+path = ""
 
 #GC/me/PTM analysis
 #ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+ "hg19_chr1_1001win501step_anot.cn")
-ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+ "hg19_chr1_NCP_anot.cn")
+ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+ "H1_NCP_sp_chr1_anot.cn")
 
-ID_score1 = name_ID_value["data/sp_spd_tests_detail/sp7"]
-ID_score2 = name_ID_value["data/sp_spd_tests_detail/sp8"]
+ID_score1 = name_ID_value["work/2021_06_07_H1_sp_detail/H1-NCP-sp-4"]
+ID_score2 = name_ID_value["work/2021_06_07_H1_sp_detail/H1-NCP-sp-8"]
 ID_AT = name_ID_value['ATcontent']
 
 for ID in ID_AT:
     ID_AT[ID] = 100*ID_AT[ID]
 
+graphics.Scatter_plot(ID_AT, ID_score1, note='H1-NCP-sp-4', ylim=[-2.5, 3])
+graphics.Scatter_plot(ID_AT, ID_score2, note='H1-NCP-sp-8', ylim=[-2.5, 3])
+
+#sys.exit(1)
+
+
+ID_score = ID_score1
 X, Y = [], []
 xvalue_scores = {}
 for ID in ID_score1.keys():
@@ -34,7 +42,7 @@ for ID in ID_score1.keys():
     if xvalue not in xvalue_scores:
         xvalue_scores[xvalue] = []
     xvalue_scores[xvalue].append(score)
-    
+
 Xmean, Ymean, Yerr = [], [], []
 for xvalue in xvalue_scores:
     if len(xvalue_scores[xvalue]) <= 1:
@@ -42,7 +50,7 @@ for xvalue in xvalue_scores:
     Xmean.append(xvalue)
     Ymean.append(np.mean(xvalue_scores[xvalue]))
     Yerr.append(np.std(xvalue_scores[xvalue]/np.sqrt(len(xvalue_scores[xvalue]))))
- 
+
 # Calculate the point density
 X, Y = np.asarray(X), np.asarray(Y)
 XY = np.vstack([X,Y])
@@ -58,7 +66,8 @@ plt.errorbar(Xmean, Ymean, yerr=Yerr, fmt='k.')
 plt.plot(Xmean, Ymean,'k.')
 plt.xlabel("AT content (%)")
 plt.ylabel("Condensability (A.U.)")
-plt.ylim([-3, 3.5])
+plt.ylim([-2.5, 3])
+plt.savefig("ATvsCondensability_scatter.png")
 plt.show()
 plt.close()
 

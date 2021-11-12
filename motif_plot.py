@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import statis
+import matplotlib.cm as cm
 
 def tuple_cmp(a, b):
     if a[0] < b[0]:
@@ -17,9 +18,9 @@ def rev_cmp (seq):
         output+=dic[nt]
     return output[::-1]
 
-def read_motif (fname, data_choice):
-    ID_info = {}
-    ID_seq = {}
+def read_motif (fname, data_choice=None):
+    name_ID_info = {}
+    name_ID_seq = {}
     First = True
     for line in open(fname):
         line = line.strip()
@@ -29,14 +30,26 @@ def read_motif (fname, data_choice):
         if First:
             First = False
             continue
-        sample, ID, chr, pos, strand, weight, seq = cols
-        if sample != data_choice:
+        name, ID, chr, pos, strand, weight, seq = cols
+
+        if data_choice != None and name != data_choice:
             continue
-        assert ID not in ID_info
-        assert ID not in ID_seq
-        ID_info[ID] = (sample, chr, int(pos), strand, int(weight))
-        ID_seq[ID] = seq.upper()
-    return ID_info, ID_seq
+        
+        if name not in name_ID_info:
+            name_ID_info[name] = {}
+        assert ID not in name_ID_info[name]
+        name_ID_info[name][ID] = (chr, int(pos), strand, int(weight))
+
+        if name not in name_ID_seq:
+            name_ID_seq[name] = {}
+        assert ID not in name_ID_seq[name] 
+        name_ID_seq[name][ID] = seq.upper()
+
+    if data_choice != None:
+        return name_ID_info[data_choice], name_ID_seq[data_choice]
+        
+    return name_ID_info, name_ID_seq
+
 
 def AG_freq (NCP_seq_list):
     nucleosome_dna_len = len(NCP_seq_list[0])
@@ -50,41 +63,64 @@ def AG_freq (NCP_seq_list):
                 Gfreq[i] += 1.0
     return Afreq / len(NCP_seq_list), Gfreq / len(NCP_seq_list)
 
+names = ['work/2021_06_07_H1_sp_detail/H1-NCP-sp-0', 'work/2021_06_07_H1_sp_detail/H1-NCP-sp-4', 'work/2021_06_07_H1_sp_detail/H1-NCP-sp-8']
 
-ID_info1, ID_seq1 = read_motif("output_motif.txt", data_choice="data/sp_spd_tests_detail/sp1")
-print "reading done"
+name_Afreq, name_Gfreq = {}, {}
+for name in names:
+    ID_info, ID_seq = read_motif("H1_NCP_sp_chr1_motif.txt", data_choice=name)
+    print name, "reading done"
+    
+    weight_seq = []
+    for ID in ID_info:
+        info = ID_info[ID]
+        seq = ID_seq[ID]
+        weight = info[-1]
+        weight_seq.append([weight, seq])
+
+    weight_seq = sorted(weight_seq, cmp=tuple_cmp, reverse=True)
+
+    # select top 90 %
+    weight_seq = weight_seq[:int(len(weight_seq)*0.9)]
+
+    seq_list = []
+    for weight, seq in weight_seq:
+        seq_list.append(seq[:147])
+        seq_list.append(seq[1:148])
+        seq_list.append(seq[2:149])
+        seq_list.append(rev_cmp(seq)[:147])
+        seq_list.append(rev_cmp(seq)[1:148])
+        seq_list.append(rev_cmp(seq)[2:149])
+    del weight_seq
+    
+    print name, "pooling sequences done"
+    
+    Afreq, Gfreq = AG_freq(seq_list)
+    del seq_list
+
+    name_Afreq[name] = Afreq
+    name_Gfreq[name] = Gfreq
+
+    print name, "frequency calculation done"
 
 
-weight_seq = []
-for ID in ID_info1:
-    info = ID_info1[ID]
-    seq = ID_seq1[ID]
-    weight = info[-1]
-    weight_seq.append([weight, seq])
-
-weight_seq = sorted(weight_seq, cmp=tuple_cmp, reverse=True)
-
-seq_list1 = []
-for ID in ID_seq1:
-    seq = ID_seq1[ID]
-    seq_list1.append(seq[:147])
-    seq_list1.append(seq[1:148])
-    seq_list1.append(seq[2:149])
-    seq_list1.append(rev_cmp(seq)[:147])
-    seq_list1.append(rev_cmp(seq)[1:148])
-    seq_list1.append(rev_cmp(seq)[2:149])
-
-print "combine done"
-Afreq1, Gfreq1 = AG_freq(seq_list1)
+# plot dinucleotide frequency
+color_list = np.linspace(0.3, 1, num=len(names))
+cmap1, cmap2 = cm.get_cmap("OrRd"), cm.get_cmap("GnBu")
 
 fig, ax1 = plt.subplots()
-ax1.plot(Afreq1, 'r')
+ax2 = ax1.twinx()
+
+for i in range(len(names)):
+    name = names[i]
+    Afreq, Gfreq = name_Afreq[name], name_Gfreq[name]
+    ax1.plot(Afreq, color=cmap1(color_list[i]), label = name.split('/')[-1])
+    ax2.plot(Gfreq, color=cmap2(color_list[i]), label = name.split('/')[-1])
+
 ax1.set_ylabel('AA/AT/TA/TT freqeuncy', color='r')
 ax1.tick_params('y', colors='r')
-ax2 = ax1.twinx()
-ax2.plot(Gfreq1, 'b')
 ax2.set_ylabel('CC/CG/GC/GG freqeuncy', color='b')
 ax2.tick_params('y', colors='b')
+
 mid = 147/2
 line_list = [mid - i*20 for i in range(4)] + [mid + i*20 for i in range(1, 4)]
 xlabel_list = ['SHL' + str(-2*i) for i in range(4)] + ['SHL' + str(2*i) for i in range(1, 4)]
@@ -94,7 +130,9 @@ for line in line_list:
 
 ax1.set_xticks(line_list)
 ax1.set_xticklabels(xlabel_list)
+ax1.legend(loc='upper left')
+ax2.legend(loc='lower right')
 plt.title("Dinucleotide frequency")
 plt.savefig("DinFreq.png", bbox_inches='tight')
-plt.show()
+#plt.show()
 plt.close()

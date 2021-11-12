@@ -36,11 +36,14 @@ def make_bedgraph (fname, binID_value, bin_size, header=None):
         print >> f, "chr1\t" + "%d\t%d\t%f" % (st, ed, value)
     f.close()
 
-bin_size = 50000
+#bin_size = 50000
+bin_size = 1000000
 
-path = "./data/"
+path = ""
+#path = "./data/"
 #fnames = ['eigen_WT_50kb.txt', 'eigen_CohesinKO_50kb.txt']
-fnames = ["eigen_GM12878_50kb.txt"]
+#fnames = ["eigen_GM12878_50kb.txt"]
+fnames = ["eigen_H1_1Mb.txt"]
 for i in range(len(fnames)):
     fname = fnames[i]
     eigen_list, interval_list = read_eigenfile(path+fname, bin_size=bin_size)

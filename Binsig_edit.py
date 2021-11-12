@@ -16,6 +16,7 @@ def Bin_sig (cov_fname,
              bin_size,
              bin_step,
              skip_zero,
+             mean_choice,
              chr_list,
              sample_choice,
              out_fname):
@@ -69,10 +70,14 @@ def Bin_sig (cov_fname,
                 name = label[i]
                 if name not in target:
                     continue
-                count = round(float(counts[i]), 3)
+                try:
+                    value = round(float(counts[i]), 3)
+                except:
+                    continue
                 if name not in chr_Bsig[chr][(st, ed)]:
-                    chr_Bsig[chr][(st, ed)][name] = 0
-                chr_Bsig[chr][(st, ed)][name] += count
+                    chr_Bsig[chr][(st, ed)][name] = {'total':0.0, 'count':0}
+                chr_Bsig[chr][(st, ed)][name]['total'] += value
+                chr_Bsig[chr][(st, ed)][name]['count'] += 1
             idx -= 1
             if idx < 0:
                 break
@@ -93,18 +98,24 @@ def Bin_sig (cov_fname,
             st, ed = chr_st[chr][i], chr_ed[chr][i]
             if skip_zero:
                 try: 
-                    total = sum(chr_Bsig[chr][(st, ed)].values())
+                    grandtotal = sum([chr_Bsig[chr][(st, ed)][name]['total'] for name in target])
                 except:
                     continue
-                if total <= 0:
+                if grandtotal <= 0:
                     continue
             BINpos = (st + ed)/2
             s = str(ID) + "\t" + chr + "\t" + str(BINpos)
             for name in target:
                 try:
-                    score = chr_Bsig[chr][(st, ed)][name]
+                    score = chr_Bsig[chr][(st, ed)][name]['total']
+                    if mean_choice:
+                        count = chr_Bsig[chr][(st, ed)][name]['count']
+                        score /= float(count)
                 except:
-                    score = 0
+                    if mean_choice:
+                        score = '-'
+                    else:
+                        score = 0
                 s += "\t" + str(score)
             print >> f, s
             ID += 1
@@ -150,6 +161,13 @@ if __name__ == '__main__':
                         const=True,
                         default=False,
                         help='skip the zero coverage positions')
+    parser.add_argument('--mean',
+                        dest="mean_choice",
+                        type=str2bool,
+                        nargs='?',
+                        const=True,
+                        default=False,
+                        help='Average the binned signals for each bin')
     parser.add_argument('--chr',
                         dest="chr_list",
                         type=str,
@@ -191,6 +209,7 @@ if __name__ == '__main__':
              args.bin_size,
              args.bin_step,
              args.skip_zero,
+             args.mean_choice,
              chr_list,
              args.sample_choice,
              args.out_fname)

@@ -13,13 +13,13 @@ import sklearn.manifold
 from sklearn.decomposition import PCA
 from sklearn import preprocessing
 from sklearn.neighbors import LocalOutlierFactor
-from pymol_graphics import Molecules
+#from pymol_graphics import Molecules
 import random
 from scipy.optimize import curve_fit
 from sklearn import linear_model
 from matplotlib.patches import Patch
 from matplotlib.lines import Line2D
-import pickle
+import matplotlib
 
 
 def GC_content(seq):
@@ -28,54 +28,6 @@ def GC_content(seq):
         if nt in 'GC':
             num+=1
     return (num/float(len(seq)))*100
-
-
-# Oncohistone libraray NGS informatino
-def read_index (fname):
-    index_name, name_index = {}, {}
-    name_titr = {}
-    First = True
-    for line in open(fname):
-        if First:
-            First = False
-            continue
-        cols = line.strip().split('\t')
-        index = cols[-1]
-        name = cols[0]
-        titr = int(cols[3])
-        assert index not in index_name
-        assert name not in name_index
-        index_name[index] = name
-        name_index[name] = index
-        name_titr[name] = titr
-    return index_name, name_index, name_titr
-index_name, name_index, name_titr = read_index("Oncolib_NGS_information.csv")
-
-# Oncohistone library barcode information
-def read_table (fname):
-    BC_BCnum, BCnum_BC = {}, {}
-    BC_histone, histone_BC = {}, {}
-    First = True
-    for line in open(fname):
-        if First:
-            First = False
-            continue
-        cols = line.strip().split('\t')
-        BC = cols[-2]
-        histone = cols[0].strip()
-        #BCnum = int(cols[-1].split('_')[1][2:])
-        if BC == '-':
-            continue
-        assert BC not in BC_histone
-        assert histone not in histone_BC
-        #assert BCnum not in BCnum_BC
-        #assert BC not in BC_BCnum
-        BC_histone[BC] = histone
-        histone_BC[histone] = BC
-        #BC_BCnum[BC] = BCnum
-        #BCnum_BC[BCnum] = BC
-    return BC_histone, histone_BC
-BC_histone, histone_BC = read_table("OncohistoneTable.csv")
 
 # read amino acid information
 def read_aa (fname):
@@ -103,265 +55,254 @@ def read_aa (fname):
     return aa_info
 aa_info = read_aa("amino_acid.txt")
 
-# read the published data
-def read_old (fname):
-    histone_mean = {}
+
+# PTM libraray NGS information
+def read_index (fname):
+    index_name, name_index = {}, {}
+    name_titr = {}
     First = True
     for line in open(fname):
         if First:
             First = False
             continue
+        cols = line.strip().split('\t')
+        index = cols[-1]
+        name = cols[0]
+        titr = int(cols[3])
+        assert index not in index_name
+        assert name not in name_index
+        index_name[index] = name
+        name_index[name] = index
+        name_titr[name] = titr
+    return index_name, name_index, name_titr
+index_name, name_index, name_titr = read_index("PTMlib_NGS_information.csv")
+
+
+# read PTM library information
+def read_table (fname):
+
+    # parsing the histone mutation information
+    def mhistone_parser (mhistone):
+        hname, mutations = re.split('(H2A(?:[.]\w)?|H2B|H3(?:[.]\d)?|H4)', mhistone)[1:]
+        pmutations = {}
+        pattern = '([A-Z])(\d+(?:,\d+)*)(ac|me2[as]|me[1-3]|me|ub|ph|cr|GlcNAc|[A-Z])'    
+        #print mhistone
+        #print mutations
+        #print re.findall(pattern, mutations)
+        for find in re.findall(pattern, mutations):
+            aa, pos_list, mutation = find
+            assert aa in aa_info.keys()
+            if mutation in aa_info.keys():
+                mtype = 'mut'
+            elif mutation.startswith('me'):
+                mtype = 'me'
+            else:
+                mtype = mutation
+            if mtype not in pmutations:
+                pmutations[mtype] = {}
+            for pos in pos_list.split(','):
+                pos = int(pos)
+                pmutations[mtype][pos] = (aa, mutation)
+        return hname, pmutations
+
+    ID_minfo = {}
+    ID_BC, BC_ID = {}, {}
+    First = True
+    for line in open(fname):
+        line = line.strip()
+        if First:
+            First = False
+            continue
         if not line:
             continue
-        
-        #print (line)
-        cols = line.strip().split(',')
-        rawname, mean, std = cols
-        mean = float(mean)
-        #mean, std = float(mean), float(std)
+        cols = line.split('\t')
+        ID, H2A, H2B, H3, H4, DNA, BC = cols
+        ID = int(ID)
+        assert ID not in ID_minfo
+        assert ID not in ID_BC
+        assert BC not in BC_ID
+        ID_minfo[ID] = {'H2A':H2A, 'H2B':H2B, 'H3':H3, 'H4':H4, 'DNA':DNA}
+        ID_BC[ID] = BC
+        BC_ID[BC] = ID
 
-        if rawname.startswith('H2A.V'):
-            histone = 'H2A.V ' + rawname[5:]
-        elif rawname.startswith('H2A.Z'):
-            histone = 'H2A.Z ' + rawname[5:]
-        elif rawname.startswith('H2A'):
-            histone = 'H2A ' + rawname[3:]
-        elif rawname.startswith('H2B'):
-            histone = 'H2B ' + rawname[3:]
-        elif rawname.startswith('H3.1'):
-            histone = 'H3.1 ' + rawname[4:]
-        elif rawname.startswith('H4'):
-            histone = 'H4 ' + rawname[2:]
-        elif rawname.startswith('H3.3'):
-            histone = 'H3.3 ' + rawname[4:]
+
+    ID_pminfo = {}
+    for ID, minfo in ID_minfo.items():
+        ID_pminfo[ID] = {}
+        for subunit in ['H2A', 'H2B', 'H3', 'H4']:
+            ID_pminfo[ID][subunit] = {}
+            if minfo[subunit] == 'NA':
+                ID_pminfo[ID][subunit]['name'] = None
+                ID_pminfo[ID][subunit]['mutations'] = {}
+                continue
+            hname, pmutations = mhistone_parser(minfo[subunit])
+            ID_pminfo[ID][subunit]['name'] = hname
+            ID_pminfo[ID][subunit]['mutations'] = pmutations
+
+        if minfo['DNA'] == 'NA':
+            ID_pminfo[ID]['DNA'] = None
         else:
-            histone = rawname
-            
-        histone = histone.strip()
-        histone_mean[histone] = mean
-    return histone_mean
+            ID_pminfo[ID]['DNA'] = minfo['DNA']
 
-histone_ACF = read_old("ACF.csv")
-histone_Nap1 = read_old("Nap1.csv")
-histone_freeDNA = read_old("Onco_freeDNA.csv")
+    # categorize IDs
+    #cate_list = ['freeDNA', 'WT', 'WT+CpGme', 'WT+mut', 'WT+PTM', 'Var', 'Var+mut']
+    cate_IDs, ID_cate = {}, {}
+    for ID, pminfo in ID_pminfo.items():
+        hnames, mtypes = set([]), set([])
+        for subunit in ['H2A', 'H2B', 'H3', 'H4']:
+            hname = pminfo[subunit]['name']
+            pmutations = pminfo[subunit]['mutations']
+            hnames.add(hname)
+            mtypes |= set(pmutations.keys())
 
+        cate = ""
+        if hnames == set([None]):
+            cate += 'freeDNA'
+        elif hnames == set(['H2A', 'H2B', 'H3', 'H4']):
+            cate += 'WT'
+        else:
+            #print hnames
+            assert len(hnames) == 4
+            cate += 'Var'
+
+        if len(mtypes) <= 0:
+            pass
+        elif mtypes == set(['mut']):
+            cate += '+mut'
+        else:
+            assert 'mut' not in mtypes
+            cate += '+PTM'
+
+        if pminfo['DNA'] == 'CpGme':
+            cate += '+CpGme'
+
+        if cate not in cate_IDs:
+            cate_IDs[cate] = []
+        cate_IDs[cate].append(ID)
+        ID_cate[ID] = cate
+
+        
+
+
+        
+    return ID_minfo, ID_BC, BC_ID
+ID_minfo, ID_BC, BC_ID = read_table('PTMlibTable.csv')
 
 # read sort file
-sort_fname = "Sp-Spd-CoHex-PEG-HP1a-Oncolib_S1_L001_R1_001.sort"
-validity_type_count = {}
-name_count = {}
-agent_num_histone_count = {}
-for line in open(sort_fname):
-    line = line.strip()
-    if line.startswith('@'):
-        validity, windows = line.split('::')[1].split(':')
-        if validity not in validity_type_count:
-            validity_type_count[validity] = {}
-        if windows not in validity_type_count[validity]:
-            validity_type_count[validity][windows] = 0
-        validity_type_count[validity][windows] +=1
-        if validity == 'invalid':
-            continue
-        BC, index = windows[1:-1].split('][')
-        try:
-            name = index_name[index]
-            histone = BC_histone[BC]
-        except:
-            continue
+def read_sort (fname)
+    validity_type_count = {}
+    name_count = {}
+    agent_num_ID_count = {}
+    for line in open(sort_fname):
+        line = line.strip()
+        if line.startswith('@'):
+            validity, windows = line.split('::')[1].split(':')
+            if validity not in validity_type_count:
+                validity_type_count[validity] = {}
+            if windows not in validity_type_count[validity]:
+                validity_type_count[validity][windows] = 0
+            validity_type_count[validity][windows] +=1
+            if validity == 'invalid':
+                continue
+            BC, index = windows[1:-1].split('][')
+            try:
+                name = index_name[index]
+                ID = BC_ID[BC]
+            except:
+                continue
 
-        if name not in name_count:
-            name_count[name] = 0
-        name_count[name] +=1
-        
-        agent = name[:-1]
-        num = int(name[-1])
-        if agent not in agent_num_histone_count:
-            agent_num_histone_count[agent] = {}
-        if num not in agent_num_histone_count[agent]:
-            agent_num_histone_count[agent][num] = {}
-        if histone not in agent_num_histone_count[agent][num]:
-            agent_num_histone_count[agent][num][histone] = 0
-        agent_num_histone_count[agent][num][histone] +=1
+            if name not in name_count:
+                name_count[name] = 0
+            name_count[name] +=1
+
+            agent = name[:-1]
+            num = int(name[-1])
+            if agent not in agent_num_ID_count:
+                agent_num_ID_count[agent] = {}
+            if num not in agent_num_ID_count[agent]:
+                agent_num_ID_count[agent][num] = {}
+            if ID not in agent_num_ID_count[agent][num]:
+                agent_num_ID_count[agent][num][ID] = 0
+            agent_num_ID_count[agent][num][ID] +=1
+    return validity_type_count, name_count, agent_num_ID_count
+#sort_fname = "Sp-Spd-CoHex-PEG-HP1a-PTMlib_S1_L001_R1_001.sort"
+sort_fname = "Sp-Spd-PTMlib-100kdfilter_S1_L001_R1_001.sort"
 
 
-# check data type
-types, counts = [], []
-for validity in validity_type_count:
-    if validity == 'valid':
-        type = 'valid'
-        count = sum(validity_type_count[validity].values())
-        types.append(type)
-        counts.append(count)
-    else:
-        for type, count in validity_type_count[validity].items():
-            types.append('invalid:' + type)
+# sort file QC
+if False:
+    # check data type
+    types, counts = [], []
+    for validity in validity_type_count:
+        if validity == 'valid':
+            type = 'valid'
+            count = sum(validity_type_count[validity].values())
+            types.append(type)
             counts.append(count)
+        else:
+            for type, count in validity_type_count[validity].items():
+                types.append('invalid:' + type)
+                counts.append(count)
 
-fig = plt.figure()
-plt.pie(counts, labels=types, shadow=True, startangle=90, autopct='%1.1f%%')
-#plt.show()
-plt.close()
-
-
-# check count by sample name
-X, Y = [], []
-for name, count in name_count.items():
-    X.append(name)
-    Y.append(count)
-
-fig = plt.figure()
-plt.bar(X, Y)
-plt.xticks(rotation=70)
-#plt.show()
-plt.close()
+    fig = plt.figure()
+    plt.pie(counts, labels=types, shadow=True, startangle=90, autopct='%1.1f%%')
+    #plt.show()
+    plt.close()
 
 
-# check count by BC (input sample only)
-all_histones = sorted(histone_BC.keys())
-fig = plt.figure()
-for agent in agent_num_histone_count.keys():
-    histone_count = agent_num_histone_count[agent][0]
+    # check count by sample name
     X, Y = [], []
-    for histone in all_histones:
-        X.append(histone)
-        Y.append(histone_count[histone])
-    plt.plot(range(len(Y)), Y, '.-', alpha=0.8, label=agent)
-plt.xlabel('Oncohistone IDs')
-plt.ylabel('Read counts')
-plt.legend()
-#plt.show()
-plt.close()
+    for name, count in name_count.items():
+        X.append(name)
+        Y.append(count)
+
+    fig = plt.figure()
+    plt.bar(X, Y)
+    plt.xticks(rotation=70)
+    #plt.show()
+    plt.close()
 
 
-# parsing the mutation information
-all_good_histones = list(set(all_histones) - set(['H3.1 K4M', 'H3.1 E97A', 'H4 G42V']))
-cate_histones = {}
-histone_minfo = {}
-for histone in all_good_histones:
-    if '-' in histone:
-        tag, subunit = histone.split('-')
-        if tag == 'Biotin':
-            pos = 115-1
-        else:
-            assert tag in ['HA', 'FLAG']
-            pos = 0
-        histone_minfo[histone] = {}
-        histone_minfo[histone][subunit] = {}
-        histone_minfo[histone][subunit]["tag"] = {}
-        histone_minfo[histone][subunit]["tag"][pos] = tag
+    # check count by BC (input sample only)
+    all_IDs = sorted(ID_BC.keys())
+    #agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
+    agent_list = ['sp', 'spd']
+    fig = plt.figure()
+    for agent in agent_list:
+        ID_count = agent_num_ID_count[agent][0]
+        X, Y = [], []
+        for ID in ID_count:
+        #for ID in all_IDs:
+            X.append(ID)
+            Y.append(ID_count[ID])
+        plt.plot(X, Y, '.-', alpha=0.8, label=agent)
+    #pstI_IDs = [71, 78, 113, 117]
+    #for x in pstI_IDs:
+    #    plt.axvline(x=x, color='black', linestyle='--', alpha=0.8, zorder=1)
+    #xtick_list = [0, 20, 40, 60, 80, 100, 120]
+    #plt.xticks(xtick_list + pstI_IDs, [str(xtick) for xtick in xtick_list] + ['\n'+str(ID) for ID in pstI_IDs], rotation=10)
+    plt.xlabel('PTM library IDs')
+    plt.ylabel('Read counts')
+    plt.title('Input read counts')
+    plt.legend()
+    #plt.show()
+    plt.close()
 
-        cate = 'tag'
-        if cate not in cate_histones:
-            cate_histones[cate] = []
-        cate_histones[cate].append(histone)
-        continue
-    
-    cols = histone.split(' ')
-    if len(cols) != 2:
-        assert len(cols) == 1
-        histone_minfo[histone] = {}
-        histone_minfo[histone][histone] = None
+#sys.exit(1)
 
-        cate = histone
-        assert cate not in cate_histones
-        cate_histones[cate] = [histone]
-        continue
-    
-    subunit, mutations = cols
 
-    if subunit.startswith('WT'):
-        histone_minfo[histone] = None
 
-        cate = 'WT'
-        if cate not in cate_histones:
-            cate_histones[cate] = []
-        cate_histones[cate].append(histone)
-        continue
-    
-    if mutations.startswith('DNA'):
-        histone_minfo[histone] = 'freeDNA'
 
-        cate = 'freeDNA'
-        if cate not in cate_histones:
-            cate_histones[cate] = []
-        cate_histones[cate].append(histone)
-        continue
 
-    finds_list = [re.findall('\d+|\D+', mut) for mut in mutations.split('/')]
-    for finds in finds_list: 
-        if len(finds) == 3:
-            pre_aa, pos, post_aa = finds
-            pos = int(pos)
-        elif len(finds) == 2:
-            if finds[0].isalpha():
-                pre_aa, pos = finds
-                pos = int(pos)
-                post_aa = finds_list[-1][-1]
-            else:
-                assert finds[1].isalpha()
-                pos, post_aa = finds
-                pos = int(pos)
-                pre_aa = finds_list[0][0]
-        else:
-            assert len(finds) == 1
-            pos = int(pos)
-            pre_aa = finds_list[0][0]
-            post_aa = finds_list[-1][-1]
 
-        if post_aa not in aa_info.keys():
-            type = 'tag'
-        else:
-            type = 'mut'
 
-        if histone not in histone_minfo:
-            histone_minfo[histone] = {}
-        if subunit not in histone_minfo[histone]:
-            histone_minfo[histone][subunit] = {}
-        if type not in histone_minfo[histone][subunit]:
-            histone_minfo[histone][subunit][type] = {}
+# remove IDs already susceptible to PstI digest
+# BCs with PstI site (ID 71, 78, 113) and free DNA with PstI site (ID 117)
+all_good_IDs = sorted(list(set(all_IDs) - set([71, 78, 113, 117])))
 
-        if type == 'tag':
-            histone_minfo[histone][subunit][type][pos] = post_aa
-        elif type == 'mut':
-            histone_minfo[histone][subunit][type][pos] = (pre_aa, post_aa)
-
-    if type == 'tag':
-        cate = 'tag'
-    else:
-        assert type == 'mut'
-        if subunit in ['H2A', 'H2B', 'H3.1', 'H4']:
-            cate = 'WT+mut'
-        else:
-            cate = subunit + '+mut'
-
-    if cate not in cate_histones:
-        cate_histones[cate] = []
-    cate_histones[cate].append(histone)
-
-# categorize histones
-histone_cate = {}
-for cate, histones in cate_histones.items():
-    for histone in histones:
-        histone_cate[histone] = cate
-
-# acidic patch amino acids
-AP_info = {"H2A":["E56", "E61", "E64", "D90", "E91", "E92"], "H2B":["E105", "E113"]}
-AP_sites = ["H2A E56", "H2A E61", "H2A E64", "H2A D90", "H2A E91", "H2A E92", "H2B E105", "H2B E113"]
-APmtype_histones = {"Positive":["H2A E56K", "H2A E61K", "H2A E64K", "H2A D90K", "H2A E91K", "H2A E92K", "H2B E105K", "H2B E113K"]}
-
-APmutants = []
-for histone in cate_histones['WT+mut']:
-    for subunit in histone_minfo[histone]:
-        for pos in histone_minfo[histone][subunit]['mut']:
-            pre_aa, post_aa = histone_minfo[histone][subunit]['mut'][pos]
-            name = "%s %s%s" % (subunit, pre_aa, pos)
-            #print (name)
-            if name in AP_sites:
-                APmutants.append(histone)
-                break
 
 # make absolute titration curve
-def read_data (fname):
+def read_titration_data (fname):
     conc_list = []
     mean_list = []
     std_list = []
@@ -379,28 +320,63 @@ def read_data (fname):
         std_list.append(std)
     return conc_list, mean_list, std_list
 
-agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
+#agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
+agent_list = ['sp', 'spd']
 agent_fullname = {'sp':'Spermine(4+)', 'spd':'Spermidine(3+)', 'CoH':'Cobalt Hexammine(3+)', 'PEG':'PEG 8000', 'HP1a':'HP1 $\\alpha$'}
-agent_filename = {'sp':"Oncolib_spermine.csv", 'spd':"Oncolib_spermidine.csv", 'CoH':"Oncolib_CoHex.csv", 'PEG':"Oncolib_PEG.csv", 'HP1a':"Oncolib_HP1a.csv"}
+#agent_filename = {'sp':"PTMlib_spermine.csv", 'spd':"PTMlib_spermidine.csv", 'CoH':"PTMlib_CoHex.csv", 'PEG':"PTMlib_PEG.csv", 'HP1a':"PTMlib_HP1a.csv"
+#agent_filename = {'sp':"PTMlib_spermine_corrected.csv", 'spd':"PTMlib_spermidine_corrected.csv", 'CoH':"PTMlib_CoHex_corrected.csv", 'PEG':"PTMlib_PEG.csv", 'HP1a':"PTMlib_HP1a.csv"}
+agent_filename = {'sp':"PTMlib_spermine_filter_corrected.csv", 'spd':"PTMlib_spermidine_filter_corrected.csv"}
 
-agent_num_histone_fraction = {}
+agent_num_ID_fraction = {}
 for agent in agent_list:
-    for num in agent_num_histone_count[agent]:
-        total = sum(agent_num_histone_count[agent][num].values())
-        histone_fraction = {}
-        for histone in agent_num_histone_count[agent][num]:
-            count = agent_num_histone_count[agent][num][histone]
+    for num in agent_num_ID_count[agent]:
+        total = sum(agent_num_ID_count[agent][num].values())
+        ID_fraction = {}
+        for ID in agent_num_ID_count[agent][num]:
+            count = agent_num_ID_count[agent][num][ID]
             fraction = float(count) / total
-            histone_fraction[histone] = fraction
-        if agent not in agent_num_histone_fraction:
-            agent_num_histone_fraction[agent] = {}
-        agent_num_histone_fraction[agent][num] = copy.deepcopy(histone_fraction)
+            ID_fraction[ID] = fraction
+        if agent not in agent_num_ID_fraction:
+            agent_num_ID_fraction[agent] = {}
+        agent_num_ID_fraction[agent][num] = copy.deepcopy(ID_fraction)
 
-agent_histone_titration = {}
+agent_ID_profile = {}
+for agent in agent_num_ID_fraction:
+    for num in sorted(agent_num_ID_fraction[agent]):
+        for ID in agent_num_ID_fraction[agent][num]:
+            try:
+                control = agent_num_ID_fraction[agent][0][ID]
+            except:
+                control = 1.0 # temporal
+            fold_change = agent_num_ID_fraction[agent][num][ID] / float(control)
+            if agent not in agent_ID_profile:
+                agent_ID_profile[agent] = {}
+            if ID not in agent_ID_profile[agent]:
+                agent_ID_profile[agent][ID] = []
+            agent_ID_profile[agent][ID].append(fold_change)
+
+# plot normalized fold change
+#agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
+agent_list = ['sp', 'spd']
 for agent in agent_list:
-    full_conc_list, full_mean_list, _ = read_data(agent_filename[agent])
+    fig = plt.figure()
+    for ID in all_good_IDs:
+        profile = agent_ID_profile[agent][ID]
+        p = plt.plot(range(len(profile)), profile, '.-', alpha=0.5, label=ID)
+        plt.annotate(str(ID), (len(profile)-1, profile[-1]), color=p[-1].get_color())
+    plt.xlabel("Titration point")
+    plt.ylabel("Normalized fold change")
+    plt.title(agent)
+    #plt.legend()
+    #plt.show()
+    plt.close()
+
+    
+agent_ID_titration = {}
+for agent in agent_list:
+    full_conc_list, full_mean_list, _ = read_titration_data(agent_filename[agent])
     #print (full_conc_list)
-    num_list = sorted(agent_num_histone_fraction[agent].keys())
+    num_list = sorted(agent_num_ID_fraction[agent].keys())
     for num in num_list:
         if num == 0:
             conc = 0.0
@@ -412,26 +388,74 @@ for agent in agent_list:
                 titr +=1
             conc = full_conc_list[titr]
             mean = full_mean_list[titr]
-            #print (titr)
-        for histone, fraction in agent_num_histone_fraction[agent][num].items():
+        for ID, fraction in agent_num_ID_fraction[agent][num].items():
             survival = mean * fraction
             #print (survival)
-            if agent not in agent_histone_titration:
-                agent_histone_titration[agent] = {}
-            if histone not in agent_histone_titration[agent]:
-                agent_histone_titration[agent][histone] = {}
-            if 'conc' not in agent_histone_titration[agent][histone]:
-                agent_histone_titration[agent][histone]['conc'] = []
-            if 'survival' not in agent_histone_titration[agent][histone]:
-                agent_histone_titration[agent][histone]['survival'] = []
-            agent_histone_titration[agent][histone]['conc'].append(conc)
-            agent_histone_titration[agent][histone]['survival'].append(survival)
+            if agent not in agent_ID_titration:
+                agent_ID_titration[agent] = {}
+            if ID not in agent_ID_titration[agent]:
+                agent_ID_titration[agent][ID] = {}
+            if 'conc' not in agent_ID_titration[agent][ID]:
+                agent_ID_titration[agent][ID]['conc'] = []
+            if 'survival' not in agent_ID_titration[agent][ID]:
+                agent_ID_titration[agent][ID]['survival'] = []
+            agent_ID_titration[agent][ID]['conc'].append(conc)
+            agent_ID_titration[agent][ID]['survival'].append(survival)
 
 for agent in agent_list:
-    for histone in list(agent_histone_titration[agent].keys()):
-        input = float(agent_histone_titration[agent][histone]['survival'][0])
-        for i in range(len(agent_histone_titration[agent][histone]['survival'])):
-            agent_histone_titration[agent][histone]['survival'][i] /= input
+    for ID in list(agent_ID_titration[agent].keys()):
+        input = float(agent_ID_titration[agent][ID]['survival'][0])
+        for i in range(len(agent_ID_titration[agent][ID]['survival'])):
+            agent_ID_titration[agent][ID]['survival'][i] /= input
+
+# plot survival probabilty 
+#agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
+agent_list = ['sp', 'spd']
+for agent in agent_list:
+    fig = plt.figure()
+    for ID in all_good_IDs:
+        X = agent_ID_titration[agent][ID]['conc']
+        Y = agent_ID_titration[agent][ID]['survival']
+        p = plt.plot(X[1:], Y[1:], '.-', alpha=0.5, label=ID)
+        plt.annotate(str(ID), (X[1], Y[1]), color=p[-1].get_color())
+    plt.title(agent)
+    plt.xlabel("Concentration")
+    plt.ylabel("Soluble fraction")
+    if agent in ['HP1a']:
+        plt.xscale('log', basex=2)
+    elif agent in ['sp', 'spd', 'CoH']:
+        plt.xscale('log', basex=10)
+    #plt.legend()
+    #plt.show()
+    plt.close()
+
+#sys.exit(1)
+
+##save survival probabilty data
+#agent_list = ['sp']
+#ID_list = sorted(list(set(all_good_IDs) - set([116])))
+#for agent in agent_list:
+#    First = True
+#    f = open("PTMlib_%s_score.txt" % (agent), 'w')
+#    for ID in ID_list:
+#        s = ""
+#        X = agent_ID_titration[agent][ID]['conc']
+#        Y = agent_ID_titration[agent][ID]['survival']
+#        if First:
+#            s = "ID" + '\t'
+#            s += '\t'.join(['score (%s %f mM)' % (agent, x) for x in X[1:]])
+#            s += '\t' + "mean score"
+#            First = False
+#            print >> f, s
+#            s = ""
+#        s += str(ID) + '\t'
+#        s += '\t'.join([str(-np.log2(y)) for y in Y[1:]])
+#        s += '\t' + str(np.mean([-np.log2(y) for y in Y[1:]]))
+#        print >> f, s
+#    f.close()
+
+#sys.exit(1)
+
 
 # define the metrics
 # fitting with sigmoidal curve and get "C-half"
@@ -440,27 +464,32 @@ def sigmoid(x, L ,x0, k):
     y = L / (1 + np.exp(k*(x-x0)))
     return (y)
 
-agent_histone_Chalf = {}
-agent_histone_fitting = {}
-agent_histone_score = {}
+agent_ID_Chalf = {}
+agent_ID_fitting = {}
+agent_ID_score = {}
 for agent in agent_list:
     fig = plt.figure()
-    for histone in all_good_histones:
-        #if histone not in ['WT #1', 'WT #2', 'Cuttable DNA', 'Uncuttable DNA']:
+    #for ID in [14, 47] + [42, 111, 112, 114, 115]:
+    for ID in all_good_IDs:
+        #if ID not in ['WT #1', 'WT #2', 'Cuttable DNA', 'Uncuttable DNA']:
         #    continue
-        #if not histone.endswith('ub'):
+        #if not ID.endswith('ub'):
         #    continue
 
         #fig = plt.figure()
         
-        X = agent_histone_titration[agent][histone]['conc']
-        Y = agent_histone_titration[agent][histone]['survival']
-        if agent == 'sp':
-            X = X[:6] + X[7:]
-            Y = Y[:6] + Y[7:]
-            
-        #X, Y = X[1:], Y[1:]
+        X = agent_ID_titration[agent][ID]['conc']
+        Y = agent_ID_titration[agent][ID]['survival']
 
+        X, Y = X[1:], Y[1:]
+
+        #if agent in ['sp', 'spd']:
+        #    X = X[:1] + X[2:]
+        #    Y = Y[:1] + Y[2:]
+        #elif agent in ['CoH']:
+        #    X = X[:1] + X[4:]
+        #    Y = Y[:1] + Y[4:]
+            
         p0 = [max(Y), np.median(X), 1]
         bounds = ([0.0, 0.0, 0.0], [max(Y)+max(Y)*0.1, np.inf, np.inf])
 
@@ -469,40 +498,45 @@ for agent in agent_list:
         ss_res = np.sum(residuals**2)
         ss_tot = np.sum((np.asarray(Y)-np.mean(Y))**2)
         r_squared = 1 - (ss_res / ss_tot)
-        pred_X = np.linspace(min(X[1:]), max(X[1:]), 1000)
+        #pred_X = np.linspace(min(X[1:]), max(X[1:]), 1000)
+        pred_X = np.linspace(min(X), max(X), 1000)
         pred_Y = sigmoid(pred_X, *popt)
 
-        c = plt.plot(X[1:], Y[1:], '.', alpha=0.3)
-        plt.plot(pred_X, pred_Y, '-', color=c[0].get_color(), alpha=0.3, label=histone)
+        #c = plt.plot(X[1:], Y[1:], '.', alpha=0.3)
+        c = plt.plot(X, Y, '.', alpha=0.3)
+        plt.plot(pred_X, pred_Y, '-', color=c[0].get_color(), alpha=0.3, label=ID)
         #plt.axvline(x=popt[1], linestyle='--', color=c[0].get_color(), alpha=0.5)
 
-        #plt.title("%s %s" % (agent, histone))
+        #plt.title("%s %s" % (agent, ID))
         #plt.xlabel("Concentration")
         #plt.ylabel("Soluble fraction")
         #if agent in ['HP1a']:
-        #    plt.xscale('log', base=2)
+        #    plt.xscale('log', basex=2)
         #elif agent in ['sp', 'spd', 'CoH']:
-        #    plt.xscale('log', base=10)
+        #    plt.xscale('log', basex=10)
         #plt.show()
         #plt.close()
 
-        if agent not in agent_histone_Chalf:
-            agent_histone_Chalf[agent] = {}
-        if histone not in agent_histone_Chalf[agent]:
-            agent_histone_Chalf[agent][histone] = popt[1]
+        if agent not in agent_ID_Chalf:
+            agent_ID_Chalf[agent] = {}
+        if ID not in agent_ID_Chalf[agent]:
+            agent_ID_Chalf[agent][ID] = popt[1]
 
-        if agent not in agent_histone_fitting:
-            agent_histone_fitting[agent] = {}
-        if histone not in agent_histone_fitting[agent]:
-            agent_histone_fitting[agent][histone] = {}
-        agent_histone_fitting[agent][histone]['para'] = popt
-        agent_histone_fitting[agent][histone]['r-square'] = r_squared
+        if agent not in agent_ID_fitting:
+            agent_ID_fitting[agent] = {}
+        if ID not in agent_ID_fitting[agent]:
+            agent_ID_fitting[agent][ID] = {}
+        agent_ID_fitting[agent][ID]['para'] = popt
+        agent_ID_fitting[agent][ID]['r-square'] = r_squared
 
-        score = np.mean(-np.log2(np.asarray(Y[1:])))
+        #score = np.mean(-np.log2(np.asarray(Y[1:])))
+        score = np.mean(-np.log2(np.asarray(Y)))
+        #score = -np.log2(np.mean(np.asarray(Y)))
+        #score = np.mean(np.asarray(Y))
 
-        if agent not in agent_histone_score:
-            agent_histone_score[agent] = {}
-        agent_histone_score[agent][histone] = score
+        if agent not in agent_ID_score:
+            agent_ID_score[agent] = {}
+        agent_ID_score[agent][ID] = score
 
         #print (popt)
 
@@ -510,27 +544,21 @@ for agent in agent_list:
     plt.title(agent_fullname[agent])
     plt.xlabel("Concentration")
     plt.ylabel("Soluble fraction")
-
     if agent in ['HP1a']:
-        plt.xscale('log', base=2)
+        plt.xscale('log', basex=2)
     elif agent in ['sp', 'spd', 'CoH']:
-        plt.xscale('log', base=10)
-
-    #if agent in ['HP1a']:
-    #    plt.xscale('log', basex=2)
-    #elif agent in ['sp', 'spd', 'CoH']:
-    #    plt.xscale('log', basex=10)
+        plt.xscale('log', basex=10)
     #plt.legend()
     #plt.show()
     #plt.savefig(agent+'.png')
-    plt.close()    
-
+    plt.close()
+#sys.exit(1)
 
 # check r-square of fitting
 for agent in agent_list:
     data = []
-    for histone in agent_histone_fitting[agent]:
-        r_squared = agent_histone_fitting[agent][histone]['r-square']
+    for ID in agent_ID_fitting[agent]:
+        r_squared = agent_ID_fitting[agent][ID]['r-square']
         data.append(r_squared)
 
     fig = plt.figure()
@@ -544,99 +572,285 @@ for agent in agent_list:
     #plt.show()
     plt.close()
 
-# save the scores
-#f = open("Oncolib_scores.txt", 'w')
-#s = ['name'] + [agent for agent in agent_list]
-#print >> f, '\t'.join(s)
-#for histone in all_good_histones:
-#    s = [histone]
-#    for agent in agent_list:
-#        score = agent_histone_score[agent][histone]
-#        s.append(str(score))
-#    print >> f, '\t'.join(s)
-#f.close()
-
-#sys.exit(1)
-
-# get difference w.r.t. wild type
-agent_histone_dChalf = {}
-agent_histone_dscore = {}
-all_good_histones_exceptWT = list(set(all_good_histones) - set(cate_histones['WT']))
+#agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
+agent_list = ['sp', 'spd']
 for agent in agent_list:
-    WT_Chalf, WT_score = [], []
-    for histone in cate_histones['WT']:
-        WT_Chalf.append(agent_histone_Chalf[agent][histone])
-        WT_score.append(agent_histone_score[agent][histone])
-    WT_Chalf = np.mean(WT_Chalf)
-    WT_score = np.mean(WT_score)
+    ID_score = agent_ID_score[agent]
+    fig = plt.figure()
+    X, Y = [], []
+    for ID in ID_score:
+        X.append(100 - GC_content(ID_BC[ID]))
+        Y.append(ID_score[ID])
+    plt.plot(X, Y, 'b.', alpha=0.5)
+    plt.xlabel('AT content')
+    plt.ylabel('Score')
+    plt.title(agent)
+    #plt.show()
+    plt.close()
 
-    for histone in all_good_histones_exceptWT:
-        dChalf = agent_histone_Chalf[agent][histone] - WT_Chalf
-        dscore = agent_histone_score[agent][histone] - WT_score
-
-        if agent not in agent_histone_dChalf:
-            agent_histone_dChalf[agent] = {}
-        agent_histone_dChalf[agent][histone] = dChalf
-
-        if agent not in agent_histone_dscore:
-            agent_histone_dscore[agent] = {}
-        agent_histone_dscore[agent][histone] = dscore
-
-
-# find out outliers based on two metircs
-histone_list_list = [all_good_histones_exceptWT, cate_histones['WT+mut']]
-agent_outliers_list = []
-for k in range(len(histone_list_list)):
-    histone_list = histone_list_list[k]
-    agent_outliers = {}
-    for agent in agent_list:
-        data_list = []
-        for histone in histone_list:
-            dChalf = agent_histone_dChalf[agent][histone]
-            dscore = agent_histone_dscore[agent][histone]
-            data_list.append([dChalf, dscore])
-
-        clf = LocalOutlierFactor()
-        outcheck = clf.fit_predict(data_list)
-
-        for i in range(len(outcheck)):
-            if outcheck[i] < 0:
-                outlier = histone_list[i]
-                if agent not in agent_outliers:
-                    agent_outliers[agent] = []
-                agent_outliers[agent].append(outlier)
-
-
-        fig = plt.figure()
-        for histone in histone_list:
-            dChalf = agent_histone_dChalf[agent][histone]
-            dscore = agent_histone_dscore[agent][histone]
-            if histone not in agent_outliers[agent]:
-                plt.plot(dChalf, dscore, 'k.')
-            else:
-                plt.plot(dChalf, dscore, 'r.')
-                plt.annotate(histone, (dChalf, dscore))
-
-        plt.axvline(x=0, linestyle='--', color='k', alpha=0.5)
-        plt.axhline(y=0, linestyle='--', color='k', alpha=0.5)
-        plt.title(agent_fullname[agent])
-        plt.xlabel("$\Delta$ C-half")
-        plt.ylabel("$\Delta$ Score")
-        #plt.savefig(str(k) + '_' + agent + "_ChalfVSScore.png")
-        #plt.show()
-        plt.close()
-
-    agent_outliers_list.append(copy.deepcopy(agent_outliers))
-all_agent_outliers, WTmut_agent_outliers = agent_outliers_list
-
-#sys.exit(1)
 
 
 # plot ranking bar graph for each metrics
-histone_list = all_good_histones_exceptWT
-agent_outliers = all_agent_outliers
-#histone_list = cate_histones['WT+mut']
-#agent_outliers = WTmut_agent_outliers
+def get_mname (minfo):
+    mutations = []
+
+    histone_subunits = ['H2A', 'H2B', 'H3', 'H4']
+    for subunit in histone_subunits:
+        mutation = minfo[subunit].strip()
+        if 'KpolyAc' in mutation:
+            mutation = subunit + 'KpolyAc'
+        if 'Acidic Patch Mutant' in mutation:
+            mutation = subunit + ' AP mutant'
+        if mutation != subunit:
+            mutations.append(mutation)
+
+    if set(mutations) == set(['NA']):
+        return 'freeDNA' + ' (' + minfo['DNA'] + ')'
+
+    if len(mutations) == 0:
+        mutations.append("WT")
+
+    if minfo['DNA'] != 'NA':
+        mutations.append(minfo['DNA'])
+        
+    return '/'.join(mutations)
+
+
+for agent in agent_list:
+    score_ID = []
+    for ID in all_good_IDs:
+        score = agent_ID_score[agent][ID]
+        score_ID.append((score, ID))
+    score_ID = sorted(score_ID)
+
+    X, Y = [], []
+    labels = []
+    for i in range(len(score_ID)):
+        score, ID = score_ID[i]
+        X.append(i)
+        Y.append(score)
+        labels.append(get_mname(ID_minfo[ID]))
+
+    #fig = plt.figure(figsize=(18,5))
+    #plt.bar(X, Y)
+    #plt.xticks(X, labels, fontsize=6, rotation=80, ha="right", rotation_mode="anchor")
+
+    fig = plt.figure(figsize=(5,12))
+    plt.barh(X, Y)
+    plt.yticks(X, labels, fontsize=5)
+    plt.title(agent)
+    plt.tight_layout()
+    #plt.show()
+    plt.close()
+
+#sys.exit(1)
+
+# find WT controls
+WT_IDs = []
+for ID in all_good_IDs:
+    mname = get_mname(ID_minfo[ID])
+    if mname == 'WT':
+        WT_IDs.append(ID)
+
+# all good IDs except WT controls
+all_good_IDs_exceptWT = list(set(all_good_IDs) - set(WT_IDs))
+
+# get difference w.r.t. wild type
+ID_list = all_good_IDs_exceptWT
+agent_ID_dChalf = {}
+agent_ID_dscore = {}
+for agent in agent_list:
+    WT_Chalf, WT_score = [], []
+    for ID in WT_IDs:
+        WT_Chalf.append(agent_ID_Chalf[agent][ID])
+        WT_score.append(agent_ID_score[agent][ID])
+    WT_Chalf = np.mean(WT_Chalf)
+    WT_score = np.mean(WT_score)
+
+    for ID in ID_list:
+        dChalf = agent_ID_Chalf[agent][ID] - WT_Chalf
+        dscore = agent_ID_score[agent][ID] - WT_score
+
+        if agent not in agent_ID_dChalf:
+            agent_ID_dChalf[agent] = {}
+        agent_ID_dChalf[agent][ID] = dChalf
+
+        if agent not in agent_ID_dscore:
+            agent_ID_dscore[agent] = {}
+        agent_ID_dscore[agent][ID] = dscore
+
+
+# find out outliers based on two metircs
+agent_outliers = {}
+for agent in agent_list:
+    data_list = []
+    for ID in ID_list:
+        dChalf = agent_ID_dChalf[agent][ID]
+        dscore = agent_ID_dscore[agent][ID]
+        data_list.append([dChalf, dscore])
+
+    clf = LocalOutlierFactor()
+    outcheck = clf.fit_predict(data_list)
+
+    for i in range(len(outcheck)):
+        if outcheck[i] < 0:
+            outlier = ID_list[i]
+            if agent not in agent_outliers:
+                agent_outliers[agent] = []
+            agent_outliers[agent].append(outlier)
+
+
+    fig = plt.figure()
+    for ID in ID_list:
+        dChalf = agent_ID_dChalf[agent][ID]
+        dscore = agent_ID_dscore[agent][ID]
+        if ID not in agent_outliers[agent]:
+            plt.plot(dChalf, dscore, 'k.')
+        else:
+            #pass
+            plt.plot(dChalf, dscore, 'r.')
+            plt.annotate(get_mname(ID_minfo[ID]), (dChalf, dscore))
+
+    plt.axvline(x=0, linestyle='--', color='k', alpha=0.5)
+    plt.axhline(y=0, linestyle='--', color='k', alpha=0.5)
+    plt.title(agent_fullname[agent])
+    plt.xlabel("$\Delta$ C-half")
+    plt.ylabel("$\Delta$ Score")
+    #plt.savefig(agent + "_ChalfVSScore.png")
+    #plt.show()
+    plt.close()
+#sys.exit(1)
+
+# plot ranking bar with histone modification information
+def rescale (value_list, old_st, old_ed, new_st, new_ed):
+    output = []
+    for value in value_list:
+        assert value >= old_st and value <= old_ed
+        new_value = new_st + (new_ed - new_st)*float(value-old_st)/(old_ed-old_st)
+        output.append(new_value)
+    return output
+
+#ID_list = list(set(all_good_IDs_exceptWT) - set([116]))
+ID_list = list(set(all_good_IDs_exceptWT))
+subunit_list = ['H2A', 'H2B', 'H3', 'H4']
+subunit_len = {'H2A':130, 'H2B':126, 'H3':136, 'H4':103}
+subunit_color = {'H2A':'tab:purple', 'H2B':'tab:olive', 'H3':'tab:green', 'H4':'tab:pink'}
+#hname_color = {'H2A':'tab:purple', 'H2A.X':'purple', 'H2A.Z':'darkviolet', 'H2B':'tab:olive', 'H3':'tab:green', 'H3.3':'green', 'H4':'tab:pink'}
+mtype_color = {'ac':'red', 'me':'blue', 'ub':'green', 'ph':'yellow', 'cr':'m', 'GlcNAc':'tab:brown', 'mut':'gray'}
+
+legend_elements = [Line2D([0], [0], marker='o', color='k', label='ac', mfc='red', mew=0.5),
+                   Line2D([0], [0], marker='o', color='k', label='me', mfc='blue', mew=0.5),
+                   Line2D([0], [0], marker='o', color='k', label='ub', mfc='green', mew=0.5),
+                   Line2D([0], [0], marker='o', color='k', label='ph', mfc='yellow', mew=0.5),
+                   Line2D([0], [0], marker='o', color='k', label='cr', mfc='m', mew=0.5),
+                   Line2D([0], [0], marker='o', color='k', label='GlcNAc', mfc='tab:brown', mew=0.5),
+                   Line2D([0], [0], marker='o', color='k', label='mut', mfc='gray', mew=0.5),
+                   Line2D([0], [0], marker='*', color='k', label='variant')]
+matplotlib.rcParams['legend.handlelength'] = 0
+matplotlib.rcParams['legend.numpoints'] = 1
+
+
+his_len = 10
+his_space = 2
+
+for agent in agent_list:
+
+    dChalf_ID, dscore_ID = [], []
+    for ID in ID_list:
+        dChalf = agent_ID_dChalf[agent][ID]
+        dscore = agent_ID_dscore[agent][ID]
+        dChalf_ID.append([dChalf, ID])
+        dscore_ID.append([dscore, ID])
+    dChalf_ID = sorted(dChalf_ID, reverse=True)
+    dscore_ID = sorted(dscore_ID)
+
+    value_ID_list = [dChalf_ID, dscore_ID]
+    ylabel_list = ["$\Delta$ C-half", "$\Delta$ Score"]
+    
+    for value_ID, ylabel in list(zip(value_ID_list, ylabel_list)):        
+
+        fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(18,8), sharex=True, gridspec_kw={'height_ratios': [1, 2]})
+
+        X, Y = [], []
+        xticks = []
+        X1, Y1 = [], []
+        X2, Y2 = [], []
+        for i in range(len(value_ID)):
+            value, ID = value_ID[i]
+            pminfo = ID_pminfo[ID]
+
+            X.append(i)
+            Y.append(value)
+            xticks.append(get_mname(ID_minfo[ID]))
+
+            if ylabel == "$\Delta$ C-half":
+                if value < 0 :
+                    X1.append(i)
+                    Y1.append(value)
+                else:
+                    X2.append(i)
+                    Y2.append(value)
+            else:
+                if value >=0 :
+                    X1.append(i)
+                    Y1.append(value)
+                else:
+                    X2.append(i)
+                    Y2.append(value)
+
+            xpos = i
+            for j in range(len(subunit_list)):
+                subunit = subunit_list[j]
+
+                yst = (his_len + his_space)*j
+                axes[1].plot([xpos, xpos], [yst, yst+his_len], color=subunit_color[subunit], lw=1, solid_capstyle='round')
+
+                hname = pminfo[subunit]['name']
+                if hname != subunit:
+                    axes[1].annotate('*', (xpos, yst), color='black', ha='center', va='center')
+
+                for mtype in pminfo[subunit]['mutations']:
+                    for pos in sorted(pminfo[subunit]['mutations'][mtype]):
+                        aa, mutation = pminfo[subunit]['mutations'][mtype][pos]
+                        ypos = yst + rescale ([pos], 0, subunit_len[subunit], 0, his_len)[0]
+
+                        axes[1].plot([xpos], [ypos], 'o', markersize=5, mfc=mtype_color[mtype], mew=0.5, mec='k')
+
+        #axes[0].bar(X, Y)
+        axes[0].bar(X1, Y1, color='tab:blue')
+        axes[0].bar(X2, Y2, color='tab:red')
+        axes[0].set_title(agent_fullname[agent])
+        axes[0].set_ylabel(ylabel)
+
+        axes[1].spines['top'].set_visible(False)
+        axes[1].spines['left'].set_visible(False)
+        axes[1].spines['right'].set_visible(False)
+        axes[1].tick_params(top='off', left='off', right='off', labelleft='off', labelbottom='on')
+        axes[1].set_xticks(X)
+        axes[1].set_xticklabels(xticks, fontsize=6, rotation=80, ha="right", rotation_mode="anchor")
+
+        for k in range(len(subunit_list)):
+            subunit = subunit_list[k]
+            axes[1].annotate(subunit, (-3, (his_len + his_space)*k+his_len/2), fontsize=14, color='black', ha='center', va='center')
+
+        leg = axes[1].legend(handles=legend_elements, frameon=False, bbox_to_anchor=(0.97, 0.89), loc='upper left')
+
+        plt.subplots_adjust(left=0.04, bottom=0.3, right=0.96, top=0.95, wspace=None, hspace=0.02)
+        plt.savefig("%s_%s_ladder_bar.png" % (agent, ylabel), dpi=300)
+        #plt.show()
+        plt.close()
+
+sys.exit(1)
+            
+            
+
+
+        
+
+
+
+# plot ranking bar graph for each metrics
+ID_list = all_good_IDs_exceptWT
 
 cate_color = {'freeDNA':"tab:red",
               'tag':"saddlebrown",
@@ -667,31 +881,31 @@ legend_elements = [Line2D([0], [0], marker='o', color='w', label='freeDNA', mark
 
 
 for agent in agent_list:
-    dChalf_histone, dscore_histone = [], []
-    for histone in histone_list:
-        dChalf = agent_histone_dChalf[agent][histone]
-        dscore = agent_histone_dscore[agent][histone]
-        dChalf_histone.append([dChalf, histone])
-        dscore_histone.append([dscore, histone])
-    dChalf_histone = sorted(dChalf_histone)
-    dscore_histone = sorted(dscore_histone)
+    dChalf_ID, dscore_ID = [], []
+    for ID in ID_list:
+        dChalf = agent_ID_dChalf[agent][ID]
+        dscore = agent_ID_dscore[agent][ID]
+        dChalf_ID.append([dChalf, ID])
+        dscore_ID.append([dscore, ID])
+    dChalf_ID = sorted(dChalf_ID)
+    dscore_ID = sorted(dscore_ID)
 
-    value_histone_list = [dChalf_histone, dscore_histone]
+    value_ID_list = [dChalf_ID, dscore_ID]
     ylabel_list = ["$\Delta$ C-half", "$\Delta$ Score"]
-    #value_histone_list = [dscore_histone]
+    #value_ID_list = [dscore_ID]
     #ylabel_list = ["$\Delta$ Score"]
     
-    for value_histone, ylabel in list(zip(value_histone_list, ylabel_list)):        
+    for value_ID, ylabel in list(zip(value_ID_list, ylabel_list)):        
         label, X, Y = [], [], []
         outlabel, outX, outY = [], [], []
-        for i in range(len(value_histone)):
-            value, histone = value_histone[i]
-            if histone not in agent_outliers[agent]:
-                label.append(histone)
+        for i in range(len(value_ID)):
+            value, ID = value_ID[i]
+            if ID not in agent_outliers[agent]:
+                label.append(get_mname(ID_minfo[ID]))
                 X.append(i)
                 Y.append(value)
             else:
-                outlabel.append(histone)
+                outlabel.append(get_mname(ID_minfo[ID]))
                 outX.append(i)
                 outY.append(value)
 
@@ -706,22 +920,22 @@ for agent in agent_list:
         #plt.yticks(X+outX, label+outlabel, fontsize=6)
         plt.xticks(X+outX, label+outlabel, fontsize=6, rotation=80, ha="right", rotation_mode="anchor")
 
-        for ticklabel in plt.gca().get_xticklabels():
-            histone = ticklabel.get_text()
-            cate = histone_cate[histone]
-            color = cate_color[cate]
-            ticklabel.set_color(color)
-            if histone in APmutants:
-                ticklabel.set_weight(1000)
-            #if histone in APmtype_histones["Positive"]:
-            #    ticklabel.set_color('b')
+        #for ticklabel in plt.gca().get_xticklabels():
+        #    ID = ticklabel.get_text()
+        #    cate = ID_cate[ID]
+        #    color = cate_color[cate]
+        #    ticklabel.set_color(color)
+        #    if ID in APmutants:
+        #        ticklabel.set_weight(1000)
+        #    #if ID in APmtype_IDs["Positive"]:
+        #    #    ticklabel.set_color('b')
 
         #for ticklabel in plt.gca().get_xticklabels():
         #    if ticklabel.get_text() in APmutants:
         #        ticklabel.set_weight(1000)
         #    if ticklabel.get_text() in agent_outliers[agent]:
         #        ticklabel.set_color('r')
-        #    if ticklabel.get_text() in APmtype_histones["Positive"]:
+        #    if ticklabel.get_text() in APmtype_IDs["Positive"]:
         #        ticklabel.set_color('b')
 
         ax = plt.gca()
@@ -731,15 +945,15 @@ for agent in agent_list:
         elif ylabel == "$\Delta$ Score": 
             loc = 'lower right'
         
-        leg = ax.legend(handles=legend_elements, loc=loc, frameon=False)
-        for text in leg.get_texts():
-            cate = text.get_text()
-            if cate in cate_color:
-                text.set_color(cate_color[cate])
-            if cate == 'AP mut':
-                text.set_weight(1000)
-            if cate == 'outliers':
-                text.set_bbox(dict(facecolor='red', edgecolor='w', alpha=0.7))
+        #leg = ax.legend(handles=legend_elements, loc=loc, frameon=False)
+        #for text in leg.get_texts():
+        #    cate = text.get_text()
+        #    if cate in cate_color:
+        #        text.set_color(cate_color[cate])
+        #    if cate == 'AP mut':
+        #        text.set_weight(1000)
+        #    if cate == 'outliers':
+        #        text.set_bbox(dict(facecolor='red', edgecolor='w', alpha=0.7))
         
         plt.title(agent_fullname[agent])
         #plt.yscale('log', base=2)
@@ -776,18 +990,18 @@ cate_marker = {'freeDNA':"X",
               'H3.3+mut':"P"}
 
 cate_list = ['WT', 'WT+mut', 'H2A.Z', 'H2A.Z+mut', 'H2A.V', 'H2A.V+mut', 'H3.3', 'H3.3+mut', 'tag', 'freeDNA']
-histone_list = all_good_histones
+ID_list = all_good_IDs
 
-histone_state = {}
+ID_state = {}
 for agent in agent_list:
-    for histone in histone_list:
-        score = agent_histone_score[agent][histone]
-        if histone not in histone_state:
-            histone_state[histone] = []
-        histone_state[histone].append(score)
+    for ID in ID_list:
+        score = agent_ID_score[agent][ID]
+        if ID not in ID_state:
+            ID_state[ID] = []
+        ID_state[ID].append(score)
 
 
-X = [histone_state[histone] for histone in histone_list]
+X = [ID_state[ID] for ID in ID_list]
         
 #scaler = preprocessing.StandardScaler(with_std=False).fit(X)
 scaler = preprocessing.StandardScaler().fit(X)
@@ -813,16 +1027,16 @@ clf = LocalOutlierFactor()
 outcheck = clf.fit_predict( [row[:2] for row in Xr] )
 
 outliers = []
-histone_PCA = {}
+ID_PCA = {}
 x_list, y_list = [], []
 for i in range(len(Xr)):
-    histone = histone_list[i]
+    ID = ID_list[i]
     x, y = Xr[i][0], Xr[i][1]
-    histone_PCA[histone] = (x, y)
+    ID_PCA[ID] = (x, y)
     x_list.append(x)
     y_list.append(y)
     if outcheck[i] < 0:
-        outliers.append(histone)
+        outliers.append(ID)
 
 fig = plt.figure(figsize=(8,7))
 #plt.scatter(x_list, y_list, s=5, c=C, cmap='jet')
@@ -830,7 +1044,7 @@ for i in range(len(Xr)):
     plt.plot(Xr[i][0], Xr[i][1], 'k.')
     if outcheck[i] < 0:
         plt.plot(Xr[i][0], Xr[i][1], 'r.')
-        plt.annotate(histone_list[i], (Xr[i][0], Xr[i][1]))
+        plt.annotate(get_mname(ID_minfo[ID_list[i]]), (Xr[i][0], Xr[i][1]))
 plt.title("PCA plot")
 #cbar = plt.colorbar()
 #cbar.set_label("AT content (%)")
@@ -840,57 +1054,95 @@ plt.ylabel('PC2')
 #plt.show()
 plt.close()
 
-fig = plt.figure(figsize=(8,7))
-for cate in cate_list:
-    histones = cate_histones[cate]
-    color = cate_color[cate]
-    marker = cate_marker[cate]
-    if cate == 'WT+mut':
-        alpha=0.5
-    else:
-        alpha=1.0
-    for i in range(len(histones)):
-        histone = histones[i]
-        x, y = histone_PCA[histone]
-        if i == 0:
-            if cate == 'WT':
-                plt.plot(x, y, '.', color=color, marker=marker, alpha=alpha, label=cate, zorder=100)
-            else:
-                plt.plot(x, y, '.', color=color, marker=marker, alpha=alpha, label=cate)
-        else:
-            if cate == 'WT':
-                plt.plot(x, y, '.', color=color, marker=marker, alpha=alpha, zorder=100)
-            else:
-                plt.plot(x, y, '.', color=color, marker=marker, alpha=alpha)
-        if histone in outliers:
-            plt.annotate(histone, (x,y))
+#fig = plt.figure(figsize=(8,7))
+#for cate in cate_list:
+#    IDs = cate_IDs[cate]
+#    color = cate_color[cate]
+#    marker = cate_marker[cate]
+#    if cate == 'WT+mut':
+#        alpha=0.5
+#    else:
+#        alpha=1.0
+#    for i in range(len(IDs)):
+#        ID = IDs[i]
+#        x, y = ID_PCA[ID]
+#        if i == 0:
+#            if cate == 'WT':
+#                plt.plot(x, y, '.', color=color, marker=marker, alpha=alpha, label=cate, zorder=100)
+#            else:
+#                plt.plot(x, y, '.', color=color, marker=marker, alpha=alpha, label=cate)
+#        else:
+#            if cate == 'WT':
+#                plt.plot(x, y, '.', color=color, marker=marker, alpha=alpha, zorder=100)
+#            else:
+#                plt.plot(x, y, '.', color=color, marker=marker, alpha=alpha)
+#        if ID in outliers:
+#            plt.annotate(ID, (x,y))
                 
 
-plt.title("PCA plot")
-plt.xlabel('PC1')
-plt.ylabel('PC2')
-plt.legend()
-#plt.savefig("PCA_allagent.png")
-#plt.show()
-plt.close()
+#plt.title("PCA plot")
+#plt.xlabel('PC1')
+#plt.ylabel('PC2')
+#plt.legend()
+##plt.savefig("PCA_allagent.png")
+##plt.show()
+#plt.close()
 
 #sys.exit(1)
 
 # check the correlation with freeDNA contamination
-histone_list = all_good_histones_exceptWT
-agent_outliers = all_agent_outliers
-#histone_list = cate_histones['WT+mut']
-#agent_outliers = WTmut_agent_outliers
-agent_histone_value_list = [agent_histone_Chalf, agent_histone_score]
+def read_freeDNA (fname):
+    ID_freeDNA = {}
+    First = True
+    for line in open(fname):
+        cols = line.split('\t')
+        if First:
+            First = False
+            continue
+        ID, name, _, _, _, freeDNA, _ = cols
+        ID = int(ID)
+        freeDNA = float(freeDNA[:-1])
+        ID_freeDNA[ID] = freeDNA
+    return ID_freeDNA
+ID_freeDNA = read_freeDNA('PTMlib_freeDNA.csv')
+
+#ID_list = all_good_IDs
+
+ID_list = []
+for ID in all_good_IDs:
+    if ID == 116:
+        continue
+    
+    pminfo = ID_pminfo[ID]
+
+    mutations = []
+    for subunit in subunit_list:
+        for mtype in pminfo[subunit]['mutations']:
+            for pos in pminfo[subunit]['mutations'][mtype]:
+                mutations.append((subunit, mtype, pos))
+
+    if len(mutations) > 1:
+        continue
+    if len(mutations) <= 0:
+        ID_list.append(ID)
+        continue
+
+    subunit, mtype, pos = mutations[0]
+
+    if mtype.startswith('me'):
+        ID_list.append(ID)
+
+
+agent_ID_value_list = [agent_ID_Chalf, agent_ID_score]
 ylabel_list = ['C-half', 'Score']
 for agent in agent_list:
-    for agent_histone_value, ylabel in list(zip(agent_histone_value_list, ylabel_list)):
+    for agent_ID_value, ylabel in list(zip(agent_ID_value_list, ylabel_list)):
 
         X, Y = [], []
-        for histone in histone_list:
-            freeDNA = histone_freeDNA[histone]
-            X.append(freeDNA*100)
-            value = agent_histone_value[agent][histone]
+        for ID in ID_list:
+            freeDNA = ID_freeDNA[ID]
+            X.append(freeDNA)
+            value = agent_ID_value[agent][ID]
             Y.append(value)
 
         corr = scipy.stats.pearsonr(X, Y)[0]
@@ -911,15 +1163,15 @@ for agent in agent_list:
 
         fig = plt.figure()
         #plt.plot(X, Y, '.')
-        for histone in histone_list:
-        #for histone in cate_histones['WT'] + cate_histones['WT+mut']:
-            x = histone_freeDNA[histone]*100
-            y = agent_histone_value[agent][histone]
-            if histone not in agent_outliers[agent]:
+        for ID in ID_list:
+        #for ID in cate_IDs['WT'] + cate_IDs['WT+mut']:
+            x = ID_freeDNA[ID]
+            y = agent_ID_value[agent][ID]
+            if ID not in agent_outliers[agent]:
                 plt.plot(x, y, 'k.')
             else:
                 plt.plot(x, y, 'r.')
-                plt.annotate(histone, (x, y))
+                plt.annotate(ID, (x, y))
         plt.plot([X_Ypred[0][0], X_Ypred[-1][0]], [X_Ypred[0][1], X_Ypred[-1][1]], 'b--')
         #xloc, yloc = np.mean([np.median(X), max(X)]), np.mean([np.median(Y), max(Y)])
         #plt.text(xloc, yloc, str(round(corr,3)), fontsize=20, va='center', ha='center')
@@ -930,23 +1182,21 @@ for agent in agent_list:
         #plt.xlim([-10, 30])
         #plt.ylim([0, 2.5])
         if ylabel == 'C-half':
-            plt.yscale('log', base=2)
+            plt.yscale('log', basey=2)
         #plt.xscale('log', base=2)
-        #plt.savefig("%s_%s_freeDNA.png" % (agent, ylabel))
+        plt.savefig("%s_%s_freeDNA.png" % (agent, ylabel))
         #plt.show()
         plt.close()
-
+#sys.exit(1)
+        
 # check the correlation with input count
-histone_list = all_good_histones_exceptWT
-agent_outliers = all_agent_outliers
-#histone_list = cate_histones['WT+mut']
-#agent_outliers = WTmut_agent_outliers
+ID_list = all_good_IDs_exceptWT
 for agent in agent_list:
-    histone_count = agent_num_histone_count[agent][0]
+    ID_count = agent_num_ID_count[agent][0]
     X, Y = [], []
-    for histone in histone_list:
-        count = histone_count[histone]
-        score = agent_histone_score[agent][histone]
+    for ID in ID_list:
+        count = ID_count[ID]
+        score = agent_ID_score[agent][ID]
         X.append(count)
         Y.append(score)
 
@@ -965,33 +1215,30 @@ for agent in agent_list:
 
     fig = plt.figure()
     #plt.plot(X, Y, '.')
-    for histone in histone_list:
-        x = histone_count[histone]
-        y = agent_histone_score[agent][histone]
-        if histone not in agent_outliers[agent]:
+    for ID in ID_list:
+        x = ID_count[ID]
+        y = agent_ID_score[agent][ID]
+        if ID not in agent_outliers[agent]:
             plt.plot(x, y, 'k.')
         else:
             plt.plot(x, y, 'r.')
-            plt.annotate(histone, (x, y))
+            plt.annotate(ID, (x, y))
     plt.plot([X_Ypred[0][0], X_Ypred[-1][0]], [X_Ypred[0][1], X_Ypred[-1][1]], 'b--')
     plt.title(agent_fullname[agent])
     plt.xlabel("Input count")
     plt.ylabel("Score")
-    #plt.savefig("Input_%s.png" % (agent))
+    plt.savefig("Input_%s.png" % (agent))
     #plt.show()
     plt.close()
 
 
 # check the correlation with AT content
-histone_list = all_good_histones_exceptWT
-agent_outliers = all_agent_outliers
-#histone_list = cate_histones['WT+mut']
-#agent_outliers = WTmut_agent_outliers
+ID_list = all_good_IDs_exceptWT
 for agent in agent_list:
     X, Y = [], []
-    for histone in histone_list:
-        AT = 100.0 - GC_content(histone_BC[histone])
-        score = agent_histone_score[agent][histone]
+    for ID in ID_list:
+        AT = 100.0 - GC_content(ID_BC[ID])
+        score = agent_ID_score[agent][ID]
         X.append(AT)
         Y.append(score)
 
@@ -1010,14 +1257,14 @@ for agent in agent_list:
 
     fig = plt.figure()
     #plt.plot(X, Y, '.')
-    for histone in histone_list:
-        x = 100.0 - GC_content(histone_BC[histone])
-        y = agent_histone_score[agent][histone]
-        if histone not in agent_outliers[agent]:
+    for ID in ID_list:
+        x = 100.0 - GC_content(ID_BC[ID])
+        y = agent_ID_score[agent][ID]
+        if ID not in agent_outliers[agent]:
             plt.plot(x, y, 'k.')
         else:
             plt.plot(x, y, 'r.')
-            plt.annotate(histone, (x, y))
+            plt.annotate(ID, (x, y))
     plt.plot([X_Ypred[0][0], X_Ypred[-1][0]], [X_Ypred[0][1], X_Ypred[-1][1]], 'b--')
     plt.title(agent_fullname[agent])
     plt.xlabel("AT content(%)")
@@ -1029,7 +1276,7 @@ for agent in agent_list:
 #sys.exit(1)
 
 # compare between condensing agents
-histone_list = all_good_histones
+ID_list = all_good_IDs
 pair_corr = {}
 corr_matrix = [ [np.nan for i in range(len(agent_list))] for i in range(len(agent_list)) ]
 for i in range(len(agent_list)-1):
@@ -1038,11 +1285,12 @@ for i in range(len(agent_list)-1):
         agent2 = agent_list[j]
 
         X, Y = [], []
-        for histone in histone_list:
-            X.append(agent_histone_score[agent1][histone])
-            Y.append(agent_histone_score[agent2][histone])
+        for ID in ID_list:
+            X.append(agent_ID_score[agent1][ID])
+            Y.append(agent_ID_score[agent2][ID])
 
         corr = scipy.stats.spearmanr(X, Y)[0]
+        #corr = scipy.stats.pearsonr(X, Y)[0]
         #print ("%s VS %s: %1.2f" % (agent1, agent2, corr))
             
         fig = plt.figure()
@@ -1062,14 +1310,13 @@ for i in range(len(agent_list)-1):
 
 
 fig, axes = plt.subplots(nrows=len(agent_list), ncols=len(agent_list))
-
 for i in range(len(agent_list)):
     for j in range(len(agent_list)):
         idx = len(agent_list)*i + j
         agent1, agent2 = agent_list[i], agent_list[j]
         if i > j:
-            X = [ agent_histone_score[agent1][histone] for histone in histone_list ]
-            Y = [ agent_histone_score[agent2][histone] for histone in histone_list ]
+            X = [ agent_ID_score[agent1][ID] for ID in ID_list ]
+            Y = [ agent_ID_score[agent2][ID] for ID in ID_list ]
             axes[i,j].plot(X, Y, 'k.', markersize=1)
             #axes[i,j].set_xscale('log', base=2)
             #axes[i,j].set_yscale('log', base=2)
@@ -1094,8 +1341,8 @@ for i in range(len(agent_list)):
             value = pair_corr[(agent1, agent2)]
             matrix = np.zeros((len(agent_list), len(agent_list)))
             matrix[:] = value
-            img = axes[i,j].imshow(matrix, cmap="jet", vmin=0.1, vmax=0.9, origin='lower')
-            if value < 0.4:
+            img = axes[i,j].imshow(matrix, cmap="jet", vmin=0.0, vmax=1.0, origin='lower')
+            if value < 0.3 or value > 0.7:
                 color = "white"
             else:
                 color = "black"
@@ -1111,391 +1358,379 @@ plt.suptitle("Corrrelation betwen condensing agents")
 #plt.show()
 plt.close()
 
+#sys.exit(1)
+
 # compare with chromatin remodeling data
-histone_list = all_good_histones
-fig1, axes1 = plt.subplots(nrows=len(agent_list), ncols=2)
-fig2, axes2 = plt.subplots(nrows=len(agent_list), ncols=2)
+def read_remodellers (fname):
+    enzyme_ID_rate = {}
+    #enzyme_ID_foldchange = {}
+    line_count = 0
+    for line in open(fname):
+        line = line.strip()
+        if not line:
+            break
+        cols = line.split('\t')
+        if line_count == 0:
+            enzyme_list = []
+            for col in cols:
+                if col.strip():
+                    enzyme_list.append(col)
+                    enzyme_ID_rate[col] = {}
+                    #enzyme_ID_foldchange[col] = {}
+            line_count +=1
+            #print enzyme_list
+            continue
+        if line_count < 2:
+            line_count +=1
+            continue
+        for i in range(len(enzyme_list)):
+            enzyme = enzyme_list[i]
+            ID = cols[11*i]
+            try:
+                ID = int(ID)
+            except:
+                if ID == 'DNA standard 2':
+                    ID = 117
+            rate = float(cols[11*i + 3])
+            foldchange = float(cols[11*i + 9])
+
+            assert ID not in enzyme_ID_rate[enzyme]
+            #enzyme_ID_rate[enzyme][ID] = rate
+            enzyme_ID_rate[enzyme][ID] = foldchange
+            #assert ID not in enzyme_ID_foldchange[enzyme]
+            #enzyme_ID_foldchange[enzyme][ID] = foldchange
+        line_count +=1
+    return enzyme_list, enzyme_ID_rate
+    #return enzyme_list, enzyme_ID_rate, enzyme_ID_foldchange
+enzyme_list, enzyme_ID_rate  = read_remodellers("PTMlib_remodellers.csv")
+
+ID_list = list(set(all_good_IDs) - set([116]))
+
+fig, axes = plt.subplots(nrows=len(agent_list), ncols=len(enzyme_list))
 for i in range(len(agent_list)):
-    agent = agent_list[i]
-    X1 = [histone_ACF[histone] for histone in histone_list]
-    X2 = [histone_Nap1[histone] for histone in histone_list]
-    Y = [agent_histone_score[agent][histone] for histone in histone_list]
+    for j in range(len(enzyme_list)):
+        agent = agent_list[i]
+        enzyme = enzyme_list[j]
+                
+        X = [enzyme_ID_rate[enzyme][ID] for ID in ID_list]
+        Y = [agent_ID_score[agent][ID] for ID in ID_list]
 
-    corr1 = scipy.stats.spearmanr(X1, Y)[0]
-    #print ("%s VS %s: %1.2f" % ('ACF', agent, corr1))
+        corr = scipy.stats.spearmanr(X, Y)[0]
+        #print ("%s VS %s: %1.2f" % (enzyme, agent, corr))
 
-    corr2 = scipy.stats.spearmanr(X2, Y)[0]
-    #print ("%s VS %s: %1.2f" % ('Nap1', agent, corr2))
+        axes[i, j].plot(X, Y, 'k.', markersize=1.0)
+        #axes[i, j].set_yscale('log', basey=2)
 
-    axes1[i, 0].plot(X1, Y, '.')
-    #axes1[i, 0].set_yscale('log', base=2)
+        if j <= 0:
+            axes[i, j].set_ylabel(agent, rotation=0, labelpad=20)
+        else:
+            axes[i, j].tick_params(axis='y', which='both', labelleft=False)
 
-    axes1[i, 1].plot(X2, Y, '.')
-    #axes1[i, 1].set_yscale('log', base=2)
+        if i >= len(agent_list) - 1:
+            axes[i, j].set_xlabel('%s' % (enzyme))
+        else:
+            axes[i, j].tick_params(axis='x', which='both', labelbottom=False)
 
-    axes1[i, 0].set_ylabel(agent, rotation=0, labelpad=20)
-    axes1[i, 1].tick_params(axis='y', which='both', labelleft=False)
+#plt.tight_layout()
+fig.suptitle("Corrrelation with remodellers rate")
+#plt.show()
+plt.close()
 
-    if i >= len(agent_list) - 1:
-        axes1[i, 0].set_xlabel('ACF data')
-        axes1[i, 1].set_xlabel('Nap1 data')
-    else:
-        axes1[i,0].tick_params(axis='x', which='both', labelbottom=False)
-        axes1[i,1].tick_params(axis='x', which='both', labelbottom=False)
+fig, axes = plt.subplots(nrows=len(agent_list), ncols=len(enzyme_list))
+for i in range(len(agent_list)):
+    for j in range(len(enzyme_list)):
 
-    corrs = [corr1, corr2]
-    for j in range(2):
-        corr = corrs[j]
+        agent = agent_list[i]
+        enzyme = enzyme_list[j]
+                
+        X = [enzyme_ID_rate[enzyme][ID] for ID in ID_list]
+        Y = [agent_ID_score[agent][ID] for ID in ID_list]
+
+        corr = scipy.stats.spearmanr(X, Y)[0]
+
         matrix = np.zeros((len(agent_list), len(agent_list)))
         matrix[:] = corr
-        img = axes2[i, j].imshow(matrix, cmap="bwr", vmin=-0.5, vmax=0.5, origin='lower')
+        img = axes[i, j].imshow(matrix, cmap="jet", vmin=0.0, vmax=1.0, origin='lower')
 
-        if corr < -0.35 or corr > 0.35:
+        if corr < 0.3 or corr > 0.7:
             color = 'white'
         else:
             color = 'black'
 
-        axes2[i,j].text(len(agent_list)/2, len(agent_list)/2, str(round(corr,2)), ha="center", va="center", fontsize=10, color=color, weight='bold')
-        axes2[i,j].set_xlim([0, len(agent_list)-1])
-        axes2[i,j].set_ylim([0, len(agent_list)-1])
-        axes2[i,j].tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labeltop=False, labelleft=False, labelright=False)
+        axes[i,j].text(len(agent_list)/2, len(agent_list)/2, str(round(corr,2)), ha="center", va="center", fontsize=10, color=color, weight='bold')
+        axes[i,j].set_xlim([0, len(agent_list)-1])
+        axes[i,j].set_ylim([0, len(agent_list)-1])
+        axes[i,j].tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labeltop=False, labelleft=False, labelright=False)
 
-    axes2[i, 0].set_ylabel(agent, rotation=0, labelpad=20)
-    axes2[i, 1].tick_params(axis='y', which='both', labelleft=False)
+        if j <= 0:
+            axes[i, j].set_ylabel(agent, rotation=0, labelpad=20)
+        else:
+            axes[i, j].tick_params(axis='y', which='both', labelleft=False)
 
-    if i >= len(agent_list) - 1:
-        axes2[i, 0].set_xlabel('ACF data')
-        axes2[i, 1].set_xlabel('Nap1 data')
-    else:
-        axes2[i, 0].tick_params(axis='x', which='both', labelbottom=False)
-        axes2[i, 1].tick_params(axis='x', which='both', labelbottom=False)
+        if i >= len(agent_list) - 1:
+            axes[i, j].set_xlabel('%s' % (enzyme))
+        else:
+            axes[i, j].tick_params(axis='x', which='both', labelbottom=False)
 
-fig1.suptitle("Corrrelation betwen ACF/Nap1 data")
-#plt.show()
-#fig1.show(fig1)
-#plt.close(fig1)
-
-fig2.suptitle("Corrrelation betwen ACF/Nap1 data")
-cbar=fig2.colorbar(img, ax=axes2, location='right', shrink=0.8)
+#plt.tight_layout()
+fig.suptitle("Corrrelation with remodellers rate")
+cbar=fig.colorbar(img, ax=axes, location='right', shrink=0.8)
 cbar.ax.set_ylabel('Spearman correlation', rotation=-90, va="bottom")
-#fig2.show()
 #plt.show()
-#plt.close()
-#plt.close(fig2)
-plt.close('all')
+plt.close()
+
+#sys.exit(1)
+
+# synergy analysis
+ID_list = list(set(all_good_IDs)&set(cate_IDs['WT+PTM']))
+
+ID_mutations = {}
+mutations_ID = {}
+mutnum_IDs = {}
+for ID in ID_list:
+    pminfo = ID_pminfo[ID]
+    mutations = set([])
+    for subunit in subunit_list:
+        hname = pminfo[subunit]['name']
+        for mtype in pminfo[subunit]['mutations']:
+            for pos in pminfo[subunit]['mutations'][mtype]:
+                aa, mutation = pminfo[subunit]['mutations'][mtype][pos]
+                mutations.add((hname, pos, mtype, aa, mutation))
+    mutations = frozenset(mutations)
+    
+    ID_mutations[ID] = mutations
+    mutations_ID[mutations] = ID
+
+    mutnum = len(mutations)
+    if mutnum not in mutnum_IDs:
+        mutnum_IDs[mutnum] = []
+    mutnum_IDs[mutnum].append(ID)
 
 
-### only AP mutants
-location_minfos = {}
-for histone in APmutants:
-    subunit, mutation = histone.split(' ')
-    if '/' in mutation:
-        continue
-    before, pos, after = mutation[0], mutation[1:-1], mutation[-1]
-    pos = int(pos)
-    location = (subunit, pos)
-    if location not in location_minfos:
-        location_minfos[location] = []
-    minfo = (before, after)
-    location_minfos[location].append(minfo)
+IDs = set([])
+for i in range(len(mutnum_IDs[1])-1):
+    for j in range(i+1, len(mutnum_IDs[1])):
+        ID1, ID2 = mutnum_IDs[1][i], mutnum_IDs[1][j]
+        tmutations = frozenset(set(ID_mutations[ID1]) | set(ID_mutations[ID2]))
+        try:
+            mutations_ID[tmutations]
+            IDs.add(ID1)
+            IDs.add(ID2)
+        except:
+            continue
+IDs = list(IDs)
 
+for agent in agent_list:
+    ID_score = agent_ID_score[agent]
+    matrix = np.zeros((len(IDs), len(IDs)))
+    for i in range(len(IDs)):
+        for j in range(i, len(IDs)):
+            if i == j:
+                synergy = np.nan
+            else:
+                ID1, ID2 = IDs[i], IDs[j]
+                tmutations = frozenset(set(ID_mutations[ID1]) | set(ID_mutations[ID2]))
+                try:
+                    tID = mutations_ID[tmutations]
+                    synergy = ID_score[tID] - 0.5*(ID_score[ID1] + ID_score[ID2])
+                except:
+                    synergy = np.nan
+            matrix[i][j] = synergy
+            matrix[j][i] = synergy
+
+    fig = plt.figure()
+    cmap = cm.bwr_r
+    cmap.set_bad(color='black')
+    plt.imshow(matrix, cmap=cmap, vmin=-2.0, vmax=2.0)
+    plt.xticks(range(len(IDs)), [str(get_mname(ID_minfo[ID])) for ID in IDs], rotation=45)
+    plt.yticks(range(len(IDs)), [str(get_mname(ID_minfo[ID])) for ID in IDs])
+    plt.title(agent_fullname[agent])
+    plt.colorbar()
+    plt.show()
+    plt.close()
+
+sys.exit(1)
+    
+
+### structure analysis
+
+# plot histone cartoon
+ID_list = list(set(all_good_IDs) & set(cate_IDs['WT+PTM']))
 agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
-location_list = sorted(location_minfos.keys())
-after_color = {'K':'blue', 'A':'gray', 'D':'red', 'N':'yellow', 'Q':'yellow'}
+subunit_list = ['H2A', 'H2B', 'H3', 'H4']
+location_list = ['fold', 'tail']
 
-fig, axes = plt.subplots(nrows=len(agent_list), ncols=len(location_list), sharex=True, sharey=True)
+#subunit_chains = {'H2A':['C', 'G'], 'H2B':['D', 'H'], 'H3.1':['A', 'E'], 'H4':['B','F']}
+#subunit_chains = {'H2A':['C'], 'H2B':['D'], 'H3.1':['E'], 'H4':['F']}
+subunit_foldrange = {'H2A':[17, 96], 'H2B':[38, 122], 'H3':[45, 131], 'H4':[31, 93]}
 
-for i in range(len(agent_list)):
-    agent = agent_list[i]
-    for j in range(len(location_list)):
-        location = location_list[j]
-        subunit, pos = location
-        #data = []
-        #label = []
-        for k in range(len(location_minfos[location])):
-            minfo = sorted(location_minfos[location])[k]
-            before, after = minfo
-            mutation = ''.join([before, str(pos), after])
-            histone = ' '.join([subunit, mutation])
-            dscore = agent_histone_dscore[agent][histone]
-            axes[i,j].bar(k, dscore, label=before + '->' + after, color=after_color[after])
-            axes[i,j].axhline(y=0, linestyle='--', color='k', alpha=0.5)
-            #data.append(dscore)
-            #label.append(before + '->' + after)
-        #axes[i,j].barplot(range(len(data)), data)
-        #axes[i,j].legend()
-        axes[i,j].tick_params(bottom='off', labelbottom='off')
-        if i == len(agent_list) - 1:
-            axes[i,j].set_xlabel(' '.join([subunit, str(pos)]))
-        if j == 0:
-            axes[i,j].set_ylabel(agent, rotation=90)
+# rescale the data in old range (old_st, old_ed) into new range (new_st, new_ed)
+def rescale (value_list, old_st, old_ed, new_st, new_ed):
+    output = []
+    for value in value_list:
+        assert value >= old_st and value <= old_ed
+        new_value = new_st + (new_ed - new_st)*float(value-old_st)/(old_ed-old_st)
+        output.append(new_value)
+    return outpu
 
-#plt.show()
-plt.close()
+# find IDs with single PTM
+subunit_infos = {}
+for ID in ID_list:
+    pminfo = ID_pminfo[ID]
+    mutations = []
+    for subunit in subunit_list:
+        for mtype in pminfo[subunit]['mutations']:
+            for pos in pminfo[subunit]['mutations'][mtype]:
+                mutations.append((subunit, mtype, pos))
 
-# all single AP mutants (group by location)
-agent_color = {'sp':'tab:blue', 'spd':'tab:orange', 'CoH':'tab:green', 'PEG':'tab:red', 'HP1a':'tab:purple'}
-after_sign = {'K':'+', 'A':'', 'D':'-', 'N':'0', 'Q':'0'}
-fig, axes = plt.subplots(nrows=1, ncols=len(location_list), sharey=True)
-for i in range(len(location_list)):
-    location = location_list[i]
-    subunit, pos = location
-    xticks = []
-    for j in range(len(location_minfos[location])):
-        minfo = sorted(location_minfos[location])[j]
-        before, after = minfo
-        xticks.append('$%s\\rightarrow{%s}^{%s}$' % (before, after, after_sign[after]))
-        mutation = ''.join([before, str(pos), after])
-        histone = ' '.join([subunit, mutation])
-        positive, negative = 0.0, 0.0
-        for k in range(len(agent_list)):
-            agent = agent_list[k]
-            dscore = agent_histone_dscore[agent][histone]
-            if dscore > 0:
-                axes[i].bar(j, dscore, bottom=positive, color=agent_color[agent], label=agent)
-                positive += dscore
-            elif dscore < 0:
-                axes[i].bar(j, dscore, bottom=negative, color=agent_color[agent], label=agent)
-                negative += dscore
-
-    if i > 0:
-        axes[i].spines['left'].set_visible(False)
-        axes[i].tick_params(left=False)
-    axes[i].spines['top'].set_visible(False)
-    axes[i].spines['right'].set_visible(False)
-    axes[i].axhline(y=0, linestyle='--', color='k', alpha=1.0)
-    axes[i].set_title(' '.join([subunit, str(pos)]))
-    axes[i].set_xticks(range(len(xticks)))
-    axes[i].set_xticklabels(xticks, fontsize=8, rotation=50, ha="right", rotation_mode="anchor")
-    if i == 0:
-        axes[i].set_ylabel('Accumulated Scores')
-ax = plt.gca()
-handles, labels = ax.get_legend_handles_labels()
-ax.legend(handles[:len(agent_list)], labels[:len(agent_list)], loc='lower right', frameon=False)
-#plt.legend()
-plt.tight_layout()
-plt.savefig("single_APmutant.png")
-#plt.show()
-plt.close()
-
-# all single AP mutants (group by mutation type)
-after_histones = {}
-for histone in APmutants:
-    if '/' in histone:
+    if len(mutations) > 1:
         continue
-    after = histone[-1]
-    if after not in after_histones:
-        after_histones[after] = []
-    after_histones[after].append(histone)
+
+    subunit, mtype, pos = mutations[0]
+
+    if subunit not in subunit_infos:
+        subunit_infos[subunit] = []
+    subunit_infos[subunit].append((ID, pos, mtype))
     
-after_index = {'A':0, 'K':1, 'D':2, 'Q':3, 'N':4}
-fig, axes = plt.subplots(nrows=1, ncols=len(after_histones), sharey=True)
-for after in after_histones:
-    index = after_index[after]
-    histones = sorted(after_histones[after])
-    for i in range(len(histones)):
-        histone = histones[i]
-        positive, negative = 0.0, 0.0
-        for k in range(len(agent_list)):
-            agent = agent_list[k]
-            dscore = agent_histone_dscore[agent][histone]
-            if dscore > 0:
-                axes[index].bar(i, dscore, bottom=positive, color=agent_color[agent], label=agent)
-                positive += dscore
-            elif dscore < 0:
-                axes[index].bar(i, dscore, bottom=negative, color=agent_color[agent], label=agent)
-                negative += dscore
 
-    if index > 0:
-        axes[index].spines['left'].set_visible(False)
-        axes[index].tick_params(left=False)
-    axes[index].spines['top'].set_visible(False)
-    axes[index].spines['right'].set_visible(False)
-    axes[index].axhline(y=0, linestyle='--', color='k', alpha=1.0)
-    axes[index].set_title('${%s}^{%s}$ mut' % (after, after_sign[after]))
-    axes[index].set_xticks(range(len(histones)))
-    axes[index].set_xticklabels(histones, fontsize=6, rotation=50, ha="right", rotation_mode="anchor")
-    if index == 0:
-        axes[index].set_ylabel('Accumulated Scores')
-ax = plt.gca()
-handles, labels = ax.get_legend_handles_labels()
-ax.legend(handles[:len(agent_list)], labels[:len(agent_list)], loc='lower right', frameon=False)
-plt.tight_layout()
-plt.savefig("single_APmutant2.png")
-#plt.show()
-plt.close()
+agent_pdscores = {}
+for agent in agent_list:
+    for subunit in subunit_infos:
+        for ID, pos, mtype in subunit_infos[subunit]:
+            dscore = agent_ID_dscore[agent][ID]
+            if agent not in agent_pdscores:
+                agent_pdscores[agent] = []
+            agent_pdscores[agent].append(abs(dscore))
 
-                
 
-# check single vs mutiple AP mutants
+mtype_marker = {'ac':'o', 'me':'s', 'ub':'D', 'ph':'P', 'cr':'p', 'GlcNAc':'*'}
+
+legend_elements = [Line2D([0], [0], marker='o', color='k', label='acetylation', markerfacecolor='w'),
+                   Line2D([0], [0], marker='s', color='k', label='methylation', markerfacecolor='w'),
+                   Line2D([0], [0], marker='D', color='k', label='ubiquitylation', markerfacecolor='w'),
+                   Line2D([0], [0], marker='P', color='k', label='phosphorylation', markerfacecolor='w'),
+                   Line2D([0], [0], marker='p', color='k', label='crotonylation', markerfacecolor='w'),
+                   Line2D([0], [0], marker='*', color='k', label='N-acetylglucosamine', markerfacecolor='w')]
+matplotlib.rcParams['legend.handlelength'] = 0
+matplotlib.rcParams['legend.numpoints'] = 1
+    
 fig = plt.figure()
-histone_list = ['H2A E61A', 'H2A D90A', 'H2A E92A', 'H2A E61/D90/E92A']
-for i in range(len(histone_list)):
-    histone = histone_list[i]
-    positive, negative = 0.0, 0.0
-    for j in range(len(agent_list)):
-        agent = agent_list[j]
-        dscore = agent_histone_dscore[agent][histone]
-        if dscore > 0:
-            plt.bar(i, dscore, width=0.3, bottom=positive, color=agent_color[agent], label=agent)
-            positive += dscore
-        elif dscore < 0:
-            plt.bar(i, dscore, width=0.3, bottom=negative, color=agent_color[agent], label=agent)
-            negative += dscore
-plt.axhline(y=0, linestyle='--', color='k', alpha=1.0)            
-plt.ylabel('Accumulated Scores')
-plt.xticks(range(len(histone_list)), histone_list, fontsize=8, rotation=40, ha="right", rotation_mode="anchor")
-plt.xlim([-0.5, len(histone_list)+0.25])
-handles, labels = plt.gca().get_legend_handles_labels()
-plt.legend(handles[:len(agent_list)], labels[:len(agent_list)])
-plt.tight_layout()
-#plt.show()
-plt.close()
-
-
-# Oncohistone vs PTM library AP mutant
-fig, axes = plt.subplots(nrows=1, ncols=2)
-histone_list = ['H2A E56A', 'H2A E61A', 'H2A D90A', 'H2A E91A', 'H2A E92A', 'H2B E113A', 'H2A E61/D90/E92A']
-for i in range(len(histone_list)):
-    histone = histone_list[i]
-    positive, negative = 0.0, 0.0
-    for j in range(len(agent_list)):
-        agent = agent_list[j]
-        dscore = agent_histone_dscore[agent][histone]
-        if dscore > 0:
-            axes[0].bar(i, dscore, width=0.4, bottom=positive, color=agent_color[agent], label=agent)
-            positive += dscore
-        elif dscore < 0:
-            axes[0].bar(i, dscore, width=0.4, bottom=negative, color=agent_color[agent], label=agent)
-            negative += dscore
-axes[0].axhline(y=0, linestyle='--', color='k', alpha=1.0)            
-axes[0].set_ylabel('Accumulated Scores')
-axes[0].set_xticks(range(len(histone_list)))
-axes[0].set_xticklabels(histone_list, fontsize=8, rotation=40, ha="right", rotation_mode="anchor")
-axes[0].set_title("Oncohistone library")
-
-with open("PTM_dscore.pickle", "rb") as f:
-    agent_ID_dscore = pickle.load(f)
-    
-positive, negative = 0.0, 0.0
-for j in range(len(agent_list)):
-    agent = agent_list[j]
-    dscore = agent_ID_dscore[agent][85]
-    if dscore > 0:
-        axes[1].bar(0, dscore, width=0.3, bottom=positive, color=agent_color[agent], label=agent)
-        positive += dscore
-    elif dscore < 0:
-        axes[1].bar(0, dscore, width=0.3, bottom=negative, color=agent_color[agent], label=agent)
-        negative += dscore
-axes[1].axhline(y=0, linestyle='--', color='k', alpha=1.0)            
-axes[1].set_xticks([0])
-axes[1].set_xticklabels(['AP mutant ($\\ast \\rightarrow $ A)\nH2A E56/E61/E64/D90/E91/E92A\nH2B E105/E113A'], fontsize=8, ma='left')
-axes[1].set_title("PTM library")
-axes[1].set_xlim([-0.5, 1])
-axes[1].set_ylim([-1, 8])
-handles, labels = plt.gca().get_legend_handles_labels()
-plt.legend(handles[:len(agent_list)], labels[:len(agent_list)])
-plt.tight_layout()
-plt.savefig("OncoVSPTMlib_APmutant.png")
-#plt.show()
-plt.close()
-
-# check H4 tail mutant
-fig, axes = plt.subplots(nrows=1, ncols=2)
-histone_list = ['H4 R17/19A']
-for i in range(len(histone_list)):
-    histone = histone_list[i]
-    positive, negative = 0.0, 0.0
-    for j in range(len(agent_list)):
-        agent = agent_list[j]
-        dscore = agent_histone_dscore[agent][histone]
-        if dscore > 0:
-            axes[0].bar(i, dscore, width=0.3, bottom=positive, color=agent_color[agent], label=agent)
-            positive += dscore
-        elif dscore < 0:
-            axes[0].bar(i, dscore, width=0.3, bottom=negative, color=agent_color[agent], label=agent)
-            negative += dscore
-axes[0].axhline(y=0, linestyle='--', color='k', alpha=1.0)
-axes[0].set_xlim([-0.5, 0.5])
-axes[0].set_ylim([-4, 0.5])
-axes[0].set_xticks([0])
-axes[0].set_xticklabels(['H4 R17/19A'], fontsize=8)
-axes[0].set_ylabel('Accumulated Scores')
-axes[0].set_title("Oncohistone library")
-
-positive, negative = 0.0, 0.0
-for j in range(len(agent_list)):
-    agent = agent_list[j]
-    dscore = agent_ID_dscore[agent][43]
-    if dscore > 0:
-        axes[1].bar(0, dscore, width=0.3, bottom=positive, color=agent_color[agent], label=agent)
-        positive += dscore
-    elif dscore < 0:
-        axes[1].bar(0, dscore, width=0.3, bottom=negative, color=agent_color[agent], label=agent)
-        negative += dscore
-axes[1].axhline(y=0, linestyle='--', color='k', alpha=1.0)            
-axes[1].set_xlim([-0.5, 0.5])
-axes[1].set_ylim([-6, 0.5])
-axes[1].set_xticks([0])
-axes[1].set_xticklabels(['H4 R17/19A'], fontsize=8)
-axes[1].set_title("PTM library")
 ax = plt.gca()
-handles, labels = ax.get_legend_handles_labels()
-ax.legend(handles[:len(agent_list)], labels[:len(agent_list)], loc='lower right', frameon=False)
-plt.tight_layout()
-plt.savefig("OncoVSPTMlib_H4tailmutant.png")
-#plt.show()
+leg = ax.legend(handles=legend_elements, frameon=False) 
+plt.show()
 plt.close()
-
-
-
-
-            
 
 sys.exit(1)
 
+for agent in []:
+    for subunit in subunit_infos:
+        for ID, pos, mtype in subunit_infos[subunit]:
+            aa, mutation = ID_pminfo[ID][subunit]['mutations'][mtype][pos]
+            dscore = agent_ID_dscore[agent][ID]
+            min_absdscore, max_absdscore = min(agent_pdscores[agent]), max(agent_pdscores[agent])
+            s = rescale([abs(dscore)], min_absdscore, max_absdscore, 5, 100)[0]
 
-
-### structure analysis
-histone_list = cate_histones['WT+mut']
-agent_outliers = WTmut_agent_outliers
-
-subunit_chains = {'H2A':['C', 'G'], 'H2B':['D', 'H'], 'H3.1':['A', 'E'], 'H4':['B','F']}
-#subunit_chains = {'H2A':['C'], 'H2B':['D'], 'H3.1':['E'], 'H4':['F']}
-subunit_foldrange = {'H2A':[17, 96], 'H2B':[38, 122], 'H3.1':[45, 131], 'H4':[31, 93]}
-
-# check tail vs fold WT mutations
-tail_mutants, fold_mutants = [], []
-for histone in histone_list:
-    for subunit in histone_minfo[histone]:
-        for pos in histone_minfo[histone][subunit]['mut']:
-            if pos >= subunit_foldrange[subunit][0] and pos <= subunit_foldrange[subunit][1]:
-                fold_mutants.append(histone)
+            if dscore > 0:
+                color = 'blue'
+                fontcolor = 'white'
             else:
-                tail_mutants.append(histone)
+                color = 'red'
+                fontcolor = 'yellow'
+            
+            fig = plt.figure()
+            plt.plot([0,0],[0,0], marker=mtype_marker[mtype], markersize=s, mfc=color, markeredgewidth=1.5, mec='k')
+            if len(mutation) > 3:
+                fontsize = int(0.3*s)
+            else:
+                fontsize = int(0.4*s)
+            if fontsize >= 9:
+                plt.annotate(mutation.title(), (0, 0), fontsize=fontsize, color=fontcolor, weight='bold', ha='center', va='center')
+            #plt.annotate(aa+str(pos)+mutation, (0, 0), fontsize=int(0.3*s), ha='center', va='center')
+            #plt.annotate(aa+str(pos)+mutation, (0, 0), ha='center', va='center')
+            #plt.xlim([-0.2, 0.2])
+            #plt.ylim([-0.2, 0.2])
+            plt.gca().axis('off')
+            plt.savefig(agent + '_' + get_mname(ID_minfo[ID])+".png", bbox_inches='tight', pad_inches=0, transparent=True)
+            plt.close()
+            
+sys.exit(1)
+    
 
 for agent in agent_list:
-    #X = [agent_histone_dscore[agent][histone] for histone in tail_mutants]
-    #Y = [agent_histone_dscore[agent][histone] for histone in fold_mutants]
-    X = [abs(agent_histone_dscore[agent][histone]) for histone in tail_mutants]
-    Y = [abs(agent_histone_dscore[agent][histone]) for histone in fold_mutants]
-    data = [X, Y]
-    
     fig = plt.figure()
-    plt.boxplot([X, Y], showfliers=False, notch=True, positions=[0, 0.5])
-    plt.plot([random.uniform(-0.03, 0.03) for i in range(len(X))], X, '.', alpha=0.6)
-    plt.plot([0.5+random.uniform(-0.03, 0.03) for i in range(len(Y))], Y, '.', alpha=0.6)
-    plt.xticks([0, 0.5], ['Tail', 'Fold'])
-    #plt.ylabel("Score")
-    plt.ylabel("$|\Delta$ Score$|$")
-    #plt.yscale('log', base=2)
-    plt.title(agent_fullname[agent])
-    #plt.tight_layout()
-    #plt.savefig("%s_tailVSfold.png" % (agent))
-    #plt.show()
-    plt.close()
+    for i in range(len(subunit_list)):
+        subunit = subunit_list[i]
+        mtype_IDs = subunit_location_mtype_IDs[subunit]['tail']
+        for mtype in mtype_IDs:
+            if mtype == 'ac':
+                color = 'red'
+            elif mtype == 'me':
+                color = 'blue'
+            else:
+                color = 'black'
+            for ID in mtype_IDs[mtype]:
+                pos = ID_pminfo[ID][subunit]['mutations'][mtype].keys()[0]
+                if pos < subunit_foldrange[subunit][0]:
+                    terminal = 'N'
+                    tail_len = subunit_foldrange[subunit][0]
+                else:
+                    assert pos > subunit_foldrange[subunit][1]
+                    terminal = 'C'
+                    tail_len = None
+                r = get_r (pos, tail_len, 0, terminal)
+                s = agent_ID_score[agent][ID]
+                plt.polar(np.pi/4.0 + i*np.pi/2.0, r, 'o', color=color, markersize=3, alpha=0.5)
 
-#sys.exit(1)
+    plt.show()
+    plt.close()
+                
+
+
+sys.exit(1)
+    
+for agent in agent_list:
+    fig = plt.figure()
+    for i in range(len(subunit_list)):
+        for j in range(len(location_list)):
+            subunit = subunit_list[i]
+            location = location_list[j]
+            mtype_IDs = subunit_location_mtype_IDs[subunit][location]
+            for mtype, IDs in mtype_IDs.items():
+                if mtype == 'me':
+                    color = 'blue'
+                elif mtype == 'ac':
+                    color = 'red'
+                else:
+                    color = 'black'
+                for ID in IDs:
+                    score = agent_ID_score[agent][ID]
+                    x = i + (j-0.5)
+                    y = score
+                    plt.plot([x], [y], '.', makercolor=color)
+    plt.show()
+    plt.close()
+    
+#X = [agent_histone_dscore[agent][histone] for histone in tail_mutants]
+#Y = [agent_histone_dscore[agent][histone] for histone in fold_mutants]
+X = [abs(agent_histone_dscore[agent][histone]) for histone in tail_mutants]
+Y = [abs(agent_histone_dscore[agent][histone]) for histone in fold_mutants]
+data = [X, Y]
+
+fig = plt.figure()
+plt.boxplot([X, Y], showfliers=False, notch=True, positions=[0, 0.5])
+plt.plot([random.uniform(-0.03, 0.03) for i in range(len(X))], X, '.', alpha=0.6)
+plt.plot([0.5+random.uniform(-0.03, 0.03) for i in range(len(Y))], Y, '.', alpha=0.6)
+plt.xticks([0, 0.5], ['Tail', 'Fold'])
+#plt.ylabel("Score")
+plt.ylabel("$|\Delta$ Score$|$")
+#plt.yscale('log', base=2)
+plt.title(agent_fullname[agent])
+#plt.tight_layout()
+#plt.savefig("%s_tailVSfold.png" % (agent))
+#plt.show()
+plt.close()
+
+sys.exit(1)
 
 # check the WT outliers on the structure
 for agent in agent_list:
@@ -1837,7 +2072,7 @@ for agent in agent_list:
     #plt.show()
     plt.close()
         
-#sys.exit(1)
+sys.exit(1)
     
 for agent in agent_list:
     score_histone = sorted([[score, histone] for histone, score in agent_histone_score[agent].items()])
@@ -2054,8 +2289,7 @@ for agent in agent_list:
     #plt.show()
     plt.close()
 
-#sys.exit(1)
-
+sys.exit(1)
 
 #### only WT and WT+mut
 # Clustering histones by titration profile

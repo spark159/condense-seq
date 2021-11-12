@@ -112,8 +112,8 @@ for gID in gID_exonlen:
     gID_RPKM[gID] = RPKM
 """
 
-#gID_RPKM = read_tsv("ENCFF146JOZ.tsv")
-gID_RPKM = read_tsv("ENCFF910OBU.tsv")
+gID_RPKM = read_tsv("ENCFF146JOZ.tsv")
+#gID_RPKM = read_tsv("ENCFF910OBU.tsv")
 temp_dict = {}
 for gID in gID_RPKM:
     if gID in gID_field_values:
@@ -128,6 +128,7 @@ for gID in gID_RPKM.keys():
     TSS = gID_field_values[gID]['TSS']
     TTS = gID_field_values[gID]['TTS']
     strand = gID_field_values[gID]['strand']
+    #interval = (TSS-250, TSS+250)
     interval = (TSS-500, TSS+500)
     #interval = (TSS-1000, TSS+1000)
     #if strand == '+':
@@ -143,7 +144,23 @@ for gID in gID_RPKM.keys():
 #fname = "NCP_Spermidine(3+)_1kb"
 bin_size = 1000
 #names, chr_binID_counts, chr_binID_range, chr_binID_GC = read_bincountfile("/home/spark159/Downloads/" + fname + "_bin.cn")
-fname = "H1_NCP-new_sp_1kb_bin.cn"
+#fname = "H1_DNA_sp_1kb_bin.cn"
+#fname = "H1_NCP_sp_1kb_bin.cn"
+
+#fname = "H1_DNA_spd_1kb_bin.cn"
+#fname = "H1_NCP_spd_1kb_bin.cn"
+
+#fname = "H1_DNA_CoH_1kb_bin.cn"
+#fname = "H1_NCP_CoH_1kb_bin.cn"
+
+#fname = "H1_DNA_PEG_1kb_bin.cn"
+#fname = "H1_NCP_PEG_1kb_bin.cn"
+
+#fname = "H1_NCP_Mg_1kb_bin.cn"
+fname = "H1_NCP_Ca_1kb_bin.cn"
+
+
+
 names, chr_binID_counts, chr_binID_range, chr_binID_GC = read_bincountfile(fname)
 chr_binID_control = chr_binID_counts[-1]
 
@@ -214,8 +231,8 @@ for i in range(len(names)-1):
     plt.xlabel("log Normalized Counts")
     plt.ylabel("log RPKM")
     plt.title("Titration " + str(i+1))
-    #plt.savefig(fname+"_"+str(i+1)+".png")
-    plt.show()
+    plt.savefig(fname+"_"+str(i+1)+".png")
+    #plt.show()
     plt.close()
 
                 

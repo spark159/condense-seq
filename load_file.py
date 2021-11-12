@@ -106,7 +106,7 @@ def read_anot_file(fname, target_names=None, jump=None, num_max=sys.maxint):
     return ID_chr, ID_pos, name_ID_value
 
 
-def read_profile(fname, moving_win=None, name_choice=None, ID_choice=None):
+def read_profile(fname, moving_win=None, name_choice=None, ID_choice=None, strip_ver=True):
     name_ID_profile = {}
     First = True
     for line in open(fname):
@@ -118,6 +118,8 @@ def read_profile(fname, moving_win=None, name_choice=None, ID_choice=None):
             First = False
             continue
         name, ID = cols[:2]
+        if strip_ver:
+            ID = ID.split('.')[0]
         if name_choice and name not in name_choice:
             continue
         if ID_choice and ID not in ID_choice:
@@ -145,6 +147,20 @@ def read_profile(fname, moving_win=None, name_choice=None, ID_choice=None):
         assert name not in name_mean_profile
         name_mean_profile[name] = mean_profile
     return name_mean_profile, name_ID_profile
+
+def read_tsv (fname):
+    First = True
+    geneID_FPKM = {}
+    for line in open(fname):
+        if First:
+            First = False
+            continue
+        cols = line.strip().split()
+        geneID, FPKM = cols[0], float(cols[6])
+        geneID = geneID.split('.')[0]
+        geneID_FPKM[geneID] = FPKM
+    return geneID_FPKM
+
 
 def read_hgtable(fname, chr_list=None, mode='gene'):
     ID_field_values = {}   
@@ -259,7 +275,115 @@ def read_hgtable(fname, chr_target, TSS_range=1000, TTS_range=1000, Prom_range=5
     return feature_ID_interval
 """
 
-def read_GTF (fname, chr_list=None, mode="gene"):
+def read_GTF (fname, chr_list=None, mode="gene", strip_ver=True):
+    ID_field_values = {}
+    for line in open(fname):
+        if line.startswith("#"):
+            continue
+        cols = line.strip().split('\t')
+        chr, source, feature, start, end, score, strand, frame, attribute = cols[:9]
+        if not chr.startswith('chr'):
+            chr = "chr" + chr
+        if chr_list and chr not in chr_list:
+            continue
+        if feature not in ["gene", "exon", "start_codon", "stop_codon"]:
+            continue
+        start = int(start) - 1
+        end = int(end) - 1
+        attcols = attribute.strip(';').split('; ')
+        tag_value = {}
+        for item in attcols:
+            tag, value = item.strip().split(' ')
+            value = value.strip('"')
+            tag_value[tag] = value
+        geneID = tag_value["gene_id"]
+        if strip_ver:
+            geneID = geneID.split('.')[0]
+        geneType = tag_value["gene_type"]
+        geneName = tag_value["gene_name"]
+        if geneID not in ID_field_values:
+            ID_field_values[geneID] = {}
+        if "chr" not in ID_field_values[geneID]:
+            ID_field_values[geneID]["chr"] = chr
+        if "strand" not in ID_field_values[geneID]:
+            ID_field_values[geneID]["strand"] = strand
+        if "geneType" not in ID_field_values[geneID]:
+            ID_field_values[geneID]["geneType"] = geneType
+        if "geneName" not in ID_field_values[geneID]:
+            ID_field_values[geneID]["geneName"] = geneName            
+        if feature == "gene":
+            if strand == "+":
+                TSS, TTS = start, end
+            else:
+                TTS, TSS = start, end
+            ID_field_values[geneID]["TSS"] = TSS
+            ID_field_values[geneID]["TTS"] = TTS
+        if feature == "exon":
+            interval = [start, end]
+            if "exons" not in ID_field_values[geneID]:
+                ID_field_values[geneID]["exons"] = []
+            ID_field_values[geneID]["exons"].append(interval)
+        if feature == "start_codon":
+            if strand == "+":
+                CSS = start
+            else:
+                CSS = end
+            if "CSS" not in ID_field_values[geneID]:
+                ID_field_values[geneID]["CSS"] = CSS
+            else:
+                prev = ID_field_values[geneID]["CSS"]
+                if strand == "+":
+                    CSS = min(prev, CSS)
+                else:
+                    CSS = max(prev, CSS)
+                ID_field_values[geneID]["CSS"] = CSS
+        if feature == "stop_codon":
+            if strand == "+":
+                CTS = end
+            else:
+                CTS = start
+            if "CTS" not in ID_field_values[geneID]:
+                ID_field_values[geneID]["CTS"] = CTS
+            else:
+                prev = ID_field_values[geneID]["CTS"]
+                if strand == "+":
+                    CTS = max(prev, CTS)
+                else:
+                    CTS = min(prev, CTS)
+                ID_field_values[geneID]["CTS"] = CTS
+
+    for ID in ID_field_values:
+        try:
+            exons = ID_field_values[ID]["exons"]
+        except:
+            continue
+        new = []
+        for start, end in sorted(exons):
+            if new and new[-1][1] >= start:
+                new[-1][1] = max(new[-1][1], end)
+            else:
+                new.append([start, end])
+        ID_field_values[ID]["exons"] = new
+
+    if mode == "gene":
+        return ID_field_values
+    if mode == "field" or mode == "both":
+        field_ID_values = {}
+        for ID in ID_field_values:
+            field_values = ID_field_values[ID]
+            for field in field_values:
+                values = field_values[field]
+                if field not in field_ID_values:
+                    field_ID_values[field] = {}
+                field_ID_values[field][ID] = values
+
+    if mode == "field":
+        return field_ID_values
+    if mode == "both":
+        return ID_field_values, field_ID_values
+
+
+def read_GTF_old (fname, chr_list=None, mode="gene"):
     ID_field_values = {}
     for line in open(fname):
         if line.startswith("#"):
@@ -287,6 +411,7 @@ def read_GTF (fname, chr_list=None, mode="gene"):
             geneType = tag_value["gene_biotype"]
         except:
             geneType = tag_value["gene_type"]
+        geneName = tag_value["gene_name"]
         if geneID not in ID_field_values:
             ID_field_values[geneID] = {}
         if "chr" not in ID_field_values[geneID]:
@@ -295,6 +420,8 @@ def read_GTF (fname, chr_list=None, mode="gene"):
             ID_field_values[geneID]["strand"] = strand
         if "geneType" not in ID_field_values[geneID]:
             ID_field_values[geneID]["geneType"] = geneType
+        if "geneName" not in ID_field_values[geneID]:
+            ID_field_values[geneID]["geneName"] = geneName
         if feature == "gene":
             if strand == "+":
                 TSS, TTS = start, end
@@ -367,7 +494,7 @@ def read_GTF (fname, chr_list=None, mode="gene"):
         return ID_field_values, field_ID_values
 
 def read_RPKM (fname, gtf_fname, chr_list=None):
-    gID_field_values, field_gID_values = read_GTF (gtf_fname, chr_list=chr_list, mode="both")
+    gID_field_values, field_gID_values = read_GTF_old (gtf_fname, chr_list=chr_list, mode="both")
     
     gID_exons = field_gID_values['exons']
     gID_exonlen = {}

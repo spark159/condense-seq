@@ -50,14 +50,16 @@ chr_choices = ['chr1']
 
 for chr_choice in chr_choices:
 
-    # read G-band information and build interval-dictionary 
-    path = "./data/"
+    # read G-band information and build interval-dictionary
+    path = ""
+    #path = "./data/"
     gID_Gband = read_Gband(path+"Gband_information.txt", chr_choices=[chr_choice])[chr_choice]
 
-
     # draw the continuous singal in the 1Mb resolution
-    path = "./data/"
-    field_ID_value = load_file.read_tabular_file (path + "hg19_" + chr_choice + "_167win25step_anot.cn", mode='col', jump=10)
+    path = ""
+    #path = "./data/"
+    #field_ID_value = load_file.read_tabular_file (path + "hg19_" + chr_choice + "_167win25step_anot.cn", mode='col', jump=10)
+    field_ID_value = load_file.read_tabular_file (path + "H1_NCP_sp_" + chr_choice + "_167win25step_anot.cn", mode='col', jump=10)
 
     ID_pos = field_ID_value['PhysicalPosition']
     ID_AT = field_ID_value['ATcontent']
@@ -65,13 +67,25 @@ for chr_choice in chr_choices:
     ID_score1 = field_ID_value["data/sp_spd_tests_detail/sp7"]
     ID_score2 = field_ID_value["data/sp_spd_tests_detail/sp8"]
 
-    geneID_field_values, field_geneID_values = load_file.read_GTF (path + "Homo_sapiens.GRCh37.87.gtf", chr_list=[chr_choice], mode="both")
-    geneID_RPKM = load_file.read_RPKM (path+"GSE63124_all_gene_raw_readcounts.txt", path+"Homo_sapiens.GRCh37.87.gtf", chr_choice)
+    #geneID_field_values, field_geneID_values = load_file.read_GTF (path + "Homo_sapiens.GRCh37.87.gtf", chr_list=[chr_choice], mode="both")
+    #geneID_RPKM = load_file.read_RPKM (path+"GSE63124_all_gene_raw_readcounts.txt", path+"Homo_sapiens.GRCh37.87.gtf", chr_choice)
+
+    geneID_field_values, field_geneID_values = load_file.read_GTF ("ENCFF159KBI.gtf", chr_list=[chr_choice], mode="both")
+    geneID_RPKM = read_tsv("ENCFF174OMR.tsv")
+
+    #geneID_pos = {}
+    #for geneID in geneID_field_values:
+    #    pos = geneID_field_values[geneID]['TSS']
+    #    geneID_pos[geneID] = pos
 
     geneID_pos = {}
     for geneID in geneID_field_values:
-        pos = geneID_field_values[geneID]['TSS']
-        geneID_pos[geneID] = pos
+        try:
+            pos = geneID_field_values[geneID]['TSS']
+            geneID_pos[geneID] = pos
+        except:
+            continue
+
 
     #names = ['data/sp_spd_tests_detail/sp7', 'ATcontent', 'CpGNumber', 'k27ac', 'k9ac', 'k4me3', 'k36me3_2', 'k9me2_2', 'k9me3_2', 'k27me3a_2']
     #names = ['data/sp_spd_tests_detail/sp7', 'ATcontent', 'CpGNumber', 'k27ac', 'k9ac', 'k4me3', 'k36me3', 'k9me2', 'k9me3', 'k27me3']
