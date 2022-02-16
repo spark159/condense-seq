@@ -108,6 +108,7 @@ blur_win = int(4*i + 1) # sliding window (unit of bin)
 #blur_win = int(10*i + 1)
 
 # set chromosomes
+#chr_choice = ['chr1']
 #chr_choices = ['chr10']
 #chr_choices = ['chr%d' % (i) for i in range(1, 13)]
 #chr_choices = ['chr1']
@@ -348,6 +349,7 @@ for chr_choice in chr_choices:
 
             plt.tight_layout()
             #plt.savefig("Gwide_" + chr_choice + '_' + target_name + '_' + feature_name + ".png", bbox_inches='tight', dpi=1000)
+            plt.savefig("Gwide_" + chr_choice + '_' + target_name + '_' + feature_name + ".svg", format='svg', bbox_inches='tight')
             plt.show()
             plt.close()
 
@@ -429,7 +431,7 @@ for chr_choice in chr_choices:
         axes[1].spines['right'].set_visible(False)
         axes[1].tick_params(top='off', bottom='off', left='off', right='off', labelbottom='off')
 
-        ax1p.set_xlabel(chr_choice, rotation=40, fontsize=10, labelpad=23, ha='right')
+        ax1p.set_xlabel(chr_choice, rotation=40, fontsize=15, labelpad=23, ha='right')
         ax1p.set_xlim([-0.1, 2.0])
         ax1p.spines['top'].set_visible(False)
         ax1p.spines['bottom'].set_visible(False)
@@ -444,6 +446,8 @@ for chr_choice in chr_choices:
         axes[0].set_yticks([])
         
         #plt.tight_layout()
-        plt.savefig("Gwide_" + chr_choice + '_' + target_name + '_' + feature_name + ".png", bbox_inches='tight')
+        #plt.savefig("Gwide_" + chr_choice + '_' + target_name + '_' + feature_name + ".png", bbox_inches='tight')
+        plt.savefig("Gwide_" + chr_choice + '_' + target_name + '_' + feature_name + ".svg", format='svg', bbox_inches='tight')
+
         #plt.show()
         plt.close()

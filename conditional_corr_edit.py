@@ -70,113 +70,81 @@ def get_dincount(seq, din=None):
         din_count[din] += 1
     return din_count
 
+def get_density (ID_CNum, ID_meNum):
+    ID_mefrac = {}
+    for ID in ID_CNum:
+        CNum = ID_CNum[ID]
+        if CNum <= 0:
+            ID_mefrac[ID] = 0.0
+            continue
+        meNum = ID_meNum[ID]
+        mefrac = float(meNum) / (CNum)
+        ID_mefrac[ID] = mefrac
+    return ID_mefrac
+
+
+# load annotation data
+print "Data reading start"
+
 path = ''
-ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+"H1_NCP_sp_chr1_anot.cn")
-ID_score2 = name_ID_value['work/2021_06_07_H1_sp_detail/H1-NCP-sp-8']
+ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+"H1_NCP_sp_chr1_extended_anot.cn")
+ID_score = name_ID_value['work/2021_06_07_H1_sp_detail/H1-NCP-sp-8']
+name_ID_value['AT content'] = name_ID_value['ATcontent']
+name_ID_value['meCpG density'] = get_density(name_ID_value['CNumber(CpG)'],
+                                             name_ID_value['meCNumber(CpG)'])
+name_ID_value['meCHG density'] = get_density(name_ID_value['CNumber(CHG)'],
+                                             name_ID_value['meCNumber(CHG)'])
+name_ID_value['meCHH density'] = get_density(name_ID_value['CNumber(CHH)'],
+                                             name_ID_value['meCNumber(CHH)'])
+
 ID_seq = name_ID_value['Sequence']
-ID_AT = name_ID_value['ATcontent']
-ID_CpG = name_ID_value['CNumber(CpG)']
-ID_me = name_ID_value['meCNumber(CpG)']
-
-for ID in ID_AT:
-    ID_AT[ID] = ID_AT[ID]*100
-
-ID_polyAT, ID_polyGC = {}, {}
+ID_polyGC = {}
 for ID in ID_seq:
     seq = ID_seq[ID]
-    num_pos = poly_score(seq, nts='AT', pos=True)
-    score = 0.0
+    num_pos = poly_score(seq.upper(), nts='GC', pos=True)
+    mean_len, count = 0.0, 0.0
     for num, pos in num_pos.items():
-        if num < 3:
-            continue
-        score += len(pos)*(num**2)
-    ID_polyAT[ID] = score
-    num_pos = poly_score(seq, nts='GC', pos=True)
-    score = 0.0
-    for num, pos in num_pos.items():
-        if num < 3:
-            continue
-        score += len(pos)*(num**2)
-    ID_polyGC[ID] = score
+        mean_len += len(pos)*num
+        count += len(pos)
+    ID_polyGC[ID] = mean_len/count
 
-ID_TA = {}
-for ID in ID_seq:
-    seq = ID_seq[ID]
-    count = get_dincount(seq, din="TA")
-    ID_TA[ID] = count
+name_ID_value['poly-G/C length'] = ID_polyGC
 
-ID_mefrac = {}
-for ID in ID_CpG:
-    CpG = ID_CpG[ID]
-    if CpG <= 0:
-        ID_mefrac[ID] = np.NaN
-        continue
-    me = ID_me[ID]
-    #mefrac = float(me) / (2*CpG)
-    mefrac = float(me) / (CpG)
-    ID_mefrac[ID] = mefrac
+del ID_seq
+del ID_polyGC
 
-# collect all features
-names = ["AT content", "TpA count", "CpG count", "Poly-G", "meCpG density", "H2AZ", "H3k4me3", "H3k27ac", "H3k9ac", "H3k36me3", "H3k9me3", "H3k27me3"]
-ID_value_list = [ID_AT, ID_TA, ID_CpG, ID_polyGC, ID_mefrac, name_ID_value['H2AFZ'], name_ID_value['H3K4me3'], name_ID_value['H3k27ac'], name_ID_value['H3K9ac'], name_ID_value['H3K36me3'], name_ID_value['H3K9me3'], name_ID_value['H3K27me3']]
+# select feature sets
+names = ['AT content', 'poly-G/C length', 'meCpG density', 'meCHG density', 'meCHH density', 'H2AFZ', 'H2AK5ac', 'H2BK120ac', 'H2BK12ac', 'H2BK15ac', 'H2BK20ac', 'H2BK5ac', 'H3K14ac', 'H3K18ac', 'H3K23ac', 'H3K23me2', 'H3K27ac', 'H3K27me3', 'H3K36me3', 'H3K4ac', 'H3K4me1', 'H3K4me2', 'H3K4me3', 'H3K56ac', 'H3K79me1', 'H3K79me2', 'H3K9ac', 'H3K9me3', 'H4K20me1', 'H4K5ac', 'H4K8ac', 'H4K91ac']
+
+IDs = list(ID_pos.keys())
 
 
+# binning the features and get state
 ID_state = {}
-for ID in ID_seq:
-    state = [ID_value[ID] for ID_value in ID_value_list]
-    ID_state[ID] = state
+for name in names:
+    values = [name_ID_value[name][ID] for ID in IDs]
+    min_value = min(values)
+    max_value = max(values)
+    for ID, value in zip(IDs, values):
+        if name.startswith('H'):
+            re_value = round(float(value-min_value)/max_value,1)
+        else:
+            re_value = round(float(value-min_value)/max_value,2)
+        if ID not in ID_state:
+            ID_state[ID] = []
+        ID_state[ID].append(re_value)
+    del values
+    del min_value
+    del max_value
+    del re_value
 
-"""
-# multivariate linear regression
-IDs = ID_state.keys()
-feature_list = [ ID_state[ID] for ID in IDs]
-test_list = [[ID_score1[ID]] for ID in IDs]
-reg = linear_model.Ridge(alpha=0.5)
-reg.fit (feature_list, test_list)
-coef_list = reg.coef_[0]
-print "Linear regression"
-for i in range(len(names)):
-    print names[i], coef_list[i]
+del ID_pos
+del ID_chr
+del name_ID_value
 
-fig = plt.figure()
-plt.bar(range(len(coef_list)), coef_list, width=0.5, color='g')
-plt.xticks(range(len(coef_list)), names, rotation=90)
-plt.ylabel("Coefficient")
-plt.axhline(y=0, color='k', linestyle='--')
-plt.title("Multivariate linear regression with Condensability")
-plt.savefig("bar_linear.png",bbox_inches='tight')
-plt.show()
-plt.close()
+print "Data reading is done"
 
-# partial correlation
-print "Partial correlation"
-pcorr_list = []
-for i in range(len(names)):
-    Zs = ID_value_list[:i] + ID_value_list[i+1:]
-    ID_newvalue = statis.neutralize (ID_value_list[i], Zs)
-    ID_newscore1 = statis.neutralize (ID_score1, Zs)
-    A, B = [], []
-    for ID in ID_newvalue:
-        newvalue = ID_newvalue[ID]
-        newscore1 = ID_newscore1[ID]
-        A.append(newvalue)
-        B.append(newscore1)
-    pcorr = statis.get_corr(A, B)
-    pcorr_list.append(pcorr)
-    name = names[i]
-    print name, pcorr
-
-fig = plt.figure()
-plt.bar(range(len(pcorr_list)), pcorr_list, width=0.5, color='g')
-plt.xticks(range(len(pcorr_list)), names, rotation=90)
-plt.ylabel("Pearson correlation")
-plt.axhline(y=0, color='k', linestyle='--')
-plt.title("Partial correlation with Condensability")
-plt.savefig("bar_pcorr.png",bbox_inches='tight')
-plt.show()
-plt.close()
-"""
-
+    
 # conditinoal correlation
 print "Conditional correlation"
 cdcorr_list = []
@@ -195,8 +163,8 @@ for i in range(len(names)):
     for IDs in rstate_IDs.values():
         if len(IDs) < 5:
             continue
-        X = [ID_value_list[i][ID] for ID in IDs]
-        Y = [ID_score2[ID] for ID in IDs]
+        X = [ID_state[ID][i] for ID in IDs]
+        Y = [ID_score[ID] for ID in IDs]
         
         #corr = statis.get_corr(X, Y)
         #corr = scipy.stats.spearmanr(X, Y)[0]
@@ -218,9 +186,10 @@ for i in range(len(names)):
 
 
 # state vs corr list with weight (new)
-color_list = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan', 'lime', 'salmon']
+color_list = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan', 'lime', 'salmon']*5
 
-fig = plt.figure(figsize=(3,4))
+#fig = plt.figure(figsize=(3,4))
+fig = plt.figure(figsize=(2.25, 6.4))
 for i in range(len(names)):
     corrs = np.asarray(corrs_list[i])
     weights = np.asarray(weights_list[i])
@@ -229,14 +198,13 @@ for i in range(len(names)):
     rgb_colors[:,:3] = colors.to_rgba(color_list[i])[:3]
     rgb_colors[:,3] = 0.15 * weights / float(max(weights))
     order = np.argsort(weights)
-    plt.scatter(corrs[order], [-i]*len(corrs), s=50000*frac_weights[order], color=rgb_colors[order])
+    plt.scatter(corrs[order], [-i]*len(corrs), s=5000*frac_weights[order], color=rgb_colors[order])
     plt.annotate('x', (cdcorr_list[i], -i), ha='center', va='center')
 plt.axvline(x=0, linestyle='--', color='k')
-plt.xlim([-0.2, 0.2])
+plt.xlim([-0.25, 0.25])
 plt.xlabel("Spearman correlation", fontsize=8)
 plt.yticks([-i for i in range(len(names))], names, fontsize=8)
 plt.title("Data Stratification", fontsize=8)
-plt.tight_layout()
 plt.gca().tick_params(axis='both', which='major', labelsize=8)
 plt.gca().tick_params(axis='both', which='minor', labelsize=8)
 plt.savefig("Data_strat.png", bbox_inches='tight', dpi=500)
@@ -256,14 +224,14 @@ for i in range(len(names)):
         yset2.append(-i)
         dataset2.append(cdcorr)
         
-fig = plt.figure(figsize=(3,4))
+#fig = plt.figure(figsize=(3,4))
+fig = plt.figure(figsize=(2.25, 6.4))
 plt.barh(yset1, dataset1, align='center', color='tab:red', height=0.5, edgecolor='k')
 plt.barh(yset2, dataset2, align='center', color='tab:blue', height=0.5, edgecolor='k')
-plt.axvline(x=0, linestyle='--', color='k')
+plt.axvline(x=0, linestyle='--', color='k', linewidth=1)
 plt.xlabel("Averaged correlation", fontsize=8)
 plt.yticks([-i for i in range(len(names))], names, fontsize=8)
 plt.title("Conditional Correlation", fontsize=8)
-plt.tight_layout()
 plt.gca().tick_params(axis='both', which='major', labelsize=8)
 plt.gca().tick_params(axis='both', which='minor', labelsize=8)
 #plt.savefig("Conditional_corr.png", bbox_inches='tight')
@@ -322,59 +290,3 @@ plt.close()
 ##plt.savefig("bar_cdcorr.png",bbox_inches='tight')
 #plt.show()
 #plt.close()
-
-
-"""
-# conditional mutual information
-print "Conditional mutual information"
-
-state_IDs = {}
-for ID in ID_state:
-    state = tuple(ID_state[ID])
-    if state not in state_IDs:
-        state_IDs[state] = []
-    state_IDs[state].append(ID)
-
-total = 0
-H_Y_allX = 0.0
-for IDs in state_IDs.values():
-    if len(IDs) < 10:
-        continue
-    Y = [ID_score1[ID] for ID in IDs]
-    total += len(IDs)
-    H_Y_allX += len(IDs)*ee.entropyd(Y)
-H_Y_allX = H_Y_allX / total
-
-cdminfo_list = []
-for i in range(len(names)):
-    rstate_IDs = {}
-    for ID in ID_state:
-        state = ID_state[ID]
-        rstate = tuple(state[:i] + state[i+1:])
-        if rstate not in rstate_IDs:
-            rstate_IDs[rstate] = []
-        rstate_IDs[rstate].append(ID)
-    total = 0
-    H_Y_rX = 0.0
-    for IDs in rstate_IDs.values():
-        if len(IDs) < 10:
-            continue
-        Y = [ID_score1[ID] for ID in IDs]
-        total += len(IDs)
-        H_Y_rX += len(IDs)*ee.entropyd(Y)
-    H_Y_rX = H_Y_rX / total
-    cdminfo = H_Y_rX - H_Y_allX
-    #assert cdminfo >= 0
-    cdminfo_list.append(cdminfo)
-    print names[i], cdminfo
-
-fig = plt.figure()
-plt.bar(range(len(cdminfo_list)), cdminfo_list, width=0.5, color='g')
-plt.xticks(range(len(cdminfo_list)), names, rotation=90)
-plt.ylabel("Bits")
-plt.axhline(y=0, color='k', linestyle='--')
-plt.title("Conditional mutual information with Condensability")
-plt.savefig("bar_cdminfo.png",bbox_inches='tight')
-plt.show()
-plt.close()
-"""

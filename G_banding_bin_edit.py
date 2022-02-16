@@ -466,13 +466,14 @@ for chr_choice in chr_choices:
     """
 
     for i in range(len(feature_names)):
-        fig = plt.figure(figsize=(15,5))
+        #fig = plt.figure(figsize=(15,5))
+        fig = plt.figure(figsize=(18,6))
         ax1 = plt.subplot(211)
         ax2 = plt.subplot(212)
         
         for j in range(len(target_names)):
             target_name = target_names[j]
-            ax1.plot(name_sig[target_name], '#1f77b4', alpha=1)
+            ax1.plot(name_sig[target_name], '#1f77b4', alpha=1, lw=3)
 
         pt = 0
         for gID in sorted(gID_size):
@@ -483,10 +484,13 @@ for chr_choice in chr_choices:
             pt += size
 
         ax1.set_xticks(xtick_locs[::10])
+        #ax1.set_xticklabels(xtick_labels[::10])
         ax1.set_xticklabels(xtick_labels[::10])
-        ax1.set_xlabel("Position (Mb)")
-        ax1.set_ylabel(target_name, color='blue')
-        ax1.tick_params('y', colors='blue')
+        #ax1.set_xlabel("Position (Mb)")
+        ax1.set_xlabel("Position (Mb)", fontsize=20)
+        #ax1.set_ylabel(target_name, color='blue')
+        ax1.set_ylabel('Condensability', color='blue', fontsize=20)
+        ax1.tick_params('y', colors='blue', labelsize=15)
         ax1.set_xlim([0, len(gband_img)+1])
         #ax1.set_ylim([0.05, 0.35])
         #ax1.set_ylim([0.1, 0.4])
@@ -506,26 +510,29 @@ for chr_choice in chr_choices:
 
         ax1p = ax1.twinx()
         feature_name = feature_names[i]
-        #ax1p.plot(name_sig[feature_name], '#d62728', alpha=0.5)
-        ax1p.plot(name_sig[feature_name], 'tab:orange', alpha=0.8)
+        #ax1p.plot(name_sig[feature_name], '#d62728', alpha=0.5, lw=3)
+        ax1p.plot(name_sig[feature_name], 'tab:orange', alpha=0.8, lw=3)
         #ax1p.plot(np.log(-1*np.asarray(name_sig[feature_name])), '#d62728', alpha=0.5)
-        #ax1p.set_ylabel(feature_name, color='r')
-        ax1p.set_ylabel('Eigenvector', color='orangered')
-        #ax1p.tick_params('y', colors='#d62728')
-        ax1p.tick_params('y', colors='orangered')
+        #ax1p.set_ylabel(feature_name, color='r', fontsize=20)
+        #ax1p.set_ylabel('Gene expression', color='r', fontsize=20)
+        ax1p.set_ylabel('A/B score', color='orangered', fontsize=20)
+        #ax1p.tick_params('y', colors='#d62728', labelsize=15)
+        ax1p.tick_params('y', colors='orangered', labelsize=15)
         ax1p.set_ylim([-0.05, 0.05])
+        #ax1p.set_ylim([-0.1, 2.0])
 
         ax2.imshow(np.transpose(gband_img), cmap='Greys', aspect=0.3/aspect)
         ax2.imshow(np.transpose(gband_cenimg), cmap ='Reds', vmin=0, vmax=20, aspect=0.3/aspect)
         ax2.imshow(np.transpose(gband_varimg), cmap ='Purples', vmin=0, vmax=20, aspect=0.3/aspect)
         ax2.set_yticks([])
         ax2.set_xticks(ytick_locs)
-        ax2.set_xticklabels(ytick_labels)
+        ax2.set_xticklabels(ytick_labels, fontsize=10)
         ax2.tick_params(axis="x", labelsize=5, rotation=90)
         ax2.set_xlim([0, len(gband_img)+1])
 
         plt.tight_layout()
-        plt.savefig("Gwide_" + chr_choice + '_' + target_name + '_' + feature_name + ".png", bbox_inches='tight', dpi=1000)
+        #plt.savefig("Gwide_" + chr_choice + '_' + target_name + '_' + feature_name + ".png", bbox_inches='tight', dpi=1000)
+        plt.savefig("Gwide_" + chr_choice + '_' + target_name + '_' + feature_name + ".svg", format='svg', bbox_inches='tight')
         #plt.show()
         plt.close()
 

@@ -443,32 +443,22 @@ def combine_all(Ncov_fname,
 
     # read bisulfite-seq file and get the number of methylated C for each NCP
     def read_BS_file (fname, Int_dict, chr):
-        ID_C = {} # num of C in the target motif
-        ID_meC = {}  # num of methylated C in the target motif 
-        First = True
-        line_count = -1
+        ID_C = {} # num of "detected" C in the target motif
+        ID_meC = {}  # num of "detected" methylated C in the target motif 
         for line in open(fname):
-            line_count +=1
             cols = line.strip().split()
-            if First:
-                First = False
-                continue
-            chrname, st, ed, _, _, strand, _, _, _, reads, frac = cols
+            chrname, st, ed, _, _, strand, _, _, _, reads, frac = cols[:11]
             if chrname != chr:
                 continue
             pos = int(st)
-            findIDs = Int_dict.insert(pos, 1)
             reads, frac = int(reads), 0.01*float(frac)
-            if reads <= 0:
-                sig = 0
-                #sig = 0.5
-                #continue
-            else:
-                sig = frac
+            if reads <= 0: # skip "undetected" C in the target motif
+                continue
+            findIDs = Int_dict.insert(pos, 1)
             for ID in findIDs:
                 if ID not in ID_meC:
                     ID_meC[ID] = 0.0
-                ID_meC[ID] += sig
+                ID_meC[ID] += frac
         ID_C = Int_dict.get()
         return ID_C, ID_meC
 

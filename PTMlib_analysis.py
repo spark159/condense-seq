@@ -21,6 +21,7 @@ from matplotlib.patches import Patch
 from matplotlib.lines import Line2D
 import matplotlib
 import pickle
+from scipy.stats import norm
 
 def GC_content(seq):
     num=0.0
@@ -545,7 +546,7 @@ for agent in agent_list:
 
 #save survival probabilty data
 #save actual number data
-if True:
+if False:
     total_WT_count = 1.6*(10**12)
     total_lib_count = total_WT_count / 100.0 #1% spike-in
     agent_list = ['sp']
@@ -580,7 +581,7 @@ if True:
             
         f.close()
 
-    sys.exit(1)
+    #sys.exit(1)
 
 
 # define the condensabiltiy metrics
@@ -595,7 +596,7 @@ agent_ID_Chalf = {}
 agent_ID_fitting = {}
 agent_ID_score = {}
 for agent in agent_list:
-    fig = plt.figure()
+    fig = plt.figure(figsize=(2, 1.4))
     #for ID in [14, 47] + [42, 111, 112, 114, 115]:
     for ID in all_good_IDs:
         #if ID not in ['WT #1', 'WT #2', 'Cuttable DNA', 'Uncuttable DNA']:
@@ -630,7 +631,7 @@ for agent in agent_list:
         pred_Y = sigmoid(pred_X, *popt)
 
         #c = plt.plot(X[1:], Y[1:], '.', alpha=0.3)
-        c = plt.plot(X, Y, '.', alpha=0.3)
+        c = plt.plot(X, Y, '.', alpha=0.3, markersize=3.5)
         plt.plot(pred_X, pred_Y, '-', color=c[0].get_color(), alpha=0.3, label=ID)
         #plt.axvline(x=popt[1], linestyle='--', color=c[0].get_color(), alpha=0.5)
 
@@ -666,17 +667,21 @@ for agent in agent_list:
         agent_ID_score[agent][ID] = score
 
         #print (popt)
-        
-    plt.title(agent_fullname[agent])
-    plt.xlabel("Concentration")
-    plt.ylabel("Soluble fraction")
+
+    plt.gca().tick_params(axis='both', which='major', labelsize=5)
+    plt.gca().tick_params(axis='both', which='minor', labelsize=5)
+    #plt.title(agent_fullname[agent])
+    #plt.xlabel("Concentration", fontsize=8)
+    plt.xlabel("Spermine concentration (mM)", fontsize=8)
+    plt.title("PTM library", fontsize=8)
+    plt.ylabel("Soluble fraction", fontsize=8)
     if agent in ['HP1a']:
         plt.xscale('log', basex=2)
     elif agent in ['sp', 'spd', 'CoH']:
         plt.xscale('log', basex=10)
     #plt.legend()
     #plt.show()
-    #plt.savefig(agent+'.png')
+    #plt.savefig(agent+'.svg', format='svg', bbox_inches='tight')
     plt.close()
 #sys.exit(1)
 
@@ -752,27 +757,76 @@ for agent in agent_list:
                 agent_outliers[agent] = []
             agent_outliers[agent].append(outlier)
 
-
-    fig = plt.figure()
+    fig = plt.figure(figsize=(2, 1.4))
+    #fig = plt.figure()
     for ID in ID_list:
         dChalf = agent_ID_dChalf[agent][ID]
         dscore = agent_ID_dscore[agent][ID]
         if ID not in agent_outliers[agent]:
-            plt.plot(dChalf, dscore, 'k.')
+            plt.plot(dChalf, dscore, 'k.', markersize=2.5)
         else:
             #pass
-            plt.plot(dChalf, dscore, 'r.')
-            plt.annotate(ID_shortname[ID], (dChalf, dscore))
+            #plt.plot(dChalf, dscore, 'r.')
+            plt.plot(dChalf, dscore, 'k.', markersize=2.5)
+            #plt.annotate(ID_shortname[ID], (dChalf, dscore), fontsize=4, annotation_clip=True)
 
     plt.axvline(x=0, linestyle='--', color='k', alpha=0.5)
     plt.axhline(y=0, linestyle='--', color='k', alpha=0.5)
-    plt.title(agent_fullname[agent])
-    plt.xlabel("$\Delta$ C-half")
-    plt.ylabel("$\Delta$ Score")
-    #plt.savefig(agent + "_ChalfVSScore.png")
+    plt.gca().tick_params(axis='both', which='major', labelsize=5)
+    plt.gca().tick_params(axis='both', which='minor', labelsize=5)
+    plt.title(agent_fullname[agent], fontsize=8)
+    plt.xlabel("$\Delta$ C-half", fontsize=8)
+    plt.ylabel("$\Delta$ Score", fontsize=8)
+    #plt.savefig(agent + "_ChalfVSScore.svg", format='svg', bbox_inches='tight')
     #plt.show()
     plt.close()
 #sys.exit(1)
+
+#sys.exit(1)
+
+# get pseudo p-value based on WT distributions
+agent_ID_pvalue = {}
+for agent in agent_list:
+    WTscores = [agent_ID_score[agent][ID] for ID in cate_IDs['WT']]
+    WTmean = np.mean(WTscores)
+    WTstd = np.std(WTscores)
+    for ID in all_good_IDs_exceptWT:
+        score = agent_ID_score[agent][ID]
+        re_score = float(score-WTmean)/WTstd
+        if re_score >=0:
+            pvalue = 1 - norm.cdf(re_score)
+        else:
+            pvalue = norm.cdf(re_score)
+        if agent not in agent_ID_pvalue:
+            agent_ID_pvalue[agent] = {}
+        agent_ID_pvalue[agent][ID] = pvalue
+
+# dscore VS p-value scatter plot
+# find outliers with p-value < 0.001
+cutoff = 0.01
+agent_outliers = {}
+for agent in agent_list:
+    if agent not in agent_outliers:
+        agent_outliers[agent] = []
+    
+    fig = plt.figure()
+    for ID in cate_IDs['WT+1PTM']:        
+        dscore = agent_ID_dscore[agent][ID]
+        pvalue = agent_ID_pvalue[agent][ID]
+        if pvalue < cutoff:
+            plt.plot(dscore, -np.log10(pvalue), 'r.')
+            plt.annotate(ID_shortname[ID], (dscore, -np.log10(pvalue)))
+            agent_outliers[agent].append(ID)
+        else:
+            plt.plot(dscore, -np.log10(pvalue), 'k.')
+            
+    plt.axvline(x=0, linestyle='--', color='k', alpha=0.5)
+    plt.axhline(y=0, linestyle='--', color='k', alpha=0.5)
+    plt.xlabel("$\Delta$ Score")
+    plt.ylabel("-log(p-value)")
+    plt.title(agent)
+    #plt.show()
+    plt.close()
 
 
 # condense-seq QC
@@ -1070,12 +1124,77 @@ if False:
     #sys.exit(1)
 
 
+# mean pvalue for (subunit, domain (fold/tail), PTM)
+ID_list = cate_IDs['WT+1PTM']
+agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
+subunit_foldrange = {'H2A':[17, 96], 'H2B':[38, 122], 'H3.1':[45, 131], 'H4':[31, 93]}
+agent_section_pvalues = {}
+ptm_list = set([])
+for agent in agent_list:
+    for ID in ID_list:
+        minfo = ID_minfo[ID]
+        pos, ptm = None, None
+        for subunit in minfo:
+            try:
+                for pos in minfo[subunit]['mutations']:
+                    ptm, aa, _ = minfo[subunit]['mutations'][pos]
+                    break
+            except:
+                pass
+            
+        assert pos != None
+        assert ptm != None
 
+        if pos >= subunit_foldrange[subunit][0] and pos <= subunit_foldrange[subunit][1]:
+            domain = 'fold'
+        else:
+            domain = 'tail'
+
+        section = (subunit, domain, ptm)
+        pvalue = agent_ID_pvalue[agent][ID]
+        if agent not in agent_section_pvalues:
+            agent_section_pvalues[agent] = {}
+        if section not in agent_section_pvalues[agent]:
+            agent_section_pvalues[agent][section] = []
+        agent_section_pvalues[agent][section].append(pvalue)
+        ptm_list.add(ptm)
+
+hregion_list = []
+subunits = ['H2A', 'H2B', 'H3.1', 'H4']
+domains = ['fold', 'tail']
+for i in range(len(subunits)):
+    for j in range(len(domains)):
+        subunit = subunits[i]
+        domain = domains[j]
+        hregion_list.append((subunit, domain))
+
+ptm_list = list(ptm_list)
+
+for agent in agent_list:
+    img = np.zeros((len(hregion_list), len(ptm_list)))
+    img[:] = np.nan
+    for i in range(len(ptm_list)):
+        for j in range(len(hregion_list)):
+            subunit, domain = hregion_list[j]
+            ptm = ptm_list[i]
+            section = (subunit, domain, ptm)
+            try:
+                mpvalue = np.mean(agent_section_pvalues[agent][section])
+                img[i,j] = mpvalue
+            except:
+                continue
+
+    fig = plt.figure()
+    plt.imshow(img)
+    #plt.show()
+    plt.close()
+
+#sys.exit(1)
+            
         
 # plot ranking bar with histone modification information
 agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a', 'sp_filter', 'spd_filter']
-#ID_list = list(set(all_good_IDs_exceptWT) - set([116]))
-ID_list = list(set(all_good_IDs_exceptWT))
+ID_list = list(set(all_good_IDs_exceptWT) - set([116]))
 subunit_list = ['H2A', 'H2B', 'H3', 'H4']
 subunit_len = {'H2A':130, 'H2B':126, 'H3':136, 'H4':103}
 subunit_color = {'H2A':'tab:purple', 'H2B':'tab:olive', 'H3':'tab:green', 'H4':'tab:pink'}
@@ -1089,7 +1208,8 @@ legend_elements = [Line2D([0], [0], marker='o', color='k', label='ac', mfc='red'
                    Line2D([0], [0], marker='o', color='k', label='cr', mfc='m', mew=0.5),
                    Line2D([0], [0], marker='o', color='k', label='GlcNAc', mfc='tab:brown', mew=0.5),
                    Line2D([0], [0], marker='o', color='k', label='mut', mfc='gray', mew=0.5),
-                   Line2D([0], [0], marker='*', color='k', label='variant')]
+                   #Line2D([0], [0], marker='*', color='k', label='variant') # ppt version
+                   Line2D([0], [0], marker='$\\ast$', color='k', label='variant')] # paper version 
 matplotlib.rcParams['legend.handlelength'] = 0
 matplotlib.rcParams['legend.numpoints'] = 1
 
@@ -1108,12 +1228,17 @@ for agent in agent_list:
     dChalf_ID = sorted(dChalf_ID, reverse=True)
     dscore_ID = sorted(dscore_ID)
 
-    value_ID_list = [dChalf_ID, dscore_ID]
-    ylabel_list = ["$\Delta$ C-half", "$\Delta$ Score"]
+    #value_ID_list = [dChalf_ID, dscore_ID]
+    #ylabel_list = ["$\Delta$ C-half", "$\Delta$ Score"]
+
+    value_ID_list = [dscore_ID]
+    ylabel_list = ["$\Delta$ Score"]
+
     
     for value_ID, ylabel in list(zip(value_ID_list, ylabel_list)):        
 
-        fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(18,8), sharex=True, gridspec_kw={'height_ratios': [1, 2]})
+        #fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(18,8), sharex=True, gridspec_kw={'height_ratios': [1, 2]}) # ppt version
+        fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(9,7), sharex=True, gridspec_kw={'height_ratios': [0.5, 2]}) # paper version
 
         X, Y = [], []
         xticks = []
@@ -1151,42 +1276,52 @@ for agent in agent_list:
 
                 hname = minfo[subunit]['name']
                 if hname != subunit:
-                    axes[1].annotate('*', (xpos, yst), color='black', ha='center', va='center')
+                    #axes[1].annotate('*', (xpos, yst), color='black', ha='center', va='center') # ppt version
+                    axes[1].annotate('$\\ast$', (xpos, yst), color='black', ha='center', va='center', fontsize=5) # paper version
 
                 for pos in sorted(minfo[subunit]['mutations']):
                     mtype, aa, mutation = minfo[subunit]['mutations'][pos]
                     ypos = yst + rescale ([pos], 0, subunit_len[subunit], 0, his_len)[0]
-                    axes[1].plot([xpos], [ypos], 'o', markersize=5, mfc=mtype_color[mtype], mew=0.5, mec='k')
+                    #axes[1].plot([xpos], [ypos], 'o', markersize=5, mfc=mtype_color[mtype], mew=0.5, mec='k') # ppt version
+                    axes[1].plot([xpos], [ypos], 'o', markersize=3, mfc=mtype_color[mtype], mew=0.5, mec='k') # paper version
 
         #axes[0].bar(X, Y)
         axes[0].bar(X1, Y1, color='tab:blue')
         axes[0].bar(X2, Y2, color='tab:red')
-        axes[0].set_title(agent_fullname[agent])
-        axes[0].set_ylabel(ylabel)
+        #axes[0].set_title(agent_fullname[agent]) # ppt version only
+        axes[0].set_ylabel(ylabel) # ppt version
+        axes[0].set_ylabel(ylabel, fontsize=7) # paper version
+
+        space = abs(max(Y1) - min(Y2))*0.1
+        axes[0].set_ylim([min(Y2)-2*space, max(Y1)+2*space])
+        axes[0].set_yticks([min(Y2), 0, max(Y1)])
+        axes[0].set_yticklabels([str(round(min(Y2),1)), str(0), str(round(max(Y1),1))], ha="center", va="center", fontsize=5, rotation=90) # paper only 
 
         axes[1].spines['top'].set_visible(False)
         axes[1].spines['left'].set_visible(False)
         axes[1].spines['right'].set_visible(False)
         axes[1].tick_params(top='off', left='off', right='off', labelleft='off', labelbottom='on')
         axes[1].set_xticks(X)
-        axes[1].set_xticklabels(xticks, fontsize=6, rotation=80, ha="right", rotation_mode="anchor")
+        #axes[1].set_xticklabels(xticks, fontsize=6, rotation=80, ha="right", rotation_mode="anchor") # ppt version
+        axes[1].set_xticklabels(xticks, fontsize=5, rotation=90, ha="right", va='center', rotation_mode="anchor") # paper version
+
 
         for k in range(len(subunit_list)):
             subunit = subunit_list[k]
-            axes[1].annotate(subunit, (-3, (his_len + his_space)*k+his_len/2), fontsize=14, color='black', ha='center', va='center')
+            #axes[1].annotate(subunit, (-3, (his_len + his_space)*k+his_len/2), fontsize=14, color='black', ha='center', va='center') # ppt version
+            axes[1].annotate(subunit, (-3, (his_len + his_space)*k+his_len/2), fontsize=10, color='black', ha='center', va='center', rotation=90) # paper version
 
-        leg = axes[1].legend(handles=legend_elements, frameon=False, bbox_to_anchor=(0.97, 0.89), loc='upper left')
+        #leg = axes[1].legend(handles=legend_elements, frameon=False, bbox_to_anchor=(0.97, 0.89), loc='upper left') # ppt version only
 
         plt.subplots_adjust(left=0.04, bottom=0.3, right=0.96, top=0.95, wspace=None, hspace=0.02)
         #plt.savefig("%s_%s_ladder_bar.png" % (agent, ylabel), dpi=300)
+        plt.savefig("%s_%s_ladder_bar.svg" % (agent, ylabel), bbox_inches='tight')
         #plt.show()
         plt.close()
-#sys.exit(1)
+sys.exit(1)
 
 
-# correlation with physical properties of modifications
-
-
+# correlation with physical properties of modifications (TO DO)
 
 # PCA analysis of histones by combining all condensing agents scores
 # nucleosome with single PTMs
@@ -1263,7 +1398,8 @@ for i in range(len(Xr)):
     if outcheck[i] < 0:
         outliers.append(ID)
 
-fig = plt.figure(figsize=(8,7))
+#fig = plt.figure(figsize=(8,7))
+fig = plt.figure(figsize=(6,5))
 mtype_list = ['WT', 'ac','me', 'ub', 'ph', 'cr', 'GlcNAc']
 for mtype in mtype_list:
     IDs = mtype_IDs[mtype]
@@ -1277,14 +1413,20 @@ for mtype in mtype_list:
         color = mtype_color[mtype]
         plt.plot(x, y, 'o', color=color, mew=0.5, mec='k', label=label)
         if ID in outliers:
-            plt.annotate(ID_shortname[ID], (x, y))
-plt.title("PCA plot (Single PTM)")
-plt.xlabel('PC1')
-plt.ylabel('PC2')
+            plt.annotate(ID_shortname[ID], (x, y), fontsize=6)
+
+plt.title("PCA plot", fontsize=10)
+plt.xlabel('PC1', fontsize=8)
+plt.ylabel('PC2', fontsize=8)
+plt.gca().tick_params(axis='both', which='major', labelsize=5)
+plt.gca().tick_params(axis='both', which='minor', labelsize=5)
+plt.legend(fontsize=6)
+#plt.savefig("PCA_allagent.svg", format='svg', bbox_inches='tight')
 #plt.tight_layout()
-plt.legend()
 #plt.show()
 plt.close()
+
+#sys.exit(1)
 
 # all PTM library
 agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
@@ -1364,7 +1506,8 @@ group_marker = {"H2A/Bac":"o",
 
 group_list = ['WT', "WT+CpGme", 'WT+mut', 'Var', 'Var+mut', "AP mutant", "H2A/Bac", "H3ac", "H4ac", "KpolyAc", "H3me", "H4me", "H4ac+H3me", "H3cr","GlcNAc","H3ph", "+ub"]
 
-fig = plt.figure(figsize=(12,12))
+#fig = plt.figure(figsize=(12,12))
+fig = plt.figure(figsize=(6,5))
 for group in group_list:
     IDs = group_IDs[group]
     color = group_color[group]
@@ -1378,15 +1521,17 @@ for group in group_list:
             plt.plot(x, y, '.', color=color, marker=marker, mew=mew, mec='k', alpha=alpha, label=group)
         plt.plot(x, y, '.', color=color, marker=marker, mew=mew, mec='k', alpha=alpha)
         #if ID in outliers:
-        #    plt.annotate(ID_shortname[ID], (x,y))
+        #    plt.annotate(ID_shortname[ID], (x,y), fontsize=6)
 
 #plt.xlim([-6, 15])
 #plt.ylim([-2, 4])
-plt.title("PCA plot")
-plt.xlabel('PC1')
-plt.ylabel('PC2')
-plt.legend()
-#plt.savefig("PCA_allagent.png", bbox_inches='tight')
+plt.title("PCA plot", fontsize=10)
+plt.xlabel('PC1', fontsize=8)
+plt.ylabel('PC2', fontsize=8)
+plt.gca().tick_params(axis='both', which='major', labelsize=5)
+plt.gca().tick_params(axis='both', which='minor', labelsize=5)
+plt.legend(fontsize=6)
+#plt.savefig("PCA_allagent.svg", format='svg', bbox_inches='tight')
 #plt.show()
 plt.close()
 
@@ -1426,7 +1571,7 @@ for agent, ax in zip(agent_list, axes):
 ax.set_xticks(range(len(group_list)))
 ax.set_xticklabels(group_list, fontsize=8, rotation=45, ha="right", rotation_mode="anchor")
 fig.text(0.08, 0.5, 'Score (A.U.)', va='center', rotation='vertical')
-plt.savefig("score_group.png", bbox_inches='tight')
+#plt.savefig("score_group.png", bbox_inches='tight')
 #plt.show()
 plt.close()
 
@@ -1468,7 +1613,7 @@ for i in range(len(agent_list)-1):
         corr_matrix[j][i] = corr
 
 
-fig, axes = plt.subplots(nrows=len(agent_list), ncols=len(agent_list))
+fig, axes = plt.subplots(figsize=(3,2.4), nrows=len(agent_list), ncols=len(agent_list))
 for i in range(len(agent_list)):
     for j in range(len(agent_list)):
         idx = len(agent_list)*i + j
@@ -1476,7 +1621,19 @@ for i in range(len(agent_list)):
         if i > j:
             X = [ agent_ID_score[agent1][ID] for ID in ID_list ]
             Y = [ agent_ID_score[agent2][ID] for ID in ID_list ]
-            axes[i,j].plot(X, Y, 'k.', markersize=1)
+            axes[i,j].plot(X, Y, 'k.', markersize=0.5)
+            axes[i,j].plot(X, Y, 'k.', markersize=0.5)
+            wspace = 0.1*(max(X) - min(X))
+            hspace = 0.1*(max(Y) - min(Y))
+            axes[i,j].set_xticks([min(X), max(X)])
+            axes[i,j].set_xticklabels([str(round(min(X),1)), str(round(max(X),1))], rotation=45)
+            axes[i,j].set_yticks([min(Y), max(Y)])
+            axes[i,j].set_yticklabels([str(round(min(Y),1)), str(round(max(Y),1))])
+            axes[i,j].set_xlim(min(X)-wspace, max(X)+wspace)
+            axes[i,j].set_ylim(min(Y)-hspace, max(Y)+hspace)
+            axes[i,j].tick_params(axis='both', which='major', labelsize=5)
+            axes[i,j].tick_params(axis='both', which='minor', labelsize=5)
+
             #axes[i,j].set_xscale('log', base=2)
             #axes[i,j].set_yscale('log', base=2)
             if j > 0 and i < len(agent_list) -1:
@@ -1491,7 +1648,7 @@ for i in range(len(agent_list)):
             matrix[:] = np.nan
             axes[i,j].imshow(matrix, origin='lower')
             s = agent1
-            axes[i,j].text(len(agent_list)/2, len(agent_list)/2, s, ha="center", va="center", fontsize=10, weight='bold')
+            axes[i,j].text(len(agent_list)/2, len(agent_list)/2, s, ha="center", va="center", fontsize=6, weight='bold')
             axes[i,j].set_xlim([0, len(agent_list)-1])
             axes[i,j].set_ylim([0, len(agent_list)-1])
             axes[i,j].set_axis_off()
@@ -1505,16 +1662,18 @@ for i in range(len(agent_list)):
                 color = "white"
             else:
                 color = "black"
-            axes[i,j].text(len(agent_list)/2, len(agent_list)/2, str(round(value,2)), ha="center", va="center", fontsize=10, color=color, weight='bold')
+            axes[i,j].text(len(agent_list)/2, len(agent_list)/2, str(round(value,2)), ha="center", va="center", fontsize=6, color=color, weight='bold')
             axes[i,j].set_xlim([0, len(agent_list)-1])
             axes[i,j].set_ylim([0, len(agent_list)-1])
             axes[i,j].tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labeltop=False, labelleft=False, labelright=False)
 
-plt.subplots_adjust(wspace=0.1, hspace=0.1)
-cbar=fig.colorbar(img, ax=axes, location='right', shrink=0.8)
-cbar.ax.set_ylabel('Spearman correlation', rotation=-90, va="bottom")
-plt.suptitle("Corrrelation betwen condensing agents")
+plt.subplots_adjust(wspace=0.2, hspace=0.2)
+cbar=fig.colorbar(img, ax=axes, location='right', shrink=0.6, aspect=30, ticks=[0, 1.0])
+cbar.ax.set_yticklabels([str(0), str(1)], fontsize=5)
+cbar.ax.set_ylabel('Spearman correlation', rotation=-90, va="bottom", fontsize=5, labelpad=-5)
+#plt.suptitle("Corrrelation betwen condensing agents")
 #plt.show()
+#plt.savefig("PTM_corr_btw_agent.svg", format='svg', bbox_inches='tight')
 plt.close()
 
 #sys.exit(1)
@@ -1643,7 +1802,8 @@ plt.close()
 
 
 # synergy analysis
-ID_list = list(set(all_good_IDs)&set(cate_IDs['WT+PTM']))
+#ID_list = list(set(all_good_IDs)&set(cate_IDs['WT+PTM']))
+ID_list = list(set(all_good_IDs)&set(cate_IDs['WT+1PTM']))
 
 ID_mutations = {}
 mutations_ID = {}
@@ -1743,7 +1903,8 @@ for ID in ID_list:
         mut, num = re.findall('([A-Z]+)(\d+(?:,\d+)*)', mutations)
                 
 # plot histone cartoon
-ID_list = list(set(all_good_IDs) & set(cate_IDs['WT+PTM']))
+#ID_list = list(set(all_good_IDs) & set(cate_IDs['WT+PTM']))
+ID_list = list(set(all_good_IDs) & set(cate_IDs['WT+1PTM']))
 agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
 subunit_list = ['H2A', 'H2B', 'H3', 'H4']
 location_list = ['fold', 'tail']
@@ -1793,18 +1954,21 @@ for agent in agent_list:
 
 mtype_marker = {'ac':'o', 'me':'s', 'ub':'D', 'ph':'P', 'cr':'p', 'GlcNAc':'*'}
 
-legend_elements = [Line2D([0], [0], marker='o', color='k', label='acetylation', markerfacecolor='w'),
-                   Line2D([0], [0], marker='s', color='k', label='methylation', markerfacecolor='w'),
-                   Line2D([0], [0], marker='D', color='k', label='ubiquitylation', markerfacecolor='w'),
-                   Line2D([0], [0], marker='P', color='k', label='phosphorylation', markerfacecolor='w'),
-                   Line2D([0], [0], marker='p', color='k', label='crotonylation', markerfacecolor='w'),
-                   Line2D([0], [0], marker='*', color='k', label='N-acetylglucosamine', markerfacecolor='w')]
+legend_elements = [Line2D([0], [0], marker='o', color='k', label='acetylation', ms=10, markerfacecolor='w'),
+                   Line2D([0], [0], marker='s', color='k', label='methylation', ms=10, markerfacecolor='w'),
+                   Line2D([0], [0], marker='D', color='k', label='ubiquitylation', ms=10, markerfacecolor='w'),
+                   Line2D([0], [0], marker='P', color='k', label='phosphorylation', ms=10, markerfacecolor='w'),
+                   Line2D([0], [0], marker='p', color='k', label='crotonylation', ms=10, markerfacecolor='w'),
+                   Line2D([0], [0], marker='*', color='k', label='N-acetylglucosamine', ms=10, markerfacecolor='w')]
 matplotlib.rcParams['legend.handlelength'] = 0
 matplotlib.rcParams['legend.numpoints'] = 1
     
 fig = plt.figure()
 ax = plt.gca()
-leg = ax.legend(handles=legend_elements, frameon=False) 
+leg = ax.legend(handles=legend_elements, frameon=False, fontsize=20)
+#for lh in leg.legendHandles: 
+#    lh.set_markersize(1000.0)
+#plt.savefig('legend.svg', format='svg', bbox_inches='tight')
 plt.show()
 plt.close()
 

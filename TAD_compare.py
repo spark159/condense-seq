@@ -55,19 +55,22 @@ for ID in ID_pos:
 
 #box_data = [[ID_score2[ID] for ID in OutTAD_IDs], [ID_score2[ID] for ID in InTAD_IDs]]
 box_data = [[ID_AT[ID] for ID in OutTAD_IDs], [ID_AT[ID] for ID in InTAD_IDs]]
-fig = plt.figure()
+fig = plt.figure(figsize=(2.8, 2.4))
 plt.boxplot(box_data, 0, "", positions=[1, 1.5])
 #plt.xlabel('Partitions')
-plt.ylabel('Condensability(A.U.)')
-plt.xticks([1,1.5], ['Outside of TAD', 'Inside of TAD'])
+plt.ylabel('Condensability(A.U.)', fontsize=8)
+plt.xticks([1,1.5], ['Outside of TAD', 'Inside of TAD'], fontsize=8)
 plt.xlim([1-0.3,1.5+0.3])
-plt.title('Single-nucleosome condensability')
+plt.title('Single-nucleosome condensability', fontsize=8)
+plt.gca().tick_params(axis='both', which='major', labelsize=5)
+plt.gca().tick_params(axis='both', which='minor', labelsize=5)
+plt.savefig('TADcompare_condensability.svg', format='svg', bbox_inches='tight')
 #plt.savefig("ATcontent"+"_pbox.png")
-plt.show()
+#plt.show()
 plt.close()
 
 
-"""
+
 # read A/B compartment annotation file
 def read_eigenfile (fname, bin_size=1000000):
     eigen_list = []
@@ -110,7 +113,22 @@ for fname in fnames:
     box_data = [[ID_score2[ID] for ID in A_IDs], [ID_score2[ID] for ID in B_IDs]]
     box_data_list.append(box_data)
 
-fig = plt.figure()
+fig = plt.figure(figsize=(2.8, 2.4))
+plt.boxplot(box_data_list[0], 0, "", positions=[1, 1.5])
+#plt.xlabel('Partitions')
+plt.ylabel('Condensability(A.U.)', fontsize=8)
+plt.xticks([1,1.5], ['A-compartment', 'B-compartment'], fontsize=8)
+plt.xlim([1-0.3,1.5+0.3])
+plt.title('Single-nucleosome condensability', fontsize=8)
+plt.gca().tick_params(axis='both', which='major', labelsize=5)
+plt.gca().tick_params(axis='both', which='minor', labelsize=5)
+plt.savefig('ABcompare_condensability.svg', format='svg', bbox_inches='tight')
+#plt.savefig("ATcontent"+"_pbox.png")
+#plt.show()
+plt.close()
+
+
+fig = plt.figure(figsize=(2.8, 2.4))
 #box1 = plt.boxplot([box_data_list[0][0],box_data_list[1][0]], 0, "", positions=[1-0.1, 1.75-0.1], patch_artist=True)
 box1 = plt.boxplot([box_data_list[0][0]], 0, "", positions=[1-0.15], patch_artist=True)
 for patch in box1['boxes']:
@@ -123,12 +141,13 @@ for patch in box2['boxes']:
 #plt.xticks([1,1.75],['WT', 'Cohesin KO'])
 plt.xlim([0,2])
 plt.xticks([],[])
-plt.ylabel('Condensability(A.U.)')
-plt.title('Single-nucleosome condensability')
+plt.ylabel('Condensability(A.U.)', fontsize=8)
+plt.title('Single-nucleosome condensability', fontsize=8)
 #plt.title('')
 #plt.savefig("ATcontent"+"_pbox.png")
-plt.legend([box1["boxes"][0], box2["boxes"][0]], ['A compartment', 'B compartment'], loc='upper right')
-plt.show()
+plt.legend([box1["boxes"][0], box2["boxes"][0]], ['A compartment', 'B compartment'], loc='upper right', fontsize=8)
+#plt.savefig('ABcompare_condensability.svg', format='svg', bbox_inches='tight')
+#plt.show()
 plt.close()
 
 # read A/B subcompartment annotation file
@@ -169,4 +188,4 @@ fig = plt.figure()
 plt.boxplot(box_data, 0, "")
 plt.show()
 plt.close()
-"""
+

@@ -346,7 +346,8 @@ for chr_choice in chr_choices:
         ax2.tick_params(axis="x", labelsize=5, rotation=90)
         ax2.set_xlim([0, len(gband_img)+1])
         plt.tight_layout()
-        plt.savefig("Gwide_" + chr_choice + '_' + name + ".png", bbox_inches='tight', dpi=1000)
+        #plt.savefig("Gwide_" + chr_choice + '_' + name + ".png", bbox_inches='tight', dpi=1000)
+        plt.savefig("Gwide_" + chr_choice + '_' + name + ".svg", format='svg', bbox_inches='tight')
         #plt.show()
         plt.close()
 

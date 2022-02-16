@@ -21,7 +21,8 @@ def single_plot (profiles, offset=-1000, xtick_loc_name=None, xlabel='Distance f
     if xtick_loc_name:
         xtick_locs, xtick_names = xtick_loc_name
         ax.set_xticks(xtick_locs)
-        ax.set_xticklabels(xtick_names)
+        #ax.set_xticklabels(xtick_names)
+        ax.set_xticklabels(xtick_names, rotation=45)
     fig.tight_layout()
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
@@ -72,7 +73,7 @@ sample = 'NCP'
 agent = 'sp'
 chr = 'chr1'
 
-"""
+
 # mean TSS plot
 feature = 'TSS'
 profile_fname = path + '_'.join([cell, sample, agent, chr, feature]) + "_profile.txt"
@@ -158,7 +159,7 @@ for name in name_ID_profile:
     frac = [1 for i in range(5)]
     groups = statis.quantile(gID_score, 5)
 
-    fig = plt.figure()
+    fig = plt.figure(figsize=(5,3.5))
     for i in range(len(groups)):
         IDs = groups[i]
         #profile = [ ID_occprofile[ID] for ID in IDs ]
@@ -169,14 +170,21 @@ for name in name_ID_profile:
         profile[len(profile)-100:] = [np.NaN]*100
         X = [ k + offset for k in range(len(profile))]
         #plt.plot(X, profile, label='RPKM quantile '+str(i+1), alpha=0.8)
-        plt.plot(X, profile, label='FPKM quantile '+str(i+1), alpha=0.8)
+        plt.plot(X, profile, label='FPKM quantile '+str(i+1), alpha=0.8, lw=4)
     if xtick_loc_name:
         xtick_locs, xtick_names = xtick_loc_name
-        plt.xticks(xtick_locs, xtick_names)
-    plt.xlabel('Distance from ' + feature +' (bp)')
-    plt.title(name)
-    plt.legend()
-    plt.savefig("RPKM_quantile_profile_" + feature + "_" + name.split('/')[-1] + ".png",bbox_inches='tight')
+        plt.xticks(xtick_locs, xtick_names, fontsize=15, rotation=45)
+    plt.xlabel('Distance from ' + feature +' (bp)', fontsize=15)
+    if name.startswith('work'):
+        plt.title('Condensability', fontsize=20)
+    else:
+        plt.title(name, fontsize=20)
+    plt.gca().tick_params(axis='both', which='major', labelsize=15)
+    plt.gca().tick_params(axis='both', which='minor', labelsize=15)
+    plt.legend(fontsize=14, frameon=False)
+    #plt.savefig("RPKM_quantile_profile_" + feature + "_" + name.split('/')[-1] + ".png",bbox_inches='tight')
+    plt.savefig("RPKM_quantile_profile_" + feature + "_" + name.split('/')[-1] + ".svg", format='svg', bbox_inches='tight')
+
     #plt.show()
     plt.close()
 
@@ -229,17 +237,21 @@ for i in range(len(name_list)):
     name = name_list[i]
     img = name_img[name]
     #fig = plt.figure(figsize=(5,10))
-    fig = plt.figure(figsize=(6.5,10))
+    #fig = plt.figure(figsize=(6.5,10))
+    fig = plt.figure(figsize=(5,8))
     plt.imshow(img, aspect='auto', cmap=cmap_list[i], vmin=vlim_list[i][0], vmax=vlim_list[i][1])
     #plt.imshow(img, aspect='auto', cmap='jet')
     #plt.title(name)
-    plt.xticks(range(0, len(profile), 1000), xtick_labels)
-    plt.savefig("heatmap_profile_byRPKM_" + feature + "_" + name.split('/')[-1] + ".png",bbox_inches='tight')
+    plt.xticks(range(0, len(profile), 1000), xtick_labels, fontsize=15)
+    plt.gca().tick_params(axis='both', which='major', labelsize=15)
+    plt.gca().tick_params(axis='both', which='minor', labelsize=15)
+    #plt.savefig("heatmap_profile_byRPKM_" + feature + "_" + name.split('/')[-1] + ".png",bbox_inches='tight')
+    plt.savefig("heatmap_profile_byRPKM_" + feature + "_" + name.split('/')[-1] + ".svg", format='svg', bbox_inches='tight')
     #plt.show()
     plt.close()
 
 #sys.exit(1)
-"""
+
 
 
 #scoregID = sorted(scoregID, reverse=True)
@@ -344,7 +356,7 @@ for name in name_ID_profile:
     plt.close()
 """
 
-
+"""
 # mean TSS-TTS plot
 feature = 'TSS_TTS'
 profile_fname = path + '_'.join([cell, sample, agent, chr, feature]) + "_profile.txt"
@@ -420,7 +432,7 @@ for name in name_ID_profile:
     frac = [1 for i in range(5)]
     groups = statis.quantile(gID_score, 5)
 
-    fig = plt.figure()
+    fig = plt.figure(figsize=(5,3.5))
     for i in range(len(groups)):
         IDs = groups[i]
         #profile = [ ID_occprofile[ID] for ID in IDs ]
@@ -431,18 +443,24 @@ for name in name_ID_profile:
         profile[len(profile)-100:] = [np.NaN]*100
         X = [ k + offset for k in range(len(profile))]
         #plt.plot(X, profile, label='RPKM quantile '+str(i+1), alpha=0.8)
-        plt.plot(X, profile, label='FPKM quantile '+str(i+1), alpha=0.8)
+        plt.plot(X, profile, label='FPKM quantile '+str(i+1), alpha=0.8, lw=4)
     if xtick_loc_name:
         xtick_locs, xtick_names = xtick_loc_name
-        plt.xticks(xtick_locs, xtick_names)
+        plt.xticks(xtick_locs, xtick_names, fontsize=15, rotation=45)
     #plt.xlabel('Distance from ' + feature +' (bp)')
-    plt.title(name)
-    plt.legend()
-    plt.savefig("RPKM_quantile_profile_" + feature + "_" + name.split('/')[-1] + ".png",bbox_inches='tight')
+    if name.startswith('work'):
+        plt.title('Condensability', fontsize=20)
+    else:
+        plt.title(name, fontsize=20)
+    plt.gca().tick_params(axis='both', which='major', labelsize=15)
+    plt.gca().tick_params(axis='both', which='minor', labelsize=15)
+    plt.legend(fontsize=15, frameon=False)
+    #plt.savefig("RPKM_quantile_profile_" + feature + "_" + name.split('/')[-1] + ".png",bbox_inches='tight')
+    #plt.savefig("RPKM_quantile_profile_" + feature + "_" + name.split('/')[-1] + ".svg", format='svg', bbox_inches='tight')
     #plt.show()
     plt.close()
 
-
+#sys.exit(1)
 
 # heatmap plot by gene expression level
 #name_list = ['data/sp_spd_tests_detail/sp7', 'ATcontent', 'k36me3', 'k9me2', 'k27ac', 'k4me3', 'k9ac', 'Occ']
@@ -515,15 +533,19 @@ for i in range(len(name_list)):
     name = name_list[i]
     img = name_img[name]
     #fig = plt.figure(figsize=(5,10))
-    fig = plt.figure(figsize=(6.5,10))
+    #fig = plt.figure(figsize=(6.5,10))
+    fig = plt.figure(figsize=(5,8))
     plt.imshow(img, aspect='auto', cmap=cmap_list[i], vmin=vlim_list[i][0], vmax=vlim_list[i][1])
     #plt.imshow(img, aspect='auto', cmap='jet')
     #plt.title(name)
     xtick_locs, xtick_names = xtick_loc_name
-    plt.xticks(np.asarray(xtick_locs) - offset, xtick_names)
+    plt.xticks(np.asarray(xtick_locs) - offset, xtick_names, fontsize=15, rotation=45)
+    plt.gca().tick_params(axis='both', which='major', labelsize=15)
+    plt.gca().tick_params(axis='both', which='minor', labelsize=15)
     #plt.xticks(range(0, len(profile), 1000), xtick_labels)
-    plt.savefig("heatmap_profile_byRPKM_" + feature + "_" + name.split('/')[-1] + ".png",bbox_inches='tight')
+    #plt.savefig("heatmap_profile_byRPKM_" + feature + "_" + name.split('/')[-1] + ".png",bbox_inches='tight')
+    plt.savefig("heatmap_profile_byRPKM_" + feature + "_" + name.split('/')[-1] + ".svg", format='svg', bbox_inches='tight')
     #plt.show()
     plt.close()
-
+"""
 

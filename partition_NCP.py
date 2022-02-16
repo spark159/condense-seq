@@ -199,7 +199,7 @@ for i in range(p_num):
         st = ed
         ed = lines[i]
     p_range.append((st, ed))
-fig = plt.figure()
+fig = plt.figure(figsize=(2.4, 2))
 plt.hist(ID_score1.values(), bins=1000)
 for line in lines:
     plt.axvline(x=line, color='k', linestyle='--')
@@ -212,12 +212,15 @@ for i in range(p_num):
         x = np.mean([st, 3])
     else:
         x = np.mean([st, ed])
-    plt.text(x, 10000, num_rom[i+1], fontsize=20, va='center', ha='center')
+    plt.text(x, 10000, num_rom[i+1], fontsize=12, va='center', ha='center')
 plt.xlim([-3,3])
-plt.title("Chromosome1")
-plt.xlabel("Condensability (A.U.)")
-plt.ylabel("Nucleosome Counts")
-plt.savefig("partition_hist.png")
+plt.title("Chromosome1", fontsize=8)
+plt.xlabel("Condensability (A.U.)", fontsize=8)
+plt.ylabel("Nucleosome Counts", fontsize=8)
+plt.gca().tick_params(axis='both', which='major', labelsize=5)
+plt.gca().tick_params(axis='both', which='minor', labelsize=5)
+#plt.savefig("partition_hist.png")
+plt.savefig('partition.svg', format='svg', bbox_inches='tight')
 #plt.show()
 plt.close()
 
@@ -264,10 +267,14 @@ for i in range(p_num):
         poly_p_sigs['polyG/C'][i].append(ID_polyGC[ID])
         seq = ID_seq[ID]
         din_count = get_dincount(seq, both=True) # survey both strands
-        for din in din_count:
+        for din in all_path(2, 'ATCG'):
+            if din not in din_count:
+                count = 0
+            else:
+                count = din_count[din]
             if din not in din_p_sigs:
                 din_p_sigs[din] = [[] for k in range(p_num)]
-            din_p_sigs[din][i].append(din_count[din])
+            din_p_sigs[din][i].append(count)
 
 NCPlen = 147
 MMfreq_list = []
@@ -505,6 +512,7 @@ for ax, img, ylabels, title in zip([ax1, ax2], img_list, ylabel_list, title_list
     ax.set_title(title)
     plt.tight_layout()
 
+
 cbar = fig.colorbar(im, cax=cax)
 #cbar.ax.tick_params(labelsize=15) 
 #cbar.ax.set_ylabel('Z-score', rotation=-90, va="bottom", fontsize=15)
@@ -512,23 +520,35 @@ plt.show()
 plt.close()
 
 
-fig = plt.figure()
-plt.subplot(1,3,1)
+fig = plt.figure(figsize=(3.4,3.2))
+plt.subplot(1,2,1)
 plt.imshow(img1, vmin=-1.5, vmax=1.5, cmap='coolwarm', aspect='auto')
-plt.xticks(range(p_num), range(1, p_num+1))
-plt.yticks(range(len(img1)), ylabels1)
-plt.title("Sequences")
-plt.tight_layout() 
-plt.subplot(1,3,2)
-im = plt.imshow(img2, vmin=-1.5, vmax=1.5, cmap='coolwarm', aspect='auto')
-plt.xticks(range(p_num), range(1, p_num+1))
-plt.yticks(range(len(img2)), ylabels2)
-plt.title("Epigentic marks")
+plt.xticks(range(p_num), range(1, p_num+1), fontsize=8)
+plt.gca().xaxis.tick_top()
+plt.yticks(range(len(img1)), ylabels1, fontsize=8)
+#plt.title("Sequences")
 plt.tight_layout()
-plt.subplot(1,3,3)
-cbar = plt.colorbar(im, cax = plt.gca())
-cbar.ax.set_ylabel('Z-score', rotation=-90, va="bottom")
+plt.subplot(1,2,2)
+im = plt.imshow(img2, vmin=-1.5, vmax=1.5, cmap='coolwarm', aspect='auto')
+plt.xticks(range(p_num), range(1, p_num+1), fontsize=8)
+plt.gca().xaxis.tick_top()
+plt.yticks(range(len(img2)), ylabels2, fontsize=8)
+#plt.title("Epigentic marks")
+plt.tight_layout()
+#plt.subplot(1,3,3)
+#cbar = plt.colorbar(im, cax = plt.gca())
+#cbar.ax.set_ylabel('Z-score', rotation=-90, va="bottom")
 plt.tight_layout()
 #plt.colorbar()
-plt.show()
+plt.savefig('partition_feature.svg', format='svg', bbox_inches='tight')
+#plt.show()
+plt.close()
+
+fig = plt.figure(figsize=(1.2,1))
+plt.subplot(1,2,1)
+cbar = plt.colorbar(im, cax=plt.gca(), ticks=[-1.5, 1.5])
+cbar.ax.set_yticklabels(['-1.5', '1.5'], fontsize=8)
+cbar.ax.set_ylabel('Z-score', rotation=-90, va="bottom", fontsize=8)
+plt.tight_layout()
+plt.savefig('partition_cbar.svg', format='svg', bbox_inches='tight')
 plt.close()

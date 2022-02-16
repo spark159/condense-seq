@@ -750,6 +750,38 @@ if __name__ == '__main__':
         particles = ID_chr.keys()
 
 
+    # Bethe-lattice Cluster object
+    class BetheCluster (UndirectedGraph):
+        # override
+        def __init__ (self,
+                      nodes, # node set
+                      edges, # edge set
+                      node_value={}
+                      edge_weight={}):
+
+            # record node and edge information
+            super(BetheCluster, self).__init__(nodes,
+                                               edges,
+                                               node_value=node_value,
+                                               edge_weight=edge_weight)
+            # get the potential of graph
+            self.potential = self.get_potential()
+
+        # to do
+        def __add__ (self, other):
+            assert type(other) == BetheCluster
+            return
+
+        def __len__ (self):
+            return len(self.nodes)
+
+        def get_potential (self):
+            potential = 0.0
+            for node in self.node_info:
+                potential += 0.5*self.node_info[node]['value']*len(self.node_info[node]['next'])
+            return potential
+
+
     # Gaussian Network object
     class GaussianNet (UndirectedGraph):
         # override
@@ -759,7 +791,7 @@ if __name__ == '__main__':
                       node_value={}
                       edge_weight={}):
 
-            # save as node and edge information
+            # save as node_info dictionary
             super(GaussianNet, self).__init__(nodes,
                                               edges,
                                               node_value=node_value,
@@ -767,29 +799,6 @@ if __name__ == '__main__':
 
             # get the partition funcition
             self.partition = self.get_partition()
-
-        def get_stiffness (self, dist):
-            return
-
-        def get_offset (self, dist):
-            return
-
-        def get_spring (self, dist):
-            stiffness = self.get_stiffness(dist)
-            offset = self.get_offset(dist)
-            return (sitffness, offset)
-
-        def combine_parallel_springs (self, springs):
-            A, B, C = 0.0, 0.0, 0.0
-            for k, a in springs:
-                A += k
-                B += k*a
-                C += k*(a**2)
-            stiffness = A
-            offset = B/A
-            const = -0.5* (C - (B*B)/A)
-            return stiffness, offset, const
-        
 
         # get the Kirchhoff matrix of Gaussian network
         def get_Kirchhoff_matrix (self):
@@ -821,14 +830,139 @@ if __name__ == '__main__':
 
             # compute the parition function
             N = len(self.node_info)
-            partition = ((2*math.pi)**(1.5*(N-1)))*(det**1.5)        
+            GN_partition = ((2*math.pi)**(1.5*(N-1)))*(det**1.5)        
 
-            return partition
+            return GN_partition
 
         
     # Worm-like Network object (Todo)
     #class WormLikeNet (object)
 
+
+    # Cluster State object
+    class State (object):
+        # make static variables shared with all instances
+        # the detail information of particles
+        node_stinfo = {}
+        for ID in particles:
+            node_stinfo[ID] = {}
+            node_stinfo[ID]['score'] = name_ID_value['Score'][ID]
+            node_stinfo[ID]['valency'] = name_ID_value['Valency'][ID]
+            node_stinfo[ID]['pos'] = name_ID_value['Position'][ID]
+
+        def __init__ (self):
+
+            # cluster information
+            self.cID_cluster, self.node_cID = {}, {}
+            for node in node_stinfo:
+                nodes = set([node])
+                node_value = {node:copy.copy(node_stinfo[ID]['score'])} # shallow copy
+                cluster = BetheCluster(nodes=nodes, node_value=node_value)
+                cID = cluster.name
+                self.cID_cluster[cID] = cluster
+                self.node_cID[node] = cID
+                
+
+            # polymer network information
+            self.polymer_network = GaussianNet(nodes=set([]),
+                                               edges=set([]))
+
+            # sorted list of contacting nodes
+            self.sorted_contact_nodes = []
+            self.idx_cnode, self.cnode_idx = [], {}
+
+            # total potential of the state
+            self.potential = 0.0
+
+        # merge two clusters
+        def merge (self, cID1, cID2):
+            # update cluster information
+            cluster1, cluster2 = self.cID_cluster[cID1], self.cID_cluster[cID2]
+            new_cluster = cluster1 + cluster2
+            new_cID = cluster.name
+            del self.cID_cluster[cID1]
+            del self.cID_cluster[cID2]
+            self.cID_cluster[new_cID] = new_cluster
+            for node in cluster.nodes:
+                self.node_cID[node] = new_cID
+
+            # update contact node information
+            for cID in [cID1, cID2]:
+                if len(self.cID_cluster[cID]) < 2:
+                    new_cnode = self.cID_cluster[cID]
+                    idx = bisect.bisect_left (self.idx_cnode, new_cnode)
+                    self.idx_cnode.insert(idx, new_cnode)
+                    for cnode in self.idx_cnode[idx+1:]:
+                        self.cnode_idx[cnode] +=1
+            
+            # update polymer network 
+            self.polymer_network.add_node(new_cID)
+            for cID in [cID1, cID2]:
+                if len(self.cID_cluster[cID]) < 2:
+                    cnode = self.cID_cluster[cID]
+                    idx = cnode_idx[cnode]
+                    nn_cnodes = self.idx_cnode[max(0, idx-1):idx] + self.idx_cnode[idx+1:idx+2]
+                    for nn_cnode in nn_cnodes:
+                        next_cID = self.node_cID[nn_code]
+                        weight = abs(self.node_stinfo[nn_cnode]['pos'] - self.node_stinfo[cnode]['pos'])
+                        
+
+                try:
+                    for next_cID, weight in self.polymer_network.node_info[cID]['next'].items():
+                        if next_cID not in self.polymer_network.node_info[new_cID]['next']:
+                            self.polymer_network.add_edge(new_cID, next_cID, weight=0)
+                        self.polymer_network.node_info[new_cID]['next'][next_cID] += weight
+                except:
+                    for node in self.cID_cluster[cID].nodes:
+                        idx = binary_search (self.sorted_contact_nodes, node)
+                        self.sorted_contanct_nodes.insert(idx, node)
+                        nn_nodes = self.sorted_contact_nodes[max(0, idx-1):idx]
+                        nn_nodes += self.sorted_contact_nodes[idx+1:idx+2]
+                        for nn_node in nn_nodes:
+                            next_cID = self.node_cID[nn_node]
+                            weight = abs(self.node_stinfo[nn_node]['pos'] - self.node_stinfo[node]['pos'])
+                            if next_cID not in self.polymer_network.node_info[new_cID]['next']:
+                                self.polymer_network.add_edge(new_cID, next_cID, weight=0)
+                            self.polymer_network.node_info[new_cID]['next'][next_cID] += weight
+
+            self.polymer_network.remove_node(cID1)
+            self.polymer_network.remove_node(cID2)
+            
+            return
+
+        # split the cluster into two
+        def split (self, cID):
+            # update cluster information
+            cluster1, cluster2 = self.cID_cluster[cID]/2
+            cID1, cID2 = cluster1.name, cluster2.name
+            del self.cID_cluster[cID]
+            self.cID_cluster[cID1] = cluster1
+            self.cID_cluster[cID2] = cluster2
+
+            # update polymer network
+            self.polymer_network.add_node(cID1)
+            for node in self.cID_cluster[cID1].nodes:
+                idx = binary_search (self.sorted_contact_nodes, node)
+                self.sorted_contanct_nodes.insert(idx, node)
+                nn_nodes = self.sorted_contact_nodes[max(0, idx-1):idx]
+                nn_nodes += self.sorted_contact_nodes[idx+1:idx+2]
+                for nn_node in nn_nodes:
+                    next_cID = self.node_cID[nn_node]
+                    weight = abs(self.node_stinfo[nn_node]['pos'] - self.node_stinfo[node]['pos'])
+                    if next_cID not in self.polymer_network.node_info[new_cID]['next']:
+                        self.polymer_network.add_edge(new_cID, next_cID, weight=0)
+                    self.polymer_network.node_info[new_cID]['next'][next_cID] += weight
+
+            
+            
+            return 
+
+        # get polymer network
+        def get_polymer_network (self):
+            return
+
+            
+            
 
     # Contact State object
     class State (UndirectedGraph):
@@ -841,17 +975,16 @@ if __name__ == '__main__':
             node_stinfo[ID]['pos'] = name_ID_value['Position'][ID]
             
         no_cycle = args.bethe
-        volume = args.volume
         
-        def __init__ (self, edges, polymer=None):
+        def __init__ (self, edges):
 
             # record the information of nodes and edges
             self.node_info = {}
             for node in node_stinfo:
                 self.node_info[node] = {}
-                # shallow copy of static variables
+                # shallow copy of static variables (score)
                 self.node_info[node]['value'] = copy.copy(node_stinfo[node]['score'])
-                self.node_info[node]['pos'] = copy.copy(node_stinfo[node]['Position'])
+                # shallow copy of static variables (valency)
                 self.node_info[node]['deglimit'] = copy.copy(node_stinfo[node]['valency'])
                 self.node_info[node]['next'] = {}
 
@@ -871,26 +1004,16 @@ if __name__ == '__main__':
             # find the connected components
             self.cID_nodes = self.clustering()
 
-            ## sorted contact node list
-            #self.cnodes = []
+            # sorted contact node list
+            self.cnodes = []
 
             # build the polymer network
-            self.polymer_net = self.get_polymer_network(polymer)
+            self.polymer_net = self.get_polymer_network()
 
-            # compute the interaction energy of the state
-            self.interaction_energy = self.get_interaction_energy()
-
-            # compute the bonding degeneracy of the state
-            self.bonding_degeneracy = self.get_bonding_degeneracy()
-
-            # compute the spatial degeneracy of the state
-            self.spatial_degeneracy = self.get_spatial_degeneracy()
-            
             # compute the potential of the state
             self.potential = self.get_potential()
 
-            
-        def get_polymer_network (self, polymer):
+        def get_polymer_network (self):
             PN_nodes, PN_edges = set([]), set([])
             PN_edge_weight = {}
             cnode_pt = None
@@ -954,7 +1077,12 @@ if __name__ == '__main__':
                 pt +=1
 
             return next_weight
-                            
+                    
+                
+            
+
+
+        
         def add_edge (self, node1, node2, weight=None):
             # check the degree limit violation
             assert len(self.node_info[node1]['next']) < self.node_info[node1]['deglimit']
@@ -1012,8 +1140,7 @@ if __name__ == '__main__':
                 
                 self.polymer_net.remove_node(cID1)
                 self.polymer_net.remove_node(cID2)
-
-            return 
+            
 
         def remove_edge (self, node1, node2):
             super(State, self).remove_edge(node1, node2)
@@ -1082,29 +1209,16 @@ if __name__ == '__main__':
         def remove_node (self, node):
             raise AttributeError("'State' object has no attribute 'remove_node'")
 
-        def get_interaction_energy (self):
-            energy = 0.0
-            for node in self.node_info:
-                energy += 0.25*self.node_info[node]['value']*len(self.node_info[node]['next'])
-            return energy
-
-        def get_bonding_degeneracy (self):
-            degeneracy = 1
-            for node in self.node_info:
-                valency = self.node_info[node]['deglimit']
-                occupancy = len(self.node_info[node]['next'])
-                for k in range(occupancy):
-                    degeneracy *= valency - k
-            return degeneracy
-
-        def get_spatial_degeneracy (self):
-            if self.polymer_net == None:
-                return volume**len(self.cID_nodes)
-            return self.polymer_net.partition
-
         def get_potential (self):
-            return self.spatial_degeneracy*self.bonding_degeneracy*self.interaction_energy
-            
+            potential = 0.0
+            for edge in self.edges:
+                node1, node2 = edge
+                try:
+                    value1, value2 = self.node_value[node1], self.node_value[node2]
+                except:
+                    pass
+                potential += 0.5*(value1 + value2)
+            return potential
 
 
     print >> sys.stderr

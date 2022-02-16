@@ -134,19 +134,36 @@ states = ["Active promoter", "Weak promoter", "Poised promoter", "Strong enhance
 states_label = [state.split('_')[-1] for state in states]
 state_scores1 = name_state_values['work/2021_06_07_H1_sp_detail/H1-NCP-sp-4']
 state_scores2 = name_state_values['work/2021_06_07_H1_sp_detail/H1-NCP-sp-8']
-for name in name_state_values:
+for name in ['work/2021_06_07_H1_sp_detail/H1-NCP-sp-8']:
+#for name in name_state_values:
     print name
     state_values = name_state_values[name]
     boxdata = [state_values[state] for state in states]
-    fig = plt.figure()
+    fig = plt.figure(figsize=(8,6))
     plt.boxplot(boxdata, 0, '')
-    plt.ylabel(name.split('/')[-1])
-    plt.xticks(range(1, len(boxdata)+1), states_label, rotation=75)
+    #plt.ylabel(name.split('/')[-1], fontsize=15)
+    plt.ylabel('Condensability (A.U.)', fontsize=15)
+    plt.xticks(range(1, len(boxdata)+1), states_label, rotation=75, fontsize=15)
     if name.startswith('work'):
         plt.ylim([-3.4, 2.8])
-    plt.savefig("box_" + 'HMM_'+name.split('/')[-1] + ".png",bbox_inches='tight')
+    #plt.savefig("box_" + 'HMM_'+name.split('/')[-1] + ".png",bbox_inches='tight')
+    plt.savefig("box_" + 'HMM_'+name.split('/')[-1] + ".svg", format='svg', bbox_inches='tight')
     #plt.show()
     plt.close('all')
     if name in ['work/2021_06_07_H1_sp_detail/H1-NCP-sp-4', 'work/2021_06_07_H1_sp_detail/H1-NCP-sp-8']:
         continue
-    pair_boxplot (state_values, state_scores1, ylabel1=name.split('/')[-1], ylabel2='Condensability (A.U.)', title=None, keys=states, note='HMM_'+name.split('/')[-1], rotation=75)
+    #pair_boxplot (state_values, state_scores1, ylabel1=name.split('/')[-1], ylabel2='Condensability (A.U.)', title=None, keys=states, note='HMM_'+name.split('/')[-1], rotation=75)
+
+fig = plt.figure(figsize=(8,6))
+plt.boxplot(boxdata, 0, '')
+#plt.ylabel(name.split('/')[-1], fontsize=15)
+plt.ylabel('Condensability (A.U.)', fontsize=15)
+plt.gca().tick_params(axis='both', which='major', labelsize=15)
+plt.gca().tick_params(axis='both', which='minor', labelsize=15)
+plt.xticks(range(1, len(boxdata)+1), states_label, rotation=75, fontsize=15)
+if name.startswith('work'):
+    plt.ylim([-3.4, 2.8])
+#plt.savefig("box_" + 'HMM_'+name.split('/')[-1] + ".png",bbox_inches='tight')
+plt.savefig("box_" + 'HMM_'+name.split('/')[-1] + ".svg", format='svg', bbox_inches='tight')
+#plt.show()
+plt.close('all')

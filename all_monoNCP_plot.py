@@ -4,11 +4,50 @@ import statis
 import sys
 import copy
 import Interval_dict
+from matplotlib import cm
 import matplotlib.pyplot as plt
 import numpy as np
 import math
 import Interval_dict
 from scipy.stats import gaussian_kde
+from matplotlib.colors import Normalize 
+from scipy.interpolate import interpn
+from matplotlib.colors import LinearSegmentedColormap
+
+# "jet-like" colormap with white background
+pastel_jet = LinearSegmentedColormap.from_list('white_viridis',
+                                             [(0, '#ffffff'),
+                                              (0.03, 'tab:cyan'),
+                                              (0.1, 'tab:blue'),
+                                              (0.3, 'tab:green'),
+                                              (0.5, 'yellow'),
+                                              (0.7, 'tab:orange'),
+                                              (0.9, 'tab:red'),
+                                              (1, 'darkred')
+                                             ], N=256)
+
+def density_scatter(x , y, ax = None, sort = True, bins = 20, density = False, **kwargs )   :
+    if ax is None :
+        fig , ax = plt.subplots()
+    data , x_e, y_e = np.histogram2d(x, y, bins = bins, density=density )
+    z = interpn( ( 0.5*(x_e[1:] + x_e[:-1]) , 0.5*(y_e[1:]+y_e[:-1]) ) , data , np.vstack([x,y]).T ,
+                 method = "splinef2d", bounds_error = False)
+
+    #To be sure to plot all data
+    z[np.where(np.isnan(z))] = 0.0
+
+    # Sort the points by density, so that the densest points are plotted last
+    if sort :
+        idx = z.argsort()
+        x, y, z = x[idx], y[idx], z[idx]
+
+    img = ax.scatter( x, y, c=z, **kwargs )
+    cbar = plt.colorbar(img)
+    cbar.ax.tick_params(labelsize=5)
+    #cbar = plt.colorbar(cm.ScalarMappable(norm = norm), ax=img)
+    #cbar.ax.set_ylabel('Density')
+
+    return ax
 
 #path = "/home/spark159/../../media/spark159/sw/sp_spd_tests_detail/"
 #path='./data/'
@@ -36,7 +75,7 @@ X, Y = [], []
 xvalue_scores = {}
 for ID in ID_score1.keys():
     xvalue = ID_AT[ID]
-    score = ID_score1[ID]
+    score = ID_score2[ID]
     X.append(xvalue)
     Y.append(score)
     if xvalue not in xvalue_scores:
@@ -51,25 +90,45 @@ for xvalue in xvalue_scores:
     Ymean.append(np.mean(xvalue_scores[xvalue]))
     Yerr.append(np.std(xvalue_scores[xvalue]/np.sqrt(len(xvalue_scores[xvalue]))))
 
-# Calculate the point density
 X, Y = np.asarray(X), np.asarray(Y)
-XY = np.vstack([X,Y])
-Z = gaussian_kde(XY)(XY)
+
+# plot density scatter
+fig = plt.figure(figsize=(3, 2))
+density_scatter(X, Y, bins = [20,20], s=3, cmap=pastel_jet, ax=plt.gca())
+plt.errorbar(Xmean, Ymean, yerr=Yerr, fmt='k.', markersize=1, elinewidth=0.5)
+plt.plot(Xmean, Ymean,'k.', markersize=1)
+plt.xlabel("AT content (%)", fontsize=8)
+plt.ylabel("Condensability (A.U.)", fontsize=8)
+plt.gca().tick_params(axis='both', which='major', labelsize=5)
+plt.gca().tick_params(axis='both', which='minor', labelsize=5)
+plt.xlim([0, 100])
+plt.ylim([-2.5, 3])
+plt.savefig("ATvsCondensability_scatter.png", bbox_inches='tight', dpi=500)
+#plt.savefig("ATvsCondensability_scatter.svg", format='svg', bbox_inches='tight')
+plt.close()
+sys.exit(1)
+
+
+# plot density scatter by using kde
+# Calculate the point density
+#X, Y = np.asarray(X), np.asarray(Y)
+#XY = np.vstack([X,Y])
+#Z = gaussian_kde(XY)(XY)
 
 # Sort the points by density, so that the densest points are plotted last
-order = np.argsort(Z)
-X, Y, Z = X[order], Y[order], Z[order]
+#order = np.argsort(Z)
+#X, Y, Z = X[order], Y[order], Z[order]
 
-fig = plt.figure()
-plt.scatter(X, Y, c=Z, s=5, cmap='jet', edgecolor='', alpha=0.1)
-plt.errorbar(Xmean, Ymean, yerr=Yerr, fmt='k.')
-plt.plot(Xmean, Ymean,'k.')
-plt.xlabel("AT content (%)")
-plt.ylabel("Condensability (A.U.)")
-plt.ylim([-2.5, 3])
-plt.savefig("ATvsCondensability_scatter.png")
-plt.show()
-plt.close()
+#fig = plt.figure()
+#plt.scatter(X, Y, c=Z, s=5, cmap='jet', edgecolor='', alpha=0.1)
+#plt.errorbar(Xmean, Ymean, yerr=Yerr, fmt='k.')
+#plt.plot(Xmean, Ymean,'k.')
+#plt.xlabel("AT content (%)")
+#plt.ylabel("Condensability (A.U.)")
+#plt.ylim([-2.5, 3])
+#plt.savefig("ATvsCondensability_scatter.png")
+#plt.show()
+#plt.close()
 
 #with open("X.pickle", "wb") as f:
 #    pickle.dump(X, f)

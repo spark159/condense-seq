@@ -11,6 +11,8 @@ import pickle
 from sklearn import linear_model
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.covariance import EllipticEnvelope
+import seaborn as sns
+from scipy import stats
 
 def get_corr(x, y):
     assert len(x) == len(y)
@@ -57,6 +59,11 @@ ESC_tf_others = ['Zfp42', 'UTF1', 'ZFX', 'TBN', 'FoxD3', 'HMGA2', 'NAC1', 'NR6A1
 ESC_tf_cores = [gname.upper() for gname in ESC_tf_cores]
 ESC_tf_others = [gname.upper() for gname in ESC_tf_others]
 ESC_gnames = ESC_tf_cores + ESC_tf_others
+
+# Pancreatic cancer cell marker genes
+#PC_gnames = ['BRCA1', 'BRCA2', 'PALB2', 'CDKN2A', 'ATM', 'TP53', 'STK11', 'MLH1', 'MSH2', 'MSH6', 'PMS2', 'EPCAM']
+PC_gnames = ['COL1A1', 'KRT17', 'ceacaM5', 'S100P', 'COL10A1', 'SerPinB5', 'GJB2', 'COL17A1', 'cXcl5', 'TMPRSS4', 'SDR16C5', 'CTHRC1', 'COL11A1', 'SLC6A14', 'MMP11', 'SULF1', 'Fn1', 'POSTN', 'ccl18', 'Muc4']
+PC_gnames = [gname.upper() for gname in PC_gnames]
 
 # read gene expression file
 gID_FPKM1 = read_tsv("ENCFF174OMR.tsv")
@@ -159,12 +166,17 @@ for chr in chr_list:
 gIDs = list(set(gID_mscore1) & set(gID_mscore2) & set(gID_FPKM1.keys()) & set(gID_FPKM2.keys()))
 print 'Total gene count:' + str(len(gIDs))
 
-# find Ensemble Gene ID for ESC marker genes
+# find Ensemble Gene ID for ESC marker genes / PC marker genes
 ESC_gname_gIDs = {gname :[] for gname in ESC_gnames}
+PC_gname_gIDs = {gname:[] for gname in PC_gnames}
 for gID in gIDs:
     gname = gID_field_values[gID]['geneName']
     try:
         ESC_gname_gIDs[gname].append(gID)
+    except:
+        pass
+    try:
+        PC_gname_gIDs[gname].append(gID)
     except:
         pass
     
@@ -174,6 +186,13 @@ for gname in ESC_gname_gIDs:
         gID = ESC_gname_gIDs[gname][0]
         assert gID not in ESC_gID_gname
         ESC_gID_gname[gID] = gname
+
+PC_gID_gname = {}
+for gname in PC_gname_gIDs:
+    if len(PC_gname_gIDs[gname]) == 1:
+        gID = PC_gname_gIDs[gname][0]
+        assert gID not in PC_gID_gname
+        PC_gID_gname[gID] = gname
 
 # set in-IDs and out-IDs
 in_gIDs = list(set(gIDs) - set(ESC_gID_gname.keys())) # all genes except ESC marker
@@ -200,16 +219,42 @@ outX = [np.log2(1+gID_FPKM1[gID]) for gID in out_gIDs]
 outY = [gID_mscore1[gID] for gID in out_gIDs]
 gnames = [ESC_gID_gname[gID] for gID in out_gIDs]
 
-fig = plt.figure()
-plt.plot(inX, inY, 'k,', markersize=3, alpha=0.3)
+# get correaltion
+X, Y = inX + outX, inY + outY
+print 'Spearman corr: ', statis.get_spearman_corr(X, Y)
+
+# polynomial fitting
+#feature_list = [[x, x**2, x**3] for x in X]
+#test_list = [[y] for y in Y]
+#reg = linear_model.Ridge(alpha=0.5)
+#reg.fit(feature_list, test_list)
+#Xrange = np.linspace(min(X), max(X), num=100)
+#Ypred = reg.predict([[x, x**2, x**3] for x in Xrange])
+#Ypred = [value[0] for value in Ypred]
+
+group_gIDs = statis.partition({gID:np.log2(1+gID_FPKM1[gID]) for gID in gIDs}, 500)
+meanX, meanY = [], []
+for i in range(len(group_gIDs)):
+    meanX.append(np.median([np.log2(1+gID_FPKM1[gID]) for gID in group_gIDs[i]]))
+    meanY.append(np.median([gID_mscore1[gID] for gID in group_gIDs[i]]))
+
+fig = plt.figure(figsize=(2.8,2.4))
+plt.plot(inX, inY, color='tab:blue', marker=',', linestyle='none', markersize=3, alpha=0.3)
 for x, y, gname in zip(outX, outY, gnames):
     plt.plot(x, y, 'r.', markersize=3, alpha=1, zorder=10)
     if gname in ESC_tf_cores:
-        plt.annotate(gname, (x, y), color='red', zorder=40, size=5)
-plt.title('H1 hESC')
-plt.xlabel('Gene expression (logFPKM)')
-plt.ylabel('Condensabiltiy (A.U.)')
-plt.show()
+        plt.annotate(gname, (x, y), color='red', zorder=40, size=8, weight='bold')
+#sns.kdeplot(data=[[X[i], Y[i]] for i in range(len(X))])
+#plt.plot(Xrange, Ypred, 'k--', alpha=0.7)
+plt.plot(meanX, meanY, 'k--', alpha=0.7)
+plt.title('H1-hESC (Near TSS)', fontsize=8)
+plt.xlabel('Gene expression (logFPKM)', fontsize=8)
+plt.ylabel('Condensabiltiy (A.U.)', fontsize=8)
+plt.gca().tick_params(axis='both', which='major', labelsize=5)
+plt.gca().tick_params(axis='both', which='minor', labelsize=5)
+plt.ylim([-2.5, 2.5])
+plt.savefig('nearTSScondvsExpreesion.svg', format='svg', bbox_inches='tight')
+#plt.show()
 plt.close()
 
 # Panc FPKM vs Panc score
@@ -219,39 +264,109 @@ outX = [np.log2(1+gID_FPKM2[gID]) for gID in out_gIDs]
 outY = [gID_mscore2[gID] for gID in out_gIDs]
 gnames = [ESC_gID_gname[gID] for gID in out_gIDs]
 
+X, Y = inX + outX, inY + outY
+print 'Spearman corr: ', statis.get_spearman_corr(X, Y)
+
+# polynomial fitting
+#feature_list = [[x, x**2, x**3] for x in X]
+#test_list = [[y] for y in Y]
+#reg = linear_model.Ridge(alpha=0.5)
+#reg.fit(feature_list, test_list)
+#Xrange = np.linspace(min(X), max(X), num=100)
+#Ypred = reg.predict([[x, x**2, x**3] for x in Xrange])
+#Ypred = [value[0] for value in Ypred]
+
+group_gIDs = statis.partition({gID:np.log2(1+gID_FPKM2[gID]) for gID in gIDs}, 500)
+meanX, meanY = [], []
+for i in range(len(group_gIDs)):
+    meanX.append(np.median([np.log2(1+gID_FPKM2[gID]) for gID in group_gIDs[i]]))
+    meanY.append(np.median([gID_mscore2[gID] for gID in group_gIDs[i]]))
+
 fig = plt.figure()
-plt.plot(inX, inY, 'k,', markersize=3, alpha=0.3)
+plt.plot(inX, inY, color='tab:blue', marker=',', linestyle='none', markersize=3, alpha=0.3)
 for x, y, gname in zip(outX, outY, gnames):
     plt.plot(x, y, 'r.', markersize=3, alpha=1, zorder=10)
     if gname in ESC_tf_cores:
-        plt.annotate(gname, (x, y), color='red', zorder=40, size=5)
+        plt.annotate(gname, (x, y), color='red', zorder=40, size=8, weight='bold')
+#plt.plot(Xrange, Ypred, 'k--', alpha=0.7)
+plt.plot(meanX, meanY, 'k--', alpha=0.7)
 plt.title('A38-41 hPanc')
 plt.xlabel('Gene expression (logFPKM)')
 plt.ylabel('Condensabiltiy (A.U.)')
-plt.show()
+plt.ylim([-2.5, 2.5])
+#plt.show()
 plt.close()
 
 
 ## H1 score VS Panc score
-inX = [gID_mscore1[gID] for gID in in_gIDs]
-inY = [gID_mscore2[gID] for gID in in_gIDs]
+X, Y = [], []
+C = []
+for gID in gIDs:
+    X.append(gID_mscore1[gID])
+    Y.append(gID_mscore2[gID])
+    C.append(np.log2(1+gID_FPKM2[gID]) - np.log2(1+gID_FPKM1[gID]))
+C = stats.zscore(C)
+
 outX = [gID_mscore1[gID] for gID in out_gIDs]
 outY = [gID_mscore2[gID] for gID in out_gIDs]
 gnames = [ESC_gID_gname[gID] for gID in out_gIDs]
 
 fig = plt.figure()
-plt.plot(inX, inY, 'k.', markersize=3, alpha=0.3)
-for x, y, gname in zip(outX, outY, outgnames):
-    plt.plot(x, y, 'r.', markersize=3, alpha=1, zorder=10)
+plt.scatter(X, Y, c=C, cmap='Spectral', vmin=-3, vmax=3, alpha=0.3, s=3)
+
+for gID in ESC_gID_gname:
+    gname = ESC_gID_gname[gID]
+    x, y = gID_mscore1[gID], gID_mscore2[gID]
+    plt.plot(x, y, 'rx', markersize=3, alpha=1, zorder=10)
     if gname in ESC_tf_cores:
-        plt.annotate(gname, (x, y), color='red', zorder=40, size=5)
+        plt.annotate(gname, (x, y), color='red', zorder=40, size=8, weight='bold')
+
+#for gID in PC_gID_gname:
+#    gname = PC_gID_gname[gID]
+#    x, y = gID_mscore1[gID], gID_mscore2[gID]
+#    plt.plot(x, y, 'bx', markersize=3, alpha=1, zorder=10)
+#    #if gname in ESC_tf_cores:
+#    #    plt.annotate(gname, (x, y), color='red', zorder=40, size=8, weight='bold')
+
+plt.plot([min(X), max(X)], [min(Y), max(Y)], 'k--', alpha=0.7)
 plt.title("Condensability near TSS (5kb)")
 plt.xlabel('H1 hESC')
 plt.ylabel('A38-41 hPanc')
+plt.xlim([-2.5, 2.5])
+plt.ylim([-2.5, 2.5])
+cbar = plt.colorbar()
+cbar.ax.set_ylabel('Gene expression (A38-41 hPanc - H1 hESC)', rotation=-90, va="bottom")
 plt.show()
 plt.close()
 
-sys.exit(1)
+
+
+### H1 score VS Panc score
+#inX = [gID_mscore1[gID] for gID in in_gIDs]
+#inY = [gID_mscore2[gID] for gID in in_gIDs]
+#outX = [gID_mscore1[gID] for gID in out_gIDs]
+#outY = [gID_mscore2[gID] for gID in out_gIDs]
+#gnames = [ESC_gID_gname[gID] for gID in out_gIDs]
+#
+#X = inX + outX
+#Y = inY + outY
+#
+#fig = plt.figure()
+#plt.plot(inX, inY, color='tab:blue', marker=',', linestyle='none', markersize=3, alpha=0.3)
+#for x, y, gname in zip(outX, outY, gnames):
+#    plt.plot(x, y, 'r.', markersize=3, alpha=1, zorder=10)
+#    if gname in ESC_tf_cores:
+#        plt.annotate(gname, (x, y), color='red', zorder=40, size=8, weight='bold')
+#plt.plot([min(X), max(X)], [min(Y), max(Y)], 'k--', alpha=0.7)
+#plt.title("Condensability near TSS (5kb)")
+#plt.xlabel('H1 hESC')
+#plt.ylabel('A38-41 hPanc')
+#plt.xlim([-2.5, 2.5])
+#plt.ylim([-2.5, 2.5])
+#plt.show()
+#plt.close()
+
+#sys.exit(1)
 
 #data_list = []
 #for gID in gIDs:
@@ -306,6 +421,29 @@ sys.exit(1)
 #plt.show()
 #plt.close()
 
+# gene expression difference VS score differences
+inX = [np.log2(1+gID_FPKM2[gID]) - np.log2(1+gID_FPKM1[gID]) for gID in in_gIDs]
+inY = [gID_mscore2[gID] - gID_mscore1[gID] for gID in in_gIDs]
+outX = [np.log2(1+gID_FPKM2[gID]) - np.log2(1+gID_FPKM1[gID]) for gID in out_gIDs]
+outY = [gID_mscore2[gID] - gID_mscore1[gID] for gID in out_gIDs]
+gnames = [ESC_gID_gname[gID] for gID in out_gIDs]
+
+fig = plt.figure()
+plt.plot(inX, inY, color='tab:blue', marker='.', linestyle='none', markersize=2, alpha=0.2)
+for x, y, gname in zip(outX, outY, gnames):
+    plt.plot(x, y, 'r.', markersize=2, alpha=1, zorder=10)
+    if gname in ESC_tf_cores:
+        plt.annotate(gname, (x, y), color='red', zorder=40, size=8, weight='bold')
+plt.xlabel('logFPKM (A38-41 hPanc - H1 hESC)')
+plt.ylabel('Condensability (A38-41 hPanc - H1 hESC)')
+plt.axvline(x=0, color='k', linestyle='--', alpha=0.7)
+plt.axhline(y=0, color='k', linestyle='--', alpha=0.7)
+#plt.xlim([-2.5, 2.5])
+#plt.ylim([-2.5, 2.5])
+#plt.show()
+plt.close()
+
+sys.exit(1)
 
 # score difference vs mean gene expression (MA-plot)
 X, Y = [] ,[]

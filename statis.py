@@ -38,6 +38,8 @@ def get_spearman_corr (X, Y):
     X, Y = np.asarray(X), np.asarray(Y)
     selected = (~np.isnan(X))*(~np.isnan(Y))
     X, Y = X[selected], Y[selected]
+    if len(X) < 2:
+        return np.nan
     return scipy.stats.spearmanr(X, Y)[0]
 
 
@@ -79,14 +81,19 @@ def test(x):
         output.append(temp)
     return output
 
-def quantile (ID_score, num, frac=None):
+def quantile (ID_score, num, IDs=None, frac=None):
     def value_cmp(a, b):
         if a[1] <= b[1]:
             return -1
         else:
             return 1
-    IDscore = [[ID, score] for ID, score in ID_score.items()]
+        
+    if IDs == None:
+        IDs = ID_score.keys()
+
+    IDscore = [[ID, ID_score[ID]] for ID in IDs]
     IDscore = sorted(IDscore, cmp=value_cmp)
+
     if frac == None:
         size_list = [int(math.ceil(len(IDscore) / float(num)))]*num
     else:
@@ -94,6 +101,7 @@ def quantile (ID_score, num, frac=None):
             frac = norm(frac)
         num = len(frac)
         size_list = [int(round(f*len(IDscore))) for f in frac]
+
     size_list[-1] += len(IDscore) - sum(size_list)
     if size_list[-1] == 0:
         size_list[-2] -= 1
@@ -254,4 +262,25 @@ def binning (data_list, bin_num):
         assert idx >=0 and idx < bin_num
         idx_list.append(idx)
     return idx_list
-        
+
+def partition (ID_value, bin_num, st=None, ed=None, IDs=None):
+    if IDs == None:
+        IDs = ID_value.keys()
+    if st == None:
+        st = min([ID_value[ID] for ID in IDs])
+    if ed == None:
+        ed = max([ID_value[ID] for ID in IDs])
+    assert st < ed
+    bin_size = int(math.ceil(float(ed-st+1) / bin_num))
+    group_IDs = [[] for i in range(bin_num)]
+    for ID in IDs:
+        value = ID_value[ID]
+        idx = int(round(float(value - st)/bin_size))
+        #if idx < 0:
+        #    idx = 0
+        #if idx >= bin_num:
+        #    idx = bin_num - 1
+        #assert idx >=0 and idx < bin_num
+        if idx >=0 and idx < bin_num:
+            group_IDs[idx].append(ID)
+    return group_IDs

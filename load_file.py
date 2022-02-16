@@ -1,6 +1,5 @@
 import sys
 import numpy as np
-import Interval_dict
 import statis
 
 def norm(L):
@@ -67,7 +66,7 @@ def read_tabular_file (fname, mode='row', jump=None):
         return ID_field_value, field_ID_value
             
             
-def read_anot_file(fname, target_names=None, jump=None, num_max=sys.maxint):
+def read_anot_file(fname, target_names=None, jump=None, num_max=sys.maxsize):
     ID_chr, ID_pos = {}, {}
     name_ID_value = {}
     First = True

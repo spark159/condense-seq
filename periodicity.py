@@ -297,43 +297,46 @@ for i in range(p_num):
 color_list = np.linspace(0.2, 1, num=p_num)
 cmap1, cmap2 = cm.get_cmap("OrRd"), cm.get_cmap("GnBu")
 cmap = cm.get_cmap("rainbow")
-fig = plt.figure()
+
+fig = plt.figure(figsize=(2.6, 2))
 #plt.subplot(1,2,1)
 ax1 = plt.gca()
 ax2 = ax1.twinx()
 for i in range(p_num):
     AT_sig, GC_sig = AT_sig_list[i], GC_sig_list[i]
-    ax1.plot(AT_sig, color=cmap1(color_list[i]))
-    ax2.plot(GC_sig, color=cmap2(color_list[i]))
-ax1.set_ylabel('AA/AT/TA/TT freqeuncy', color='r')
-ax2.set_ylabel('CC/CG/GC/GG freqeuncy', color='b')
-ax1.set_xlabel("Super Helical Location")
-ax1.tick_params('y', colors='r')
-ax2.tick_params('y', colors='b')
+    ax1.plot(AT_sig, color=cmap1(color_list[i]), lw=2)
+    ax2.plot(GC_sig, color=cmap2(color_list[i]), lw=2)
+ax1.set_ylabel('AA/AT/TA/TT freqeuncy', color='r', fontsize=8)
+ax2.set_ylabel('CC/CG/GC/GG freqeuncy', color='b', fontsize=8)
+ax1.set_xlabel("Super Helical Location", fontsize=8)
+ax1.tick_params('y', colors='r', labelsize=8)
+ax2.tick_params('y', colors='b', labelsize=8)
 line_list = [147/2 - i*20 for i in range(4)] + [147/2 + i*20 for i in range(1, 4)]
 for line in line_list:
     plt.axvline(x=line, color='k', linestyle='--', alpha=0.25)
-plt.xticks([147/2 + 10*i for i in range(-7, 8)], [str(10*i) for i in range(-7,8)])
+plt.xticks([147/2 + 10*i for i in range(-7, 8, 2)], [str(10*i) for i in range(-7, 8, 2)], fontsize=5)
 #plt.ylabel("Relative frequency")
 #plt.legend()
 #plt.ylim([0.22, 0.28])
-plt.savefig('ATGCperiod_' + "slide" + '.png')
-plt.title("Dinucleotide periodicity")
+#plt.savefig('ATGCperiod_' + "slide" + '.png')
+plt.savefig('ATGCperiod_' + "slide" + '.svg', format='svg', bbox_inches='tight')
+plt.title("Dinucleotide periodicity", fontsize=8)
 #plt.show()
 plt.close()
 
-fig = plt.figure()
-#plt.subplot(1,2,2)
+fig = plt.figure(figsize=(1,1))
+plt.subplot(1,2,1)
 img = [ [color, np.nan] for color in color_list ]
 plt.imshow(img, cmap='OrRd', aspect=3)
 img = [ [np.nan, color] for color in color_list ]
 plt.imshow(img, cmap='GnBu', aspect=3)
-plt.yticks(range(p_num), range(1, p_num+1))
+plt.yticks(range(p_num), range(1, p_num+1), fontsize=8)
 ax = plt.gca()
 ax.yaxis.tick_right()
 #plt.tick_params(axis='y', which='both', labelleft='off', labelright='on')
 plt.xticks([])
-plt.savefig("cbar.png", bbox_inches='tight')
+#plt.savefig("cbar.png", bbox_inches='tight')
+plt.savefig('cbar.svg', format='svg', bbox_inches='tight')
 #plt.show()
 plt.close()
 
@@ -453,24 +456,16 @@ min_mean, max_mean = np.min(AT_mean_list+GC_mean_list), np.max(AT_mean_list+GC_m
 color_list = np.linspace(0.2, 1, num=p_num)
 cmap = cm.get_cmap("jet")
 cmap1, cmap2 = cm.get_cmap("OrRd"), cm.get_cmap("GnBu")
-fig = plt.figure()
+
+fig = plt.figure(figsize=(2.2, 2.2))
 for i in range(p_num):
-    color1 = rescale(AT_mean_list[i], min_mean, max_mean, 0, 1)
-    plt.polar(AT_phase_list[i], np.log(AT_amplt_list[i]), '.', markersize=20, color=cmap(color1), alpha=0.5)
-    if i == 0:
-        alignment = "top"
-    else:
-        alignment = "bottom"
-    plt.text(AT_phase_list[i], np.log(AT_amplt_list[i]), '%d' % (int(i+1)), horizontalalignment='center', verticalalignment=alignment, color='k')
-    color2 = rescale(GC_mean_list[i], min_mean, max_mean, 0, 1)
-    plt.polar(GC_phase_list[i], np.log(GC_amplt_list[i]), '.', markersize=20, color=cmap(color2), alpha=0.5)
-    if i == 3:
-        alignment = "top"
-    else:
-        alignment = "bottom"
-    plt.text(GC_phase_list[i], np.log(GC_amplt_list[i]), '%d' % (int(i+1)), horizontalalignment='center', verticalalignment=alignment, color='k')
-plt.text(1.17*np.pi, -6.1, 'AT-rich', horizontalalignment='center', verticalalignment='center', color='r', size=13)
-plt.text(1.84*np.pi, -6.75, 'GC-rich', horizontalalignment='center', verticalalignment='center', color='b', size=13)
+    plt.polar(AT_phase_list[i], np.log(AT_amplt_list[i]), '.', markersize=16, color=cmap1(color_list[i]), alpha=0.5)
+    plt.text(AT_phase_list[i], np.log(AT_amplt_list[i]), '%d' % (int(i+1)), horizontalalignment='center', verticalalignment='center', color='k', size=7)
+    plt.polar(GC_phase_list[i], np.log(GC_amplt_list[i]), '.', markersize=16, color=cmap2(color_list[i]), alpha=0.5)
+    plt.text(GC_phase_list[i], np.log(GC_amplt_list[i]), '%d' % (int(i+1)), horizontalalignment='center', verticalalignment='center', color='k', size=7)
+
+plt.text(1.17*np.pi, -6.1, 'AT-rich', horizontalalignment='center', verticalalignment='center', color='r', size=8)
+plt.text(1.84*np.pi, -6.75, 'GC-rich', horizontalalignment='center', verticalalignment='center', color='b', size=8)
 ax = plt.gca()
 ax.set_rlabel_position(135)
 rtick_list = [-7, -6.25, -6.5, -6.75, -6]
@@ -479,16 +474,59 @@ rlabel_list[0] = ''
 rlabel_list[1] = ''
 rlabel_list[3] = ''
 ax.set_rticks(rtick_list) 
-ax.set_yticklabels(rlabel_list)
+ax.set_yticklabels(rlabel_list, fontsize=5)
+ax.tick_params(axis='both', which='major', labelsize=5, pad=-5)
+ax.tick_params(axis='both', which='minor', labelsize=5, pad=-5)
+#plt.savefig("ATGC_amplt_phase.png", bbox_inches='tight') 
+plt.savefig("ATGC_amplt_phase.svg", format='svg', bbox_inches='tight')
+#plt.show()
+plt.close()
+
+
+
+fig = plt.figure(figsize=(2.6, 2.6))
+for i in range(p_num):
+    color1 = rescale(AT_mean_list[i], min_mean, max_mean, 0, 1)
+    #plt.polar(AT_phase_list[i], np.log(AT_amplt_list[i]), '.', markersize=8, color=cmap(color1), alpha=0.5)
+    plt.polar(AT_phase_list[i], np.log(AT_amplt_list[i]), '.', markersize=12, color=cmap1(color_list[i]), alpha=0.5)
+    if i == 0:
+        alignment = "top"
+    else:
+        alignment = "bottom"
+    plt.text(AT_phase_list[i], np.log(AT_amplt_list[i]), '%d' % (int(i+1)), horizontalalignment='center', verticalalignment=alignment, color='k', size=5)
+    color2 = rescale(GC_mean_list[i], min_mean, max_mean, 0, 1)
+    #plt.polar(GC_phase_list[i], np.log(GC_amplt_list[i]), '.', markersize=8, color=cmap(color2), alpha=0.5)
+    plt.polar(GC_phase_list[i], np.log(GC_amplt_list[i]), '.', markersize=12, color=cmap2(color_list[i]), alpha=0.5)
+    if i == 3:
+        alignment = "top"
+    else:
+        alignment = "bottom"
+    plt.text(GC_phase_list[i], np.log(GC_amplt_list[i]), '%d' % (int(i+1)), horizontalalignment='center', verticalalignment=alignment, color='k', size=5)
+plt.text(1.17*np.pi, -6.1, 'AT-rich', horizontalalignment='center', verticalalignment='center', color='r', size=8)
+plt.text(1.84*np.pi, -6.75, 'GC-rich', horizontalalignment='center', verticalalignment='center', color='b', size=8)
+ax = plt.gca()
+ax.set_rlabel_position(135)
+rtick_list = [-7, -6.25, -6.5, -6.75, -6]
+rlabel_list = ['$10^{' + str(tick) + '}$' for tick in rtick_list]
+rlabel_list[0] = ''
+rlabel_list[1] = ''
+rlabel_list[3] = ''
+ax.set_rticks(rtick_list) 
+ax.set_yticklabels(rlabel_list, fontsize=5)
+ax.tick_params(axis='both', which='major', labelsize=5, pad=-5)
+ax.tick_params(axis='both', which='minor', labelsize=5, pad=-5)
 #ax.set_xlabel("Phase")
 #ax.set_ylabel("Amplitude")
 cmap = mpl.cm.jet
 norm = mpl.colors.Normalize(vmin=min_mean, vmax=max_mean)
 Map = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
 Map.set_array([])
-plt.colorbar(Map, label='Mean frequency')
+#cbar = plt.colorbar(Map, fraction=0.03, ticks=[min_mean, max_mean])
+#cbar.ax.set_yticklabels([str(round(min_mean,2)), str(round(max_mean,2))], fontsize=5)
+#cbar.ax.set_ylabel('Mean frequency', rotation=-90, va="bottom", labelpad=-2, fontsize=8)
 plt.tight_layout()
-plt.savefig("ATGC_amplt_phase.png", bbox_inches='tight')
+#plt.savefig("ATGC_amplt_phase.png", bbox_inches='tight')
+#plt.savefig("ATGC_amplt_phase.svg", format='svg', bbox_inches='tight')
 #plt.show()
 plt.close()
 
@@ -512,7 +550,7 @@ for i in range(p_num):
         plt.plot(din_sig[din], label=din)
     plt.title(str(i+1))
     plt.legend()
-    plt.show()
+    #plt.show()
     plt.close()
         
 
@@ -550,7 +588,7 @@ for i in range(p_num):
         plt.polar(din_phase[din]*np.pi, din_amplt[din], color+'o')
         plt.text(din_phase[din]*np.pi, din_amplt[din], din, horizontalalignment='center', verticalalignment='bottom', color=color)
     plt.title(str(i+1))
-    plt.show()
+    #plt.show()
     plt.close()
 
 din_amplt_trace, din_phase_trace = {}, {}
@@ -611,7 +649,7 @@ ax.set_rticks(rtick_list)
 ax.set_yticklabels(rlabel_list)
 plt.title("Dinucleotide peridiocity change")
 plt.tight_layout()
-plt.show()
-plt.close()
-    
+#plt.show()
+plt.close() 
+   
     

@@ -145,7 +145,7 @@ for i in range(len(agent_list)-1):
         corr_matrix[j][i] = corr
 
 
-fig, axes = plt.subplots(nrows=len(agent_list), ncols=len(agent_list))
+fig, axes = plt.subplots(figsize=(6.4, 4.8), nrows=len(agent_list), ncols=len(agent_list))
 for i in range(len(agent_list)):
     for j in range(len(agent_list)):
         idx = len(agent_list)*i + j
@@ -153,7 +153,7 @@ for i in range(len(agent_list)):
         if i > j:
             X = [ agent_ID_score[agent1][ID] for ID in ID_list ]
             Y = [ agent_ID_score[agent2][ID] for ID in ID_list ]
-            axes[i,j].plot(X, Y, 'k,', alpha=0.1)
+            axes[i,j].plot(X, Y, 'k.', ms=0.5, mfc='k', mec='k', alpha=0.05)
             #axes[i,j].set_xscale('log', base=2)
             #axes[i,j].set_yscale('log', base=2)
             if j > 0 and i < len(agent_list) -1:
@@ -191,6 +191,7 @@ plt.subplots_adjust(wspace=0.1, hspace=0.1)
 cbar=fig.colorbar(img, ax=axes, location='right', shrink=0.8)
 cbar.ax.set_ylabel('Spearman correlation', rotation=-90, va="bottom")
 plt.suptitle("Corrrelation betwen condensing agents (10 kb bin)")
+plt.savefig("Corr_agent.png", dpi=1000, bbox_inches='tight')
 #plt.show()
 plt.close()
 
@@ -370,7 +371,7 @@ for chr_choice in chr_choices:
 
     # correation score VS feature
     binIDs = sorted(binID_Gvalue.keys())
-    fig, axes = plt.subplots(nrows=2*len(feature_names), ncols=len(agent_list), gridspec_kw = {'hspace':0.1, 'wspace':0.12})
+    fig, axes = plt.subplots(figsize=(6.4, 2.8), nrows=2*len(feature_names), ncols=len(agent_list), gridspec_kw = {'hspace':0.001, 'wspace':0.3})
     for i in range(len(agent_list)):
         agent = agent_list[i]
         #X = name_sig[agent]
@@ -381,14 +382,18 @@ for chr_choice in chr_choices:
             Y = [name_binID_mean[feature_name][binID] for binID in binIDs]
             corr = scipy.stats.spearmanr(X, Y)[0]
 
-            axes[2*j, i].plot(X, Y, 'k.', markersize=2, alpha=0.5)
+            axes[2*j, i].plot(X, Y, 'k.', markersize=1.5, mfc='k', mec='k', alpha=0.5)
             
             if i > 0:
                 axes[2*j, i].tick_params(axis='y', which='both', labelleft=False)
             if i == 0:
-                axes[2*j, i].set_ylabel('Gene expression')
+                pass
+                #axes[2*j, i].set_ylabel('Gene expression')
             axes[2*j, i].set_title(agent+'$^{%s}$' % (agent_charge[agent]), weight='bold')
             axes[2*j, i].set_aspect(np.diff(axes[2*j, i].get_xlim())/np.diff(axes[2*j, i].get_ylim()))
+
+            axes[2*j, i].set_xticks([min(X), max(X)])
+            axes[2*j, i].set_xticklabels([str(round(min(X),1)), str(round(max(X),1))], rotation=45)
 
             matrix = np.zeros((len(agent_list), len(agent_list)))
             matrix[:] = corr
@@ -404,11 +409,15 @@ for chr_choice in chr_choices:
 
     #plt.subplots_adjust(wspace=0.1, hspace=0.1)
     cbar=fig.colorbar(img, ax=axes, location='right', shrink=0.5)
-    cbar.ax.set_ylabel('Spearman correlation', rotation=-90, va="bottom")
+    cbar.set_ticks([-0.8, 0.0])
+    cbar.set_ticklabels(['-0.8', '0.0'])
+    cbar.ax.tick_params(labelsize=6)
+    cbar.ax.set_ylabel('Spearman correlation', rotation=-90, va="bottom", fontsize=6)
     plt.suptitle("Corrrelation with gene expression (1 Mb bin)")
     #plt.tight_layout()
     #fig.text(0.04, 0.5, 'Gene expression', va='center', rotation='vertical')
-    plt.show()
+    plt.savefig("Corr_agent_gene.png", dpi=500, bbox_inches='tight')
+    #plt.show()
     plt.close()
 
         
@@ -488,7 +497,7 @@ for chr_choice in chr_choices:
 
             plt.tight_layout()
             #plt.savefig("Gwide_" + chr_choice + '_' + target_name + '_' + feature_name + ".png", bbox_inches='tight', dpi=1000)
-            plt.show()
+            #plt.show()
             plt.close()
 
     # plot genome cartoon and genome-wide data (vertical)
@@ -541,13 +550,15 @@ for chr_choice in chr_choices:
         
         #plt.tight_layout()
         plt.savefig("Gwide_" + chr_choice + '_all_agents_' + feature_name + ".png", bbox_inches='tight')
-        plt.show()
+        #plt.show()
         plt.close()
 
     # plot genome cartoon and genome-wide data (horizontal)
     if True:
-        figwidth = round(12*float(len(gband_img))/9970, 1)
-        figheight = 1 + 2*len(agent_list)
+        #figwidth = round(12*float(len(gband_img))/9970, 1)
+        #figheight = 1 + 2*len(agent_list)
+        figwidth = round(6.4*float(len(gband_img))/10000, 1)
+        figheight = 1 + 1.4*len(agent_list)
         fig, axes = plt.subplots(nrows=1+len(agent_list), ncols=1, figsize=(figwidth, figheight), sharex=True, gridspec_kw = {'hspace':0.12, 'wspace':0.12, 'height_ratios':[7]*len(agent_list)+[1]})
 
         for i in range(len(agent_list)):
@@ -597,5 +608,6 @@ for chr_choice in chr_choices:
         
         #plt.tight_layout()
         #plt.savefig("Gwide_" + chr_choice + '_all_agents_' + feature_name + ".png", bbox_inches='tight')
+        plt.savefig("Gwide_" + chr_choice + '_all_agents_' + feature_name + ".svg", format='svg', bbox_inches='tight')
         #plt.show()
         plt.close()
