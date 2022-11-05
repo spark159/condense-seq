@@ -13,6 +13,48 @@ from sklearn.neighbors import LocalOutlierFactor
 from sklearn.covariance import EllipticEnvelope
 import seaborn as sns
 from scipy import stats
+from matplotlib.colors import LinearSegmentedColormap
+
+def tuple_cmp (a,b):
+    if a[0] <= b[0]:
+        return -1
+    else:
+        return 1
+
+
+# read num file
+def read_num_file_new (fname, chr_choice):
+    ID_pos = {}
+    ID_score1, ID_score2 = {}, {}
+    First = True
+    for line in open(fname):
+        if First:
+            First = False
+            continue
+        line = line.strip()
+        if not line:
+            continue
+        cols = line.split()
+        if cols[-1] == '*':
+            #print "here"
+            continue
+        chr = cols[1]
+        if cols[1] != chr_choice:
+            continue
+        #ID = chr + ':' + cols[0]
+        ID = cols[0]
+        pos = int(cols[2])
+        sup1 = float(cols[3])
+        sup2 = float(cols[4])
+        control = float(cols[5])
+        if sup1 * sup2 * control <= 0:
+            continue
+        score1 = -np.log(sup1/control)
+        score2 = -np.log(sup2/control)
+        ID_pos[ID] = pos
+        ID_score1[ID] = score1
+        ID_score2[ID] = score2
+    return ID_pos, ID_score1, ID_score2
 
 def get_corr(x, y):
     assert len(x) == len(y)
@@ -30,6 +72,71 @@ def get_corr(x, y):
         xdiff2 += xdiff * xdiff
         ydiff2 += ydiff * ydiff
     return diffprod / np.sqrt(xdiff2 * ydiff2)
+
+# read raw count file and convert it to RPKM
+def read_RPKM (fname, field_name, gtf_fname, chr_list=None):
+    gID_field_values = load_file.read_GTF (gtf_fname, chr_list=chr_list, mode="gene")
+
+    # get total exon length
+    gID_exonlen = {}
+    for gID in gID_field_values:
+        length = 0
+        for start, end in gID_field_values[gID]['exons']:
+            length +=  end - start + 1
+        gID_exonlen[gID] = length
+
+    field_gID_counts = load_file.read_tabular_file (fname, mode="col")
+    vgID_counts = field_gID_counts[field_name]
+
+    gID_counts = {}
+    total_counts = 0.0
+    for vgID in vgID_counts:
+        gID = vgID.split('.')[0]
+        counts = vgID_counts[vgID]
+        gID_counts[gID] = counts # exclude the case of zero counts
+        total_counts += counts
+
+    gID_RPKM = {}
+    for gID in gID_exonlen:
+        try:
+            RPM = (gID_counts[gID] / total_counts)*(10**6)
+            RPKM = float(RPM)/(gID_exonlen[gID]/1000.0)
+        except:
+            continue
+        gID_RPKM[gID] = RPKM
+
+    return gID_RPKM
+
+
+
+# temporal function for reading RNA-seq data 
+def read_txtRNA_seq (fname):
+    gname_exonlen = {}
+    gname_count = {}
+    First = True
+    for line in open(fname):
+        if First:
+            First = False
+            continue
+        line = line.strip()
+        if not line:
+            continue
+        if line.startswith('Geneid'):
+            continue
+        cols = line.split()
+        gname, exonlen, count = cols[0], cols[-2], cols[-1]
+        exonlen, count = int(exonlen), int(count)
+        assert gname not in gname_exonlen
+        assert gname not in gname_count
+        gname_exonlen[gname] = exonlen
+        gname_count[gname] = count
+
+    totalcount = sum(gname_count.values())
+    gname_RPKM = {}
+    for gname in gname_count:
+        gname_RPKM[gname] = (10**9)*float(gname_count[gname])/(totalcount*gname_exonlen[gname])
+    return gname_RPKM
+
 
 def read_tsv (fname, chr_choices=None):
     First = True
@@ -72,11 +179,21 @@ def read_bivalent (fname, chr_choices=None):
         btype_gnames[btype].append(gname)
     return gname_info, btype_gnames
 
+# set data path
+path = "/home/spark159/../../media/spark159/sw/"
+
 # chr list for analysis
-chr_list = ['chr' + str(i) for i in range(1, 23)]
+#chr_list = ['chr' + str(i) for i in range(1, 23)]
+
+chr_list = ['chr' + str(i) for i in range(1, 20)]
+#chr_list += ['chrX']
 chr_list += ['chrX', 'chrY']
 #chr_list = ['chr9']
 #chr_list.remove('chr13')
+
+# mouse CD4 T cell lineage commitment genes
+mCD4Tcell_gnames = ['Tbx21', 'Gata3', 'Rorc', 'Ifng', 'Il17']
+mCD4Tcell_gnames = [gname.upper() for gname in mCD4Tcell_gnames]
 
 # stem cell marker genes
 ESC_tf_cores =  ['Pou5f1', 'Sox2', 'KLF4', 'Nanog']
@@ -91,11 +208,34 @@ PC_gnames = ['COL1A1', 'KRT17', 'ceacaM5', 'S100P', 'COL10A1', 'SerPinB5', 'GJB2
 PC_gnames = [gname.upper() for gname in PC_gnames]
 
 # read gene expression file
-gID_FPKM1 = read_tsv("ENCFF174OMR.tsv")
-gID_FPKM2 = load_file.read_RPKM("GSE63124_all_gene_raw_readcounts.txt", "Homo_sapiens.GRCh37.87.gtf", chr_list = chr_list)
+#gID_FPKM1 = read_tsv(path+"ENCFF174OMR.tsv") # H1-hESC
+#gID_FPKM2 = read_tsv(path+"ENCFF345SHY.tsv") # GM12878
+#gID_FPKM2 = load_file.read_RPKM("GSE63124_all_gene_raw_readcounts.txt", "Homo_sapiens.GRCh37.87.gtf", chr_list = chr_list)
 
 # read gtf file
-gID_field_values = load_file.read_GTF ("ENCFF159KBI.gtf", chr_list=chr_list, mode="gene")
+#gID_field_values = load_file.read_GTF (path+"ENCFF159KBI.gtf", chr_list=chr_list, mode="gene") #human
+gID_field_values = load_file.read_GTF (path+"gencodeM21pri-UCSC-tRNAs-ERCC-phiX.gtf", mode="gene", chr_list=chr_list) #mouse
+
+## read txt RNA_seq file and get geneID_FPKM (mouse CD8 T cell)
+#gname_FPKM = read_txtRNA_seq("GSM3721901_W_effector_batch_1_1.txt")
+#gID_FPKM = {}
+#for gID in gID_field_values:
+#    gname = gID_field_values[gID]["geneName"]
+#    try:
+#        FPKM = gname_FPKM[gname]
+#        gID_FPKM[gID] = FPKM
+#    except:
+#        continue
+#gID_FPKM1 = gID_FPKM
+#gID_FPKM2 = gID_FPKM
+
+# get old ODC data RPKM
+gID_FPKM1 = read_RPKM (path + 'GSE157596_ODC_counts.tsv', 'TH2_WT2', path+"gencodeM21pri-UCSC-tRNAs-ERCC-phiX.gtf", chr_list=chr_list)
+
+gID_FPKM2 = read_RPKM (path + 'GSE157596_ODC_counts.tsv', 'TH2_KO2', path+"gencodeM21pri-UCSC-tRNAs-ERCC-phiX.gtf", chr_list=chr_list)
+
+    
+
 
 # calculate score for all genes
 gID_mscore1 = {}
@@ -103,31 +243,44 @@ gID_mscore2 = {}
 for chr in chr_list:
     print "processing " + chr
     
-    fname1 = '%s_gene_score1' % (chr)
-    fname2 = '%s_gene_score2' % (chr)
+    #fname1 = 'mCD8Tcell_%s_gene_score1' % (chr)
+    #fname2 = 'mCD8Tcell_%s_gene_score2' % (chr)
+
+    fname1 = 'mCD8Tcell_%s_corrected_gene_score1' % (chr)
+    fname2 = 'mCD8Tcell_%s_corrected_gene_score2' % (chr)
+
+    #fname1 = 'mCD8Tcell_%s_corrected_upstream_gene_score1' % (chr)
+    #fname2 = 'mCD8Tcell_%s_corrected_upstream_gene_score2' % (chr)
+
+
 
     try:
-        chr_gID_mscore1 = pickle.load(open(fname1 + ".pickle", "rb"))
-        chr_gID_mscore2 = pickle.load(open(fname2 + ".pickle", "rb"))
+        chr_gID_mscore1 = pickle.load(open(path+fname1 + ".pickle", "rb"))
+        chr_gID_mscore2 = pickle.load(open(path+fname2 + ".pickle", "rb"))
 
     except:
 
         # read gene locations
-        chr_gID_field_values1 = load_file.read_GTF ("ENCFF159KBI.gtf", chr_list=[chr], mode="gene")
-        chr_gID_field_values2 = load_file.read_GTF_old ("Homo_sapiens.GRCh37.87.gtf", chr_list=[chr], mode="gene")
+        chr_gID_field_values1 = load_file.read_GTF (path+"gencodeM21pri-UCSC-tRNAs-ERCC-phiX.gtf", chr_list=[chr], mode="gene")
+        chr_gID_field_values2 = load_file.read_GTF (path+"gencodeM21pri-UCSC-tRNAs-ERCC-phiX.gtf", chr_list=[chr], mode="gene")
+        ##chr_gID_field_values2 = load_file.read_GTF_old ("Homo_sapiens.GRCh37.87.gtf", chr_list=[chr], mode="gene")
 
         gIDs = list(set(chr_gID_field_values1.keys()) & set(chr_gID_field_values2.keys()))
+
+        print len(gIDs)
 
         gID_ginterval1, gID_ginterval2 = {}, {}
         for gID in gIDs:
             try:
                 TSS1 = chr_gID_field_values1[gID]['TSS']
-                interval1 = (TSS1-2500, TSS1+2500)
+                #interval1 = (TSS1-2500, TSS1+2500)
+                interval1 = (TSS1-5000, TSS1)
             except:
                 continue
             try:
                 TSS2 = chr_gID_field_values2[gID]['TSS']
-                interval2 = (TSS2-2500, TSS2+2500)
+                #interval2 = (TSS2-2500, TSS2+2500)
+                interval2 = (TSS2-5000, TSS2)
             except:
                 continue
             gID_ginterval1[gID] = interval1
@@ -135,16 +288,29 @@ for chr in chr_list:
 
         del chr_gID_field_values1, chr_gID_field_values2
 
-        # read NCP scores
-        anot_fname1 = "H1_NCP_sp_%s_anot.cn" % (chr)
-        nID_chr1, nID_pos1, name_nID_value1 = load_file.read_anot_file(anot_fname1)
-        nID_score1 = name_nID_value1['work/2021_06_07_H1_sp_detail/H1-NCP-sp-8']
-        del nID_chr1, name_nID_value1
+        ## read NCP scores
+        #anot_fname1 = "mCD8T_WT-NCP_sp_%s_anot.cn" % (chr)
+        #nID_chr1, nID_pos1, name_nID_value1 = load_file.read_anot_file(path+anot_fname1)
+        #nID_score1 = name_nID_value1['/home/spark159/scratch4-tha4/sangwoo/2022_09_23_mouseCD8_detail/mCD8T-WT-NCP-sp-8']
+        #del nID_chr1, name_nID_value1
 
-        anot_fname2 = "hg19_%s_NCP_ics_anot.cn" % (chr)
-        nID_chr2, nID_pos2, name_nID_value2 = load_file.read_anot_file(anot_fname2)
-        nID_score2 = name_nID_value2['data/sp_spd_tests_detail/sp8']
-        del nID_chr2, name_nID_value2
+        #anot_fname2 = "mCD8T_inht-NCP_sp_%s_anot.cn" % (chr)
+        #nID_chr2, nID_pos2, name_nID_value2 = load_file.read_anot_file(path+anot_fname2)
+        #nID_score2 = name_nID_value2['/home/spark159/scratch4-tha4/sangwoo/2022_09_23_mouseCD8_detail/mCD8T-inht-NCP-sp-8']
+        #del nID_chr2, name_nID_value2
+
+
+        # read NCP scores (from corrected NCP number files)
+        #num_fname1 = "H1_NCP_sp_%s_num.cn" % (chr)
+        num_fname1 = "mCD8T_WT-NCP_sp_%s_num.cn" % (chr)
+        nID_pos1, _, nID_score1 = read_num_file_new (path+num_fname1, chr_choice=chr)
+
+        #num_fname2 = "GM_NCP_sp_%s_num.cn" % (chr)
+        num_fname2 = "mCD8T_inht-NCP_sp_%s_num.cn" % (chr)
+        nID_pos2, _, nID_score2 = read_num_file_new (path+num_fname2, chr_choice=chr)
+
+        del _
+
 
         # get scores near TSS
         data_sets = [(gID_ginterval1, nID_pos1, nID_score1), (gID_ginterval2, nID_pos2, nID_score2)]
@@ -176,8 +342,8 @@ for chr in chr_list:
                 chr_gID_mscore2[gID] = np.mean(gID_scores2[gID])
 
         # save pickle file
-        pickle.dump(chr_gID_mscore1, open(fname1 + ".pickle", "wb"))
-        pickle.dump(chr_gID_mscore2, open(fname2 + ".pickle", "wb"))
+        pickle.dump(chr_gID_mscore1, open(path+fname1 + ".pickle", "wb"))
+        pickle.dump(chr_gID_mscore2, open(path+fname2 + ".pickle", "wb"))
 
     # update total data set
     gID_mscore1.update(chr_gID_mscore1)
@@ -191,12 +357,104 @@ for chr in chr_list:
 gIDs = list(set(gID_mscore1) & set(gID_mscore2) & set(gID_FPKM1.keys()) & set(gID_FPKM2.keys()))
 print 'Total gene count:' + str(len(gIDs))
 
+## standardization of scores
+scores1 = [gID_mscore1[gID] for gID in gIDs]
+scores2 = [gID_mscore2[gID] for gID in gIDs]
+score_mean1, score_std1 = np.mean(scores1), np.std(scores1)
+score_mean2, score_std2 = np.mean(scores2), np.std(scores2)
+
+for gID in gIDs:
+    gID_mscore1[gID] = float(gID_mscore1[gID] - score_mean1) / score_std1
+    gID_mscore2[gID] = float(gID_mscore2[gID] - score_mean2) / score_std2
+
+
+# save score difference by rank
+dscore_gID = []
+for gID in gIDs:
+    dscore = gID_mscore2[gID] - gID_mscore1[gID]
+    dscore_gID.append((dscore, gID))
+dscore_gID = sorted(dscore_gID)
+
+sample_size = int(len(gIDs)*0.2)
+
+up_gIDs, down_gIDs = [], []
+
+for dscore, gID in dscore_gID[:sample_size]:
+    down_gIDs.append(gID)
+
+for dscore, gID in dscore_gID[::-1][:sample_size]:
+    up_gIDs.append(gID)
+
+f = open("rank_up.txt", 'w')
+for gID in up_gIDs:
+    print >> f, gID_field_values[gID]['geneName']
+f.close()
+
+f = open("rank_down.txt", 'w')
+for gID in down_gIDs:
+    print >> f, gID_field_values[gID]['geneName']
+f.close()
+
+
+# plot bar graph of GO analysis
+#fname1 = "GO_top_raw.csv"
+#fname2 = "GO_top.csv"
+#fname3 = "GO_bott_raw.csv"
+#fname4 = "GO_bott.csv"
+
+fname1 = "GO_up.csv"
+fname2 = "GO_down.csv"
+
+def draw_GO (fname, num, color='gold', alpha=1):
+    goID_field_value = load_file.read_tabular_file (fname)
+
+    sig_goID = sorted([(goID_field_value[goID]['P-value'], goID) for goID in goID_field_value])
+    #sig_goID = sig_goID[:min(20, len(sig_goID))]
+    sig_goID = sig_goID[:min(num, len(sig_goID))]
+
+    xlabels, sigs = [], []
+    for sig, goID in sig_goID:
+        xlabels.append(goID_field_value[goID]['Description'])
+        sigs.append(-np.log10(sig))
+
+    #fig = plt.figure(figsize=(4,7))
+    fig = plt.figure()
+    #plt.barh(range(len(sigs))[::-1], sigs, color='gold')
+    plt.barh(range(len(sigs))[::-1], sigs, color=color, alpha=alpha)
+    for i in range(len(xlabels)):
+        plt.annotate(xlabels[i], (0.5, len(xlabels)-1-i), ha='left', va='center', fontsize=8, weight='bold')
+
+    plt.ylim([-1+0.25, len(xlabels)-0.25])
+    plt.gca().tick_params(left='off')
+    plt.yticks([])
+    plt.xlabel('-log10(p)')
+    plt.savefig(fname.rsplit('.', 1)[0] + '.png', bbox_inches='tight')
+    #plt.show()
+    plt.close()
+
+draw_GO(fname1, 10, 'tab:green', alpha=0.7)
+draw_GO(fname2, 10, 'tab:orange', alpha=0.7)
+
+# Hierarchial clustering of differential genes
+
+
+
+#draw_GO(fname1)
+#draw_GO(fname2)
+#draw_GO(fname3)
+#draw_GO(fname4)
+
+
+#sys.exit(1)
+
 # find Ensemble Gene ID for ESC marker genes / PC marker genes
 ESC_gname_gIDs = {gname :[] for gname in ESC_gnames}
 PC_gname_gIDs = {gname:[] for gname in PC_gnames}
+mCD4Tcell_gname_gIDs = {gname:[] for gname in mCD4Tcell_gnames}
 HOX_gname_gID = {}
+
 for gID in gIDs:
-    gname = gID_field_values[gID]['geneName']
+    gname = gID_field_values[gID]['geneName'].upper()
     if gname.startswith('HOX'):
         HOX_gname_gID[gname] = gID
     try:
@@ -205,6 +463,10 @@ for gID in gIDs:
         pass
     try:
         PC_gname_gIDs[gname].append(gID)
+    except:
+        pass
+    try:
+        mCD4Tcell_gname_gIDs[gname].append(gID)
     except:
         pass
     
@@ -221,6 +483,14 @@ for gname in PC_gname_gIDs:
         gID = PC_gname_gIDs[gname][0]
         assert gID not in PC_gID_gname
         PC_gID_gname[gID] = gname
+
+mCD4Tcell_gID_gname = {}
+for gname in mCD4Tcell_gname_gIDs:
+    if len(mCD4Tcell_gname_gIDs[gname]) == 1:
+        gID = mCD4Tcell_gname_gIDs[gname][0]
+        assert gID not in mCD4Tcell_gID_gname
+        mCD4Tcell_gID_gname[gID] = gname
+
 
 HOX_gID_gname = {}
 for gname in HOX_gname_gID:
@@ -247,7 +517,7 @@ in_gIDs = list(set(gIDs) - set(ESC_gID_gname.keys())) # all genes except ESC mar
 out_gIDs = ESC_gID_gname.keys() # ESC marker genes
 
 
-# H1 FPKM vs Panc FPKM
+# H1 FPKM vs GM FPKM
 X, Y = [], []
 for gID in gIDs:
     X.append(np.log2(1+gID_FPKM1[gID]))
@@ -256,7 +526,8 @@ fig = plt.figure()
 plt.plot(X, Y, '.')
 plt.title('RNA-seq data comparison')
 plt.xlabel('H1 hESC logFPKM')
-plt.ylabel('A38-41 hPanc logFPKM')
+#plt.ylabel('A38-41 hPanc logFPKM')
+plt.ylabel('GM12878 logFPKM')
 #plt.show()
 plt.close()
 
@@ -308,11 +579,12 @@ plt.ylabel('Condensabiltiy (A.U.)', fontsize=12)
 plt.gca().tick_params(axis='both', which='major', labelsize=8)
 plt.gca().tick_params(axis='both', which='minor', labelsize=8)
 plt.ylim([-2.5, 2.5])
-plt.savefig('nearTSScondvsExpreesion_hESC.svg', format='svg', bbox_inches='tight')
+#plt.savefig('nearTSScondvsExpreesion_hESC.svg', format='svg', bbox_inches='tight')
+plt.savefig('nearTSScondvsExpreesion_hESC.png', bbox_inches='tight')
 #plt.show()
 plt.close()
 
-# Panc FPKM vs Panc score
+# Panc FPKM vs GM score
 inX = [np.log2(1+gID_FPKM2[gID]) for gID in in_gIDs]
 inY = [gID_mscore2[gID] for gID in in_gIDs]
 outX = [np.log2(1+gID_FPKM2[gID]) for gID in out_gIDs]
@@ -352,18 +624,21 @@ for x, y, gname in zip(outX, outY, gnames):
 #plt.plot(Xrange, Ypred, 'k--', alpha=0.7)
 plt.plot(meanX, meanY, 'k--', alpha=0.7)
 #plt.title('A38-41 hPanc')
-plt.title('A38-41 hPanc (Near TSS)', fontsize=12)
+#plt.title('A38-41 hPanc (Near TSS)', fontsize=12)
+plt.title('GM12878 (Near TSS)', fontsize=12)
 plt.xlabel('Gene expression (logFPKM)', fontsize=12)
 plt.ylabel('Condensabiltiy (A.U.)', fontsize=12)
 plt.gca().tick_params(axis='both', which='major', labelsize=8)
 plt.gca().tick_params(axis='both', which='minor', labelsize=8)
-plt.ylim([-2.5, 2.5])
-plt.savefig('nearTSScondvsExpreesion_hPanc.svg', format='svg', bbox_inches='tight')
+plt.ylim([-3.5, 3.5])
+#plt.savefig('nearTSScondvsExpreesion_hPanc.svg', format='svg', bbox_inches='tight')
+#plt.savefig('nearTSScondvsExpreesion_GM.svg', format='svg', bbox_inches='tight')
+plt.savefig('nearTSScondvsExpreesion_GM.png', bbox_inches='tight')
 #plt.show()
 plt.close()
 
 
-## H1 score VS Panc score
+## H1 score VS GM score
 X, Y = [], []
 C = []
 for gID in gIDs:
@@ -378,27 +653,121 @@ gnames = [ESC_gID_gname[gID] for gID in out_gIDs]
 
 
 # draw all genes
-fig = plt.figure()
-plt.scatter(X, Y, c=C, cmap='Spectral', vmin=-3, vmax=3, alpha=0.3, s=3)
-        
-for gID in ESC_gID_gname:
-    gname = ESC_gID_gname[gID]
-    x, y = gID_mscore1[gID], gID_mscore2[gID]
-    plt.plot(x, y, 'rx', markersize=3, alpha=1, zorder=10)
-    if gname in ESC_tf_cores:
-        plt.annotate(gname, (x, y), color='red', zorder=40, size=8, weight='bold')
 
-plt.plot([min(X), max(X)], [min(Y), max(Y)], 'k--', alpha=0.7)
+# custom diverging colormap with white background
+pastel_jet = LinearSegmentedColormap.from_list('white_viridis',
+                                             [(0, 'darkblue'),
+                                              (0.1, 'blue'),
+                                              (0.2, 'tab:blue'),
+                                              (0.4, 'tab:cyan'),
+                                              (0.5, 'ivory'),
+                                              (0.6, 'tab:orange'),
+                                              (0.8, 'tab:red'),
+                                              (0.9, 'red'),
+                                              (1, 'darkred')
+                                             ], N=256)
+
+
+fig = plt.figure()
+#plt.scatter(X, Y, c=C, cmap='Spectral', vmin=-3, vmax=3, alpha=0.3, s=3)
+plt.scatter(X, Y, c=C, cmap=pastel_jet, vmin=-5, vmax=5, alpha=0.3, s=2)
+#plt.plot(X, Y, 'k.', alpha=0.2, markersize=1.5)
+        
+for gID in mCD4Tcell_gID_gname:
+    gname = mCD4Tcell_gID_gname[gID]
+    x, y = gID_mscore1[gID], gID_mscore2[gID]
+    plt.plot(x, y, 'kx', markersize=5, alpha=1, zorder=10, mew=1.5)
+    plt.annotate(gname, (x, y), color='black', zorder=40, size=8, weight='bold')
+
+#plt.plot([min(X), max(X)], [min(Y), max(Y)], 'k--', alpha=0.7)
+#plt.plot([-2.5, 2], [-3.5, 3.5], 'k--', alpha=0.5)
+#plt.plot([-4, 3.5], [-4, 3.5], 'r--', alpha=0.7)
+plt.plot([-5, 3.5], [-5, 3.5], 'k--', alpha=0.7)
 plt.title("Condensability near TSS (5kb)")
-plt.xlabel('H1 hESC')
-plt.ylabel('A38-41 hPanc')
-plt.xlim([-2.5, 2.5])
-plt.ylim([-2.5, 2.5])
+plt.xlabel('Mouse CD8 T cell (WT)')
+#plt.ylabel('A38-41 hPanc')
+plt.ylabel('Mouse CD8 T cell (+ODC inhibitor)')
+#plt.ylim([-2.5, 2.5])
+#plt.xlim([-3, 2.5])
+#plt.ylim([-3, 2.5])
+#plt.xlim([-4, 3.5])
+#plt.ylim([-4, 3.5])
+plt.xlim([-5, 3.5])
+plt.ylim([-5, 3.5])
 cbar = plt.colorbar()
-cbar.ax.set_ylabel('Gene expression (A38-41 hPanc - H1 hESC)', rotation=-90, va="bottom")
-plt.savefig('A38VSH1hESC_all.png')
+#cbar.ax.set_ylabel('Gene expression (A38-41 hPanc - H1 hESC)', rotation=-90, va="bottom")
+#cbar.ax.set_ylabel('Gene expression (GM12878 - H1 hESC)', rotation=-90, va="bottom")
+cbar.ax.set_ylabel('Gene expression (+inht - WT)', rotation=-90, va="bottom")
+#plt.savefig('A38VSH1hESC_all.png')
+plt.savefig('WTVSODCinht_all.png')
 #plt.show()
 plt.close()
+
+
+# plot scatter with differential genes
+middleX, middleY = [], []
+for gID in list(set(gIDs)-set(up_gIDs + down_gIDs)):
+    middleX.append(gID_mscore1[gID])
+    middleY.append(gID_mscore2[gID])
+
+upX, upY = [], []
+for gID in up_gIDs:
+    upX.append(gID_mscore1[gID])
+    upY.append(gID_mscore2[gID])
+
+downX, downY = [], []
+for gID in down_gIDs:
+    downX.append(gID_mscore1[gID])
+    downY.append(gID_mscore2[gID])
+
+fig = plt.figure()
+plt.plot(middleX, middleY, color='tab:gray', marker='.', alpha=0.15, markersize=1.5)
+plt.plot(upX, upY, 'b.', alpha=0.15, markersize=1.5, label='Up')
+plt.plot(downX, downY, 'r.', alpha=0.15, markersize=1.5, label='Down')
+plt.plot([-5, 3.5], [-5, 3.5], 'k--', alpha=0.7)
+plt.title("Condensability near TSS (5kb)")
+plt.xlabel('Mouse CD8 T cell (WT)')
+plt.ylabel('Mouse CD8 T cell (+ODC inhibitor)')
+plt.xlim([-5, 3.5])
+plt.ylim([-5, 3.5])
+leg = plt.legend(loc='best', numpoints=1, prop={'size': 6})
+for lh in leg.legendHandles:
+    lh._legmarker.set_markersize(15)
+    lh._legmarker.set_alpha(1)
+plt.savefig('WTVSODCinht_diff.png')
+#plt.show()
+plt.close()
+
+
+
+    
+
+# score difference vs mean gene expression (MA-plot)
+X, Y = [] ,[]
+gID_dscore = {}
+for gID in gIDs:
+    #mean_FPKM = 0.5*(np.log(1+gID_FPKM1[gID]) + np.log(1+gID_FPKM2[gID]))
+    #mean_FPKM = 0.5*(gID_FPKM1[gID] + gID_FPKM2[gID])
+    mean_score = 0.5*(gID_mscore1[gID] + gID_mscore2[gID])
+    score_diff = gID_mscore2[gID] - gID_mscore1[gID]
+    X.append(mean_score)
+    Y.append(score_diff)
+    gID_dscore[gID] = score_diff
+
+fig = plt.figure()
+#plt.plot(X, Y, 'k.', markersize=2, alpha=0.2)
+plt.scatter(X, Y, c=C, cmap=pastel_jet, vmin=-5, vmax=5, alpha=0.3, s=2)
+plt.axhline(y=0, linestyle='--', color='r')
+plt.title("Condensability mean vs difference")
+plt.xlabel('mean condensability')
+#plt.ylabel('A38-41 hPanc - H1 hESC')
+plt.ylabel('+ODC inht - WT')
+cbar = plt.colorbar()
+cbar.ax.set_ylabel('Gene expression (+inht - WT)', rotation=-90, va="bottom")
+plt.savefig('MA_plot_all.png')
+#plt.show()
+plt.close()
+
 
 
 # draw only bivalent genes
@@ -418,15 +787,20 @@ for btype in btype_gID_gname:
         Bt_C.append(np.log2(1+gID_FPKM2[gID]) - np.log2(1+gID_FPKM1[gID]))
     plt.scatter(Bt_X, Bt_Y, c=Bt_C, s=3, alpha=0.5, zorder=10, vmin=-3, vmax=3,  cmap='bwr')
 
-    plt.plot([min(X), max(X)], [min(Y), max(Y)], 'k--', alpha=0.7)
-    plt.title("Condensability near TSS (5kb)")
+    #plt.plot([min(X), max(X)], [min(Y), max(Y)], 'k--', alpha=0.7)
+    plt.plot([-2.5, 2], [-3.5, 3.5], 'k--', alpha=0.5)
+    plt.title("Condensability near TSS (5kb) %s" % (btype))
     plt.xlabel('H1 hESC')
-    plt.ylabel('A38-41 hPanc')
-    plt.xlim([-2.5, 2.5])
-    plt.ylim([-2.5, 2.5])
+    plt.ylabel('GM12878')
+    plt.xlim([-2.5, 2])
+    plt.ylim([-3.5, 3.5])
+    #plt.xlim([-2.5, 2.5])
+    #plt.ylim([-2.5, 2.5])
     cbar = plt.colorbar()
-    cbar.ax.set_ylabel('Gene expression (A38-41 hPanc - H1 hESC)', rotation=-90, va="bottom")
-    plt.savefig('A38VSH1hESC_%s.png' % (btype))
+    #cbar.ax.set_ylabel('Gene expression (A38-41 hPanc - H1 hESC)', rotation=-90, va="bottom")
+    cbar.ax.set_ylabel('Gene expression (GM12878 - H1 hESC)', rotation=-90, va="bottom")
+    #plt.savefig('A38VSH1hESC_%s.png' % (btype))
+    plt.savefig('GMVSH1hESC_%s.png' % (btype))
     #plt.show()
     plt.close()
 
@@ -445,15 +819,21 @@ for gID in HOX_gID_gname:
     HOX_C.append(np.log2(1+gID_FPKM2[gID]) - np.log2(1+gID_FPKM1[gID]))
 plt.scatter(HOX_X, HOX_Y, c=HOX_C, s=12, alpha=1, zorder=10, vmin=-3, vmax=3, edgecolor='k', linewidth=0.5, cmap='bwr')
 
-plt.plot([min(X), max(X)], [min(Y), max(Y)], 'k--', alpha=0.7)
-plt.title("Condensability near TSS (5kb)")
+#plt.plot([min(X), max(X)], [min(Y), max(Y)], 'k--', alpha=0.7)
+plt.plot([-2.5, 2], [-3.5, 3.5], 'k--', alpha=0.5)
+plt.title("Condensability near TSS (5kb) only HOX genes")
 plt.xlabel('H1 hESC')
-plt.ylabel('A38-41 hPanc')
-plt.xlim([-2.5, 2.5])
-plt.ylim([-2.5, 2.5])
+#plt.ylabel('A38-41 hPanc')
+plt.ylabel('GM12878')
+#plt.xlim([-2.5, 2.5])
+#plt.ylim([-2.5, 2.5])
+plt.xlim([-2.5, 2])
+plt.ylim([-3.5, 3.5])
 cbar = plt.colorbar()
-cbar.ax.set_ylabel('Gene expression (A38-41 hPanc - H1 hESC)', rotation=-90, va="bottom")
-plt.savefig('A38VSH1hESC_HOX.png')
+#cbar.ax.set_ylabel('Gene expression (A38-41 hPanc - H1 hESC)', rotation=-90, va="bottom")
+#plt.savefig('A38VSH1hESC_HOX.png')
+cbar.ax.set_ylabel('Gene expression (GM12878 - H1 hESC)', rotation=-90, va="bottom")
+plt.savefig('GMVSH1hESC_HOX.png')
 #plt.show()
 plt.close()
 
@@ -472,15 +852,21 @@ for gID in ESC_gID_gname:
     ESC_C.append(np.log2(1+gID_FPKM2[gID]) - np.log2(1+gID_FPKM1[gID]))
 plt.scatter(ESC_X, ESC_Y, c=ESC_C, s=12, alpha=1, zorder=10, vmin=-3, vmax=3, edgecolor='k', linewidth=0.5, cmap='bwr')
 
-plt.plot([min(X), max(X)], [min(Y), max(Y)], 'k--', alpha=0.7)
-plt.title("Condensability near TSS (5kb)")
+#plt.plot([min(X), max(X)], [min(Y), max(Y)], 'k--', alpha=0.7)
+plt.plot([-2.5, 2], [-3.5, 3.5], 'k--', alpha=0.5)
+plt.title("Condensability near TSS (5kb) only ES markers")
 plt.xlabel('H1 hESC')
-plt.ylabel('A38-41 hPanc')
-plt.xlim([-2.5, 2.5])
-plt.ylim([-2.5, 2.5])
+#plt.ylabel('A38-41 hPanc')
+plt.ylabel('GM12878')
+#plt.xlim([-2.5, 2.5])
+#plt.ylim([-2.5, 2.5])
+plt.xlim([-2.5, 2])
+plt.ylim([-3.5, 3.5])
 cbar = plt.colorbar()
-cbar.ax.set_ylabel('Gene expression (A38-41 hPanc - H1 hESC)', rotation=-90, va="bottom")
-plt.savefig('A38VSH1hESC_ESm.png')
+#cbar.ax.set_ylabel('Gene expression (A38-41 hPanc - H1 hESC)', rotation=-90, va="bottom")
+#plt.savefig('A38VSH1hESC_ESm.png')
+cbar.ax.set_ylabel('Gene expression (GM12878 - H1 hESC)', rotation=-90, va="bottom")
+plt.savefig('GMVSH1hESC_ESm.png')
 #plt.show()
 plt.close()
 
@@ -581,8 +967,10 @@ for x, y, gname in zip(outX, outY, gnames):
     plt.plot(x, y, 'r.', markersize=2, alpha=1, zorder=10)
     if gname in ESC_tf_cores:
         plt.annotate(gname, (x, y), color='red', zorder=40, size=8, weight='bold')
-plt.xlabel('logFPKM (A38-41 hPanc - H1 hESC)')
-plt.ylabel('Condensability (A38-41 hPanc - H1 hESC)')
+#plt.xlabel('logFPKM (A38-41 hPanc - H1 hESC)')
+#plt.ylabel('Condensability (A38-41 hPanc - H1 hESC)')
+plt.xlabel('logFPKM (GM12878 - H1 hESC)')
+plt.ylabel('Condensability (GM12878 - H1 hESC)')
 plt.axvline(x=0, color='k', linestyle='--', alpha=0.7)
 plt.axhline(y=0, color='k', linestyle='--', alpha=0.7)
 #plt.xlim([-2.5, 2.5])
@@ -608,7 +996,8 @@ plt.plot(X, Y, 'k.', markersize=3, alpha=0.3)
 plt.axhline(y=0, linestyle='--', color='r')
 plt.title("Condensability difference vs mean gene expression")
 plt.xlabel('mean log2(1+FPKM))')
-plt.ylabel('A38-41 hPanc - H1 hESC')
+#plt.ylabel('A38-41 hPanc - H1 hESC')
+plt.ylabel('GM12878 - H1 hESC')
 plt.show()
 plt.close()
 
@@ -649,7 +1038,8 @@ for i in range(p_num):
 plt.xlim([-3,3])
 #plt.title("Chromosome1")
 plt.title("All genes")
-plt.xlabel("Condensability difference (A38-41 hPanc - H1 hESC)")
+#plt.xlabel("Condensability difference (A38-41 hPanc - H1 hESC)")
+plt.xlabel("Condensability difference (GM12878 - H1 hESC)")
 plt.ylabel("Gene Counts")
 #plt.savefig("partition_hist.png")
 plt.show()

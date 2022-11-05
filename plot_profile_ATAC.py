@@ -64,20 +64,14 @@ def pair_plot (profile1, profile2, offset=-1000, xtick_loc_name=None, xlabel='Di
     #plt.show()
     plt.close()
 
-
 #path = "/home/spark159/../../media/spark159/sw/sp_spd_tests_detail/"
 #path = "./data/"
-#path = ""
-path = "/home/spark159/../../media/spark159/sw/"
+path = ""
 
-cell = 'mCD8T'
-sample = 'inht-NCP'
+cell = 'H1'
+sample = 'NCP'
 agent = 'sp'
 chr = 'chr1'
-
-# RNA-seq data fname
-tsvfname = path + "ENCFF174OMR.tsv"
-
 
 
 # mean TSS plot
@@ -85,13 +79,20 @@ feature = 'TSS'
 profile_fname = path + '_'.join([cell, sample, agent, chr, feature]) + "_profile.txt"
 #profile_fname = path + 'H1_chr1_gtf_' + feature + "_profile.txt"
 #profile_fname = path + 'hg19_chr1_' + feature + "_check_profile.txt"
-#occprofile_fname = path + '_'.join([cell, sample, agent, chr, feature]) + "_occ_profile.txt
-occprofile_fname = path + '_'.join([cell, sample, agent, chr, 'occ', feature]) + "_profile.txt"
+occprofile_fname = path + '_'.join([cell, sample, agent, chr, feature]) + "_occ_profile.txt"
+ATACprofile_fname = path + cell + '_ATAC_foldchange_' + feature + "_profile.txt"
 #occprofile_fname = path + 'hg19_chr1_gtf_' + feature + "_occ_profile.txt"
 #occprofile_fname = path + 'hg19_chr1_' + feature + "_occ_check_profile.txt"
 moving_average_win = 100
 offset = -1000
 xtick_loc_name = None
+
+# check ATAC profile
+name_mean_ATACprofile, name_ID_ATACprofile = load_file.read_profile(ATACprofile_fname)
+mean_ATACprofile = np.log2(1.0 + statis.moving_average(name_mean_ATACprofile['Binsig'], moving_average_win))
+single_plot([mean_ATACprofile], names=['ATAC'], ylabel='ATAC score', title="ATAC signal near TSS", note='ATAC')
+
+#sys.exit(1)
 
 # check occupany profile
 name_mean_occprofile, name_ID_occprofile = load_file.read_profile(occprofile_fname)
@@ -105,7 +106,7 @@ names, occprofiles = [], []
 for name, occprofile in sorted(name_mean_occprofile.items()):
     names.append(name.split('/')[-1])
     occprofiles.append(occprofile/sum(occprofile))
-single_plot(occprofiles, names=names, title="Nucleosome occupancy near TSS")
+single_plot(occprofiles, names=names, title="Nucleosome occupancy near TSS", note='occ')
 
 #sys.exit(1)
 
@@ -114,21 +115,25 @@ for name in name_mean_profile:
     name_mean_profile[name] = statis.moving_average(name_mean_profile[name], moving_average_win)
 
 # average plot of all genes
-mean_score1_profile = name_mean_profile["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-8"]
-#mean_score2_profile = name_mean_profile["/home/spark159/scratch4-tha4/sangwoo/2022_09_08_GM_sp_H1_HP1a_deep/GM-NCP-sp-8"]
-mean_occprofile = name_mean_occprofile["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-0"]
+mean_score1_profile = name_mean_profile["work/2021_06_07_H1_sp_detail/H1-NCP-sp-4"]
+mean_score2_profile = name_mean_profile["work/2021_06_07_H1_sp_detail/H1-NCP-sp-8"]
+mean_occprofile = name_mean_occprofile["work/2021_06_07_H1_sp_detail/H1-NCP-sp-0"]
 pair_plot(mean_score1_profile, mean_occprofile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="Occupancy", xtick_loc_name = xtick_loc_name, note="Occ" + '_score1_' + feature)
-#pair_plot(mean_score2_profile, mean_occprofile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="Occupancy", xtick_loc_name = xtick_loc_name, note="Occ" + '_score2_' + feature)
+pair_plot(mean_score2_profile, mean_occprofile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="Occupancy", xtick_loc_name = xtick_loc_name, note="Occ" + '_score2_' + feature)
+
+pair_plot(mean_score1_profile, mean_ATACprofile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="ATAC signal", xtick_loc_name = xtick_loc_name, note="ATAC" + '_score1_' + feature)
+pair_plot(mean_score2_profile, mean_ATACprofile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="ATAC signal", xtick_loc_name = xtick_loc_name, note="ATAC" + '_score2_' + feature)
+
 
 #sys.exit(1)
 
 
 for name in sorted(name_mean_profile):
-    if name in  ["/home/spark159/scratch4-tha4/sangwoo/2022_09_08_GM_sp_H1_HP1a_deep/H1-DNA-HP1a-3"]:
+    if name in  ["work/2021_06_07_H1_sp_detail/H1-NCP-sp-4", "work/2021_06_07_H1_sp_detail/H1-NCP-sp-8"]:
         continue
     mean_profile = name_mean_profile[name]
     pair_plot(mean_score1_profile, mean_profile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2=name,  xtick_loc_name = xtick_loc_name, note=name.split('/')[-1] + '_score1_' + feature)
-    #pair_plot(mean_score2_profile, mean_profile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2=name,  xtick_loc_name = xtick_loc_name, note=name.split('/')[-1] + '_score2_' + feature)
+    pair_plot(mean_score2_profile, mean_profile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2=name,  xtick_loc_name = xtick_loc_name, note=name.split('/')[-1] + '_score2_' + feature)
 
 #mean_meCpGfrac_profile = name_mean_profile["meGCNumber"] / (2*name_mean_profile["CpGNumber"])
 #pair_plot(mean_score1_profile, mean_meCpGfrac_profile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="meCpG frac",  xtick_loc_name = xtick_loc_name, note="meCpGfrac" + '_' + feature)
@@ -136,23 +141,21 @@ for name in sorted(name_mean_profile):
 
 # paritions according to gene expression
 #gID_RPKM = load_file.read_RPKM (path+"GSE63124_all_gene_raw_readcounts.txt", path+"Homo_sapiens.GRCh37.87.gtf", "chr1")
-#gID_RPKM = load_file.read_tsv(tsvfname)
-gID_RPKM = load_file.read_RPKM_new ("GSE136898_rawCounts.txt", "gencodeM21pri-UCSC-tRNAs-ERCC-phiX.gtf", chr_list=[chr]) # mouse CD8 T cell case 
-
+gID_RPKM = load_file.read_tsv("ENCFF174OMR.tsv")
 #ID_profile = name_ID_profile["work/2021_06_07_H1_sp_detail/H1-NCP-sp-8"]
-name_ID_profile['Occ'] = name_ID_occprofile["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-0"]
+name_ID_profile['Occ'] = name_ID_occprofile["work/2021_06_07_H1_sp_detail/H1-NCP-sp-0"]
 
-#ID_meCpGfrac_profile = {}
-#for ID in (set(name_ID_profile['CNumber(CpG)'].keys()) & set(name_ID_profile['meCNumber(CpG)'].keys())):
-#    #meGC_profile = statis.moving_average(name_ID_profile["meGCNumber"][ID], moving_average_win)
-#    #CpG_profile = statis.moving_average(name_ID_profile["CpGNumber"][ID], moving_average_win)
-#    meGC_profile = np.asarray(statis.NN_interpolate(name_ID_profile['meCNumber(CpG)'][ID]))
-#    CpG_profile = np.asarray(statis.NN_interpolate(name_ID_profile['CNumber(CpG)'][ID]))
-#    meCpGfrac_profile =  (meGC_profile+1) / (CpG_profile+1)
-#    ID_meCpGfrac_profile[ID] = meCpGfrac_profile
-#name_ID_profile['meCpGfrac'] = ID_meCpGfrac_profile
+ID_meCpGfrac_profile = {}
+for ID in (set(name_ID_profile['CNumber(CpG)'].keys()) & set(name_ID_profile['meCNumber(CpG)'].keys())):
+    #meGC_profile = statis.moving_average(name_ID_profile["meGCNumber"][ID], moving_average_win)
+    #CpG_profile = statis.moving_average(name_ID_profile["CpGNumber"][ID], moving_average_win)
+    meGC_profile = np.asarray(statis.NN_interpolate(name_ID_profile['meCNumber(CpG)'][ID]))
+    CpG_profile = np.asarray(statis.NN_interpolate(name_ID_profile['CNumber(CpG)'][ID]))
+    meCpGfrac_profile =  (meGC_profile+1) / (CpG_profile+1)
+    ID_meCpGfrac_profile[ID] = meCpGfrac_profile
+name_ID_profile['meCpGfrac'] = ID_meCpGfrac_profile
 
-
+name_ID_profile['ATAC'] = name_ID_ATACprofile['Binsig']
 
 for name in name_ID_profile:
     ID_profile = name_ID_profile[name]
@@ -184,8 +187,7 @@ for name in name_ID_profile:
         xtick_locs, xtick_names = xtick_loc_name
         plt.xticks(xtick_locs, xtick_names, fontsize=15, rotation=45)
     plt.xlabel('Distance from ' + feature +' (bp)', fontsize=15)
-    #if name.startswith('work'):
-    if name.startswith('/home/'):
+    if name.startswith('work'):
         plt.title('Condensability', fontsize=20)
     else:
         plt.title(name, fontsize=20)
@@ -203,9 +205,7 @@ for name in name_ID_profile:
 # heatmap plot by gene expression level
 #name_list = ['data/sp_spd_tests_detail/sp7', 'k27ac', 'k4me3', 'k9ac', 'Occ']
 #name_list = ['data/sp_spd_tests_detail/sp7']
-#name_list = ["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-8", 'H3K27ac', 'H3K4me3', 'H3K9ac', 'Occ']
-name_list = ["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-8", 'H3K27ac', 'H3K4me3', 'H3K4me1', 'Occ']
-
+name_list = ["work/2021_06_07_H1_sp_detail/H1-NCP-sp-4", "work/2021_06_07_H1_sp_detail/H1-NCP-sp-8", 'H3k27ac', 'H3K4me3', 'H3K9ac', 'Occ', 'ATAC']
 
 common_IDs = set(gID_RPKM)
 for name in name_list:
@@ -227,6 +227,8 @@ for name in name_list:
     for RPKM, ID in RPKMgID:
         profile = ID_profile[ID]
         profile = statis.moving_average(profile, moving_average_win)
+        if name == 'ATAC':
+            profile = np.log2(1.0 + profile)
         profile[:100] = [profile[100]]*100
         profile[len(profile)-100:] = [profile[len(profile)-101]]*100
         img.append(profile)
@@ -241,9 +243,9 @@ for name in name_list:
         
     name_img[name] = img
 
-cmap_list = ['rainbow', 'YlOrRd', 'YlGn', 'Purples', 'Greys', 'Blues', 'Oranges']
+cmap_list = ['rainbow', 'rainbow_r', 'YlOrRd', 'YlGn', 'Purples', 'Greys', 'Blues', 'Oranges']
 #vlim_list = [ [-4, 4], [-4, 4], [None, None], [None, None], [None, None], [None, None], [None, None]]
-vlim_list = [ [None, None], [None, None], [None, None], [None, None], [None, None], [None, None]]
+vlim_list = [ [-0.9, 0], [-2.3, 0.3], [None, None], [None, None], [None, None], [None, None], [None, None]]
 xtick_labels = [ str(k + offset) for k in range(0, len(profile), 1000)]
 for i in range(len(name_list)):
     name = name_list[i]
@@ -262,7 +264,7 @@ for i in range(len(name_list)):
     #plt.show()
     plt.close()
 
-#sys.exit(1)
+sys.exit(1)
 
 
 
@@ -366,13 +368,14 @@ for name in name_ID_profile:
     plt.savefig("RPKM_quantile_profile_" + feature + "_" + name.split('/')[-1] + ".png",bbox_inches='tight')
     #plt.show()
     plt.close()
+"""
 
-
-
+"""
 # mean TSS-TTS plot
 feature = 'TSS_TTS'
 profile_fname = path + '_'.join([cell, sample, agent, chr, feature]) + "_profile.txt"
-occprofile_fname = path + '_'.join([cell, sample, agent, chr, "occ", feature]) + "_profile.txt"
+occprofile_fname = path + '_'.join([cell, sample, agent, chr, feature]) + "_occ_profile.txt"
+ATACprofile_fname = path + cell + '_ATAC_foldchange_' + feature + "_profile.txt"
 #profile_fname = path + 'hg19_chr1_gtf_' + feature + "_profile.txt"
 #occprofile_fname = path + 'hg19_chr1_gtf_' + feature + "_occ_profile.txt"
 moving_average_win = 20
@@ -380,6 +383,12 @@ offset = -200
 xtick_locs = [-100, 0, 600, 700]
 xtick_names = ["-2.5kb", "TSS", "TTS", "2.5kb"]
 xtick_loc_name = [xtick_locs, xtick_names]
+
+# check ATAC profile
+name_mean_ATACprofile, name_ID_ATACprofile = load_file.read_profile(ATACprofile_fname)
+mean_ATACprofile = np.log2(1.0 + statis.moving_average(name_mean_ATACprofile['Binsig'], moving_average_win))
+single_plot([mean_ATACprofile], names=['ATAC'], ylabel='ATAC score', title="ATAC signal near TSS", note='ATAC')
+
 
 # check occupany profile
 name_mean_occprofile, name_ID_occprofile = load_file.read_profile(occprofile_fname)
@@ -395,40 +404,44 @@ for name in name_mean_profile:
     name_mean_profile[name] = statis.moving_average(name_mean_profile[name], moving_average_win)
 
 # average plot of all genes
-mean_score1_profile = name_mean_profile["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-8"]
-#mean_score2_profile = name_mean_profile["/home/spark159/scratch4-tha4/sangwoo/2022_09_08_GM_sp_H1_HP1a_deep/GM-NCP-sp-8"]
-mean_occprofile = name_mean_occprofile["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-0"]
+mean_score1_profile = name_mean_profile["work/2021_06_07_H1_sp_detail/H1-NCP-sp-4"]
+mean_score2_profile = name_mean_profile["work/2021_06_07_H1_sp_detail/H1-NCP-sp-8"]
+mean_occprofile = name_mean_occprofile["work/2021_06_07_H1_sp_detail/H1-NCP-sp-0"]
 pair_plot(mean_score1_profile, mean_occprofile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="Occupancy", xtick_loc_name = xtick_loc_name, note="Occ" + '_score1_' + feature)
-#pair_plot(mean_score2_profile, mean_occprofile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="Occupancy", xtick_loc_name = xtick_loc_name, note="Occ" + '_score2_' + feature)
+pair_plot(mean_score2_profile, mean_occprofile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="Occupancy", xtick_loc_name = xtick_loc_name, note="Occ" + '_score2_' + feature)
+
+pair_plot(mean_score1_profile, mean_ATACprofile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="ATAC signal", xtick_loc_name = xtick_loc_name, note="ATAC" + '_score1_' + feature)
+pair_plot(mean_score2_profile, mean_ATACprofile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="ATAC signal", xtick_loc_name = xtick_loc_name, note="ATAC" + '_score2_' + feature)
 
 
 for name in sorted(name_mean_profile):
-    if name in ["/home/spark159/scratch4-tha4/sangwoo/2022_09_08_GM_sp_H1_HP1a_deep/H1-new-NCP-HP1a-3"]:
+    if name in ["work/2021_06_07_H1_sp_detail/H1-NCP-sp-4", "work/2021_06_07_H1_sp_detail/H1-NCP-sp-8"]:
         continue
     mean_profile = name_mean_profile[name]
     pair_plot(mean_score1_profile, mean_profile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2=name,  xtick_loc_name = xtick_loc_name, note=name.split('/')[-1] + '_score1_' + feature)
-    #pair_plot(mean_score2_profile, mean_profile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2=name,  xtick_loc_name = xtick_loc_name, note=name.split('/')[-1] + '_score2_' + feature)
+    pair_plot(mean_score2_profile, mean_profile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2=name,  xtick_loc_name = xtick_loc_name, note=name.split('/')[-1] + '_score2_' + feature)
 
 
-#mean_meCpGfrac_profile = name_mean_profile['meCNumber(CpG)'] / (name_mean_profile['CNumber(CpG)'])
-#pair_plot(mean_score1_profile, mean_meCpGfrac_profile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="meCpG frac",  xtick_loc_name = xtick_loc_name, note="meCpGfrac" + '_' + feature)
+mean_meCpGfrac_profile = name_mean_profile['meCNumber(CpG)'] / (name_mean_profile['CNumber(CpG)'])
+pair_plot(mean_score1_profile, mean_meCpGfrac_profile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="meCpG frac",  xtick_loc_name = xtick_loc_name, note="meCpGfrac" + '_' + feature)
 
 # paritions according to gene expression
 #gID_RPKM = load_file.read_RPKM (path+"GSE63124_all_gene_raw_readcounts.txt", path+"Homo_sapiens.GRCh37.87.gtf", "chr1")
 #ID_profile = name_ID_profile["data/sp_spd_tests_detail/sp7"]
-#gID_RPKM = load_file.read_tsv(tsvfname)
-gID_RPKM = load_file.read_RPKM_new ("GSE136898_rawCounts.txt", "gencodeM21pri-UCSC-tRNAs-ERCC-phiX.gtf", chr_list=[chr]) # mouse CD8 T cell case 
-name_ID_profile['Occ'] = name_ID_occprofile["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-0"]
+gID_RPKM = load_file.read_tsv("ENCFF174OMR.tsv")
+name_ID_profile['Occ'] = name_ID_occprofile["work/2021_06_07_H1_sp_detail/H1-NCP-sp-0"]
 
-#ID_meCpGfrac_profile = {}
-#for ID in (set(name_ID_profile['CNumber(CpG)'].keys()) & set(name_ID_profile['meCNumber(CpG)'].keys())):
-#    #meGC_profile = statis.moving_average(name_ID_profile["meGCNumber"][ID], moving_average_win)
-#    #CpG_profile = statis.moving_average(name_ID_profile["CpGNumber"][ID], moving_average_win)
-#    meGC_profile = np.asarray(statis.NN_interpolate(name_ID_profile['meCNumber(CpG)'][ID]))
-#    CpG_profile = np.asarray(statis.NN_interpolate(name_ID_profile['CNumber(CpG)'][ID]))
-#    meCpGfrac_profile =  (meGC_profile+1) / (CpG_profile+1)
-#    ID_meCpGfrac_profile[ID] = meCpGfrac_profile
-#name_ID_profile['meCpGfrac'] = ID_meCpGfrac_profile
+ID_meCpGfrac_profile = {}
+for ID in (set(name_ID_profile['CNumber(CpG)'].keys()) & set(name_ID_profile['meCNumber(CpG)'].keys())):
+    #meGC_profile = statis.moving_average(name_ID_profile["meGCNumber"][ID], moving_average_win)
+    #CpG_profile = statis.moving_average(name_ID_profile["CpGNumber"][ID], moving_average_win)
+    meGC_profile = np.asarray(statis.NN_interpolate(name_ID_profile['meCNumber(CpG)'][ID]))
+    CpG_profile = np.asarray(statis.NN_interpolate(name_ID_profile['CNumber(CpG)'][ID]))
+    meCpGfrac_profile =  (meGC_profile+1) / (CpG_profile+1)
+    ID_meCpGfrac_profile[ID] = meCpGfrac_profile
+name_ID_profile['meCpGfrac'] = ID_meCpGfrac_profile
+
+name_ID_profile['ATAC'] = name_ID_ATACprofile['Binsig']
 
 
 for name in name_ID_profile:
@@ -452,6 +465,8 @@ for name in name_ID_profile:
         profile = [ ID_profile[ID] for ID in IDs ]
         profile = np.nanmean(profile, axis=0)
         profile = statis.moving_average(profile, moving_average_win)
+        if name == 'ATAC':
+            profile = np.log2(1.0 + profile)
         profile[:100] = [np.NaN]*100
         profile[len(profile)-100:] = [np.NaN]*100
         X = [ k + offset for k in range(len(profile))]
@@ -461,8 +476,7 @@ for name in name_ID_profile:
         xtick_locs, xtick_names = xtick_loc_name
         plt.xticks(xtick_locs, xtick_names, fontsize=15, rotation=45)
     #plt.xlabel('Distance from ' + feature +' (bp)')
-    #if name.startswith('work'):
-    if name.startswith('/home/'):
+    if name.startswith('work'):
         plt.title('Condensability', fontsize=20)
     else:
         plt.title(name, fontsize=20)
@@ -481,7 +495,7 @@ for name in name_ID_profile:
 #name_list = ['data/sp_spd_tests_detail/sp7']
 #name_list = ['data/sp_spd_tests_detail/sp7', 'meCpGfrac', 'k36me3', 'ATcontent']
 #name_list = ['data/sp_spd_tests_detail/sp7', 'ATcontent', 'k36me3', 'k9me2']
-name_list = ["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-8", 'H3K27me3', 'H3K36me3', 'ATcontent']
+name_list = ["work/2021_06_07_H1_sp_detail/H1-NCP-sp-8", 'meCpGfrac', 'H3K36me3', 'ATcontent', 'ATAC']
 
 common_IDs = set(gID_RPKM)
 for name in name_list:
@@ -509,6 +523,8 @@ for name in name_list:
     for RPKM, ID in RPKMgID:
         profile = ID_profile[ID]
         profile = statis.moving_average(profile, moving_average_win)
+        if name == 'ATAC':
+            profile = np.log2(1.0 + profile)
         profile[:50] = [profile[50]]*50
         profile[len(profile)-50:] = [profile[len(profile)-51]]*50
         img.append(profile)
@@ -541,9 +557,8 @@ for name in name_list:
 #    img = np.log2(img - mini + 1)
 #    name_img['meCpGfrac'] = img
 
-cmap_list = ['rainbow_r', 'cool', 'viridis', 'hot']
-vlim_list = [ [None, None], [None, None], [None, None], [None, None], [None, None], [None, None]]
-#vlim_list = [ [None, None], [None, None], [None, None], [None, None], [None, None], [None, None], [None, None]]
+cmap_list = ['rainbow_r', 'cool', 'viridis', 'hot', 'Blues']
+vlim_list = [ [-2, 0.5], [None, None], [None, None], [None, None], [None, None], [None, None]]
 for i in range(len(name_list)):
     name = name_list[i]
     img = name_img[name]

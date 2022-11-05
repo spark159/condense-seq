@@ -11,6 +11,15 @@ def norm(L):
     total = sum(L)
     return [L[i]/float(total) for i in range(len(L))]
 
+def standardization (data_list):
+    if len(data_list) <= 1:
+        return data_list
+    mean = np.mean(data_list)
+    std = np.std(data_list)
+    #return [ float(data - mean) for data in data_list]
+    return [ float(data - mean)/std for data in data_list]
+
+
 def get_corr(x, y):
     assert len(x) == len(y)
     x, y = np.asarray(x), np.asarray(y)

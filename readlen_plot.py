@@ -33,7 +33,9 @@ def read_rlen(fname, chr_list=None):
     return rlen_count
 
 #path = "/home/spark159/../../media/spark159/sw/sp_spd_tests_detail/"
-path = ""
+#path = ""
+path = "/home/spark159/../../media/spark159/sw/"
+
 #fnames = ["H1_DNA_spd_H1-DNA-spd-0_rlen.txt", "H1_DNA_sp_H1-DNA-sp-0_rlen.txt", "H1_NCP-new_spd_H1-NCP-new-spd-0_rlen.txt", "H1_NCP-new_sp_H1-NCP-new-sp-0_rlen.txt"]
 #names = ["H1-DNA-spd-0", "H1-DNA-sp-0", "H1-NCP-spd-0", "H1-NCP-sp-0"]
 
@@ -82,8 +84,158 @@ path = ""
 #fnames = ["H1_NCP_Ca_H1-NCP-Ca-%s_rlen.txt" % (i) for i in range(8)]
 #names = ["H1-NCP-Ca-%s" % (i) for i in range(8)]
 
-fnames = ["H1_NCP_sp_H1-NCP-sp-%s_rlen.txt" % (i) for i in [0, 4, 8]]
-names = ["H1-NCP-sp-%s" % (i) for i in [0, 4, 8]]
+#fnames = ["H1_NCP_sp_H1-NCP-sp-%s_rlen.txt" % (i) for i in [0, 4, 8]]
+#names = ["H1-NCP-sp-%s" % (i) for i in [0, 4, 8]]
+
+
+# proteins
+"""
+fnames = ["H1_DNA_HP1a_H1-DNA-HP1a-%s_rlen.txt" % (i) for i in range(6)]
+names = ["H1-DNA-HP1a-%s" % (i) for i in range(6)]
+
+fnames = ["H1_NCP_HP1a_H1-NCP-HP1a-%s_rlen.txt" % (i) for i in range(6)]
+names = ["H1-NCP-HP1a-%s" % (i) for i in range(6)]
+
+fnames = ["H1_DNA_HP1bSUV_H1-DNA-HP1bSUV-%s_rlen.txt" % (i) for i in range(6)]
+names = ["H1-DNA-HP1bSUV-%s" % (i) for i in range(6)]
+
+fnames = ["H1_NCP_HP1bSUV_H1-NCP-HP1bSUV-%s_rlen.txt" % (i) for i in range(6)]
+names = ["H1-NCP-HP1bSUV-%s" % (i) for i in range(6)]
+
+fnames = ["H1_DNA_LKH_H1-DNA-LKH-%s_rlen.txt" % (i) for i in range(6)]
+names = ["H1-DNA-LKH-%s" % (i) for i in range(6)]
+
+fnames = ["H1_NCP_LKH_H1-NCP-LKH-%s_rlen.txt" % (i) for i in range(6)]
+names = ["H1-NCP-LKH-%s" % (i) for i in range(6)]
+
+fnames = ["H1_DNA_Ki67_H1-DNA-Ki67-%s_rlen.txt" % (i) for i in range(6)]
+names = ["H1-DNA-Ki67-%s" % (i) for i in range(6)]
+
+fnames = ["H1_NCP_Ki67_H1-NCP-Ki67-%s_rlen.txt" % (i) for i in range(6)]
+names = ["H1-NCP-Ki67-%s" % (i) for i in range(6)]
+
+fnames = ["H1_DNA_FUS_H1-DNA-FUS-%s_rlen.txt" % (i) for i in range(6)]
+names = ["H1-DNA-FUS-%s" % (i) for i in range(6)]
+
+fnames = ["H1_NCP_FUS_H1-NCP-FUS-%s_rlen.txt" % (i) for i in range(6)]
+names = ["H1-NCP-FUS-%s" % (i) for i in range(6)]
+"""
+
+#path = "protein_qc/"
+
+#fnames = ["%d_%d_rlen.txt" % (i, i) for i in range(1, 5)]
+#names = ["H1-NCP-HP1a-qc-%s" % (i) for i in range(4)]
+#note = 'HP1a_qc'
+
+#fnames = ["%d_%d_rlen.txt" % (i, i) for i in range(5, 11)]
+#names = ["H1-NCP-LKH-qc-%s" % (i) for i in range(6)]
+#note = 'LKH_qc'
+
+#fnames = ["%d_%d_rlen.txt" % (i, i) for i in range(11, 17)]
+#names = ["H1-NCP-Ki67-qc-%s" % (i) for i in range(6)]
+#note = 'Ki67_qc'
+
+#fnames = ["%d_%d_rlen.txt" % (i, i) for i in range(17, 23)]
+#names = ["H1-NCP-FUS-qc-%s" % (i) for i in range(6)]
+#note = 'FUS_qc'
+
+#fnames = ["%d_%d_rlen.txt" % (i, i) for i in range(23, 29)]
+#names = ["H1-NCP-old-LKH-qc-%s" % (i) for i in range(6)]
+#note = 'oldKLH_qc'
+
+#path = "../H1_protein_qc_again/"
+
+#fnames = ["%d_%d_rlen.txt" % (i, i) for i in range(1, 7)]
+#names = ["H1-NCP-HP1a-qc-%s" % (i) for i in range(6)]
+#note = 'HP1a_qc'
+
+#fnames = ["%d_%d_rlen.txt" % (i, i) for i in range(7, 13)]
+#names = ["H1-NCP-Ki67-qc-%s" % (i) for i in range(6)]
+#note = 'Ki67_qc'
+
+
+# protein fillings
+#fnames = ["H1_new-NCP_HP1a_H1-new-NCP-HP1a-%s_rlen.txt" % (i) for i in range(6)]
+#names = ["H1-NCP-HP1a-%s" % (i) for i in range(6)]
+
+#fnames = ["H1_new-NCP_LKH_H1-new-NCP-LKH-%s_rlen.txt" % (i) for i in range(6)]
+#names = ["H1-NCP-LKH-%s" % (i) for i in range(6)]
+
+#fnames = ["H1_new-NCP_Ki67_H1-new-NCP-Ki67-%s_rlen.txt" % (i) for i in range(6)]
+#names = ["H1-NCP-Ki67-%s" % (i) for i in range(6)]
+
+#fnames = ["H1_NCP_FUS_H1-NCP-FUS-%s_rlen.txt" % (i) for i in range(6)]
+#names = ["H1-NCP-FUS-%s" % (i) for i in range(6)]
+
+#note='filling'
+
+# GM cells 
+#fnames = ["GM_NCP_sp_GM-NCP-sp-%s_rlen.txt" % (i) for i in range(10)]
+#names = ["GM-NCP-sp-%s" % (i) for i in range(10)]
+#note="GM_NCP_sp"
+
+#fnames = ["GM_NCP_spd_GM-NCP-spd-%s_rlen.txt" % (i) for i in range(10)]
+#names = ["GM-NCP-spd-%s" % (i) for i in range(10)]
+#note="GM_NCP_spd"
+
+#fnames = ["GM_NCP_CoH_GM-NCP-CoH-%s_rlen.txt" % (i) for i in range(8)]
+#names = ["GM-NCP-CoH-%s" % (i) for i in range(8)]
+#note="GM_NCP_CoH"
+
+#fnames = ["GM_NCP_PEG_GM-NCP-PEG-%s_rlen.txt" % (i) for i in range(8)]
+#names = ["GM-NCP-PEG-%s" % (i) for i in range(8)]
+#note="GM_NCP_PEG"
+
+# Progeria cells
+
+#fnames = ["HGPS_NCP_sp_HGPS-NCP-sp-%s_rlen.txt" % (i) for i in range(10)]
+#names = ["HGPS-NCP-sp-%s" % (i) for i in range(10)]
+#note="HGPS_NCP_sp"
+
+# mouse CD8 T cells
+#fnames = ["mCD8T_WT-NCP_sp_mCD8T-WT-NCP-sp-%s_rlen.txt" % (i) for i in range(10)]
+#names = ["mCD8T:WT-NCP-sp-%s" % (i) for i in range(10)]
+#note="mCD8T:WT_NCP_sp"
+
+#fnames = ["mCD8T_inht-NCP_sp_mCD8T-inht-NCP-sp-%s_rlen.txt" % (i) for i in range(10)]
+#names = ["mCD8T:inht-NCP-sp-%s" % (i) for i in range(10)]
+#note="mCD8T:inht_NCP_sp"
+
+#fnames = ["mCD8T_KO-NCP_sp_mCD8T-KO-NCP-sp-%s_rlen.txt" % (i) for i in range(10)]
+#names = ["mCD8T:KO-NCP-sp-%s" % (i) for i in range(10)]
+#note="mCD8T:KO_NCP_sp"
+
+
+# GM NCP spermine in detail
+#fnames = ["GM_NCP_sp_GM-NCP-sp-%s_rlen.txt" % (i) for i in [0, 4, 8]]
+#names = ["GM-NCP-sp-%s" % (i) for i in [0, 4, 8]]
+#note="GM_NCP_sp_detail"
+
+# H1 NCP HP1a in detail
+#fnames = ["H1_new-NCP_HP1a_H1-new-NCP-HP1a-%s_rlen.txt" % (i) for i in [0, 3]]
+#names = ["H1-NCP-HP1a-%s" % (i) for i in [0, 3]]
+#note="H1_NCP_HP1a_detail"
+
+# H1 DNA HP1a in detail
+#fnames = ["H1_DNA_HP1a_H1-DNA-HP1a-%s_rlen.txt" % (i) for i in [0, 3]]
+#names = ["H1-DNA-HP1a-%s" % (i) for i in [0, 3]]
+#note="H1_DNA_HP1a_detail"
+
+
+# Mouse CD8 T cell in detail
+#fnames = ["mCD8T_WT-NCP_sp_mCD8T-WT-NCP-sp-%s_rlen.txt" % (i) for i in [0, 4, 8]]
+#names = ["mCD8T:WT-NCP-sp-%s" % (i) for i in [0, 4, 8]]
+#note="mCD8T:WT_NCP_sp"
+
+#fnames = ["mCD8T_inht-NCP_sp_mCD8T-inht-NCP-sp-%s_rlen.txt" % (i) for i in [0, 4, 8]]
+#names = ["mCD8T:inht-NCP-sp-%s" % (i) for i in [0, 4, 8]]
+#note="mCD8T:inht_NCP_sp"
+
+
+
+
+
+
 
 
 
@@ -115,9 +267,10 @@ plt.xlabel("Read length (bp)")
 plt.ylabel("Read counts")
 plt.title("Read length distribution")
 plt.legend()
+plt.savefig("rlen_" + note + ".png")
 #plt.savefig(path+"rlen.png")
 #plt.savefig(fname.split('.')[0]+".png")
-plt.show()
+#plt.show()
 plt.close()
 
 """

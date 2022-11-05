@@ -92,7 +92,7 @@ def draw_along_genome (ID_pos, ID_sig_list, win, labels, ylabel, title=None, xli
     plt.ylim(ylim)
     plt.title(title)
     plt.savefig("Gwide_" + note + ".png", bbox_inches='tight')
-    plt.show()
+    #plt.show()
     plt.close()
 
 def draw_along_genome_pair (ID_pos, ID_sig1, ID_sig2,  win, ylabel1, ylabel2, title="", xlabel="Genomic coordinate (bp)", note=""):

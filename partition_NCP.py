@@ -172,9 +172,9 @@ def stat_Kmer(seq_list, NCPlen, knum, bnum):
 
 
 #path = './data/'
-path = ''
-ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+"H1_NCP_sp_chr1_anot.cn")
-ID_score1 = name_ID_value["work/2021_06_07_H1_sp_detail/H1-NCP-sp-8"]
+path = '/home/spark159/../../media/spark159/sw/'
+ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+"mCD8T_WT-NCP_sp_chr1_anot.cn")
+ID_score1 = name_ID_value["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-WT-NCP-sp-8"]
 #ID_score2 = name_ID_value["work/2021_06_07_H1_sp_detail/H1-NCP-sp-8"]
 ID_seq = name_ID_value['Sequence']
 ID_AT = name_ID_value['ATcontent']
@@ -214,6 +214,8 @@ for i in range(p_num):
         x = np.mean([st, ed])
     plt.text(x, 10000, num_rom[i+1], fontsize=12, va='center', ha='center')
 plt.xlim([-3,3])
+#plt.xlim([-4,4.5])
+#plt.xlim([-2,4])
 plt.title("Chromosome1", fontsize=8)
 plt.xlabel("Condensability (A.U.)", fontsize=8)
 plt.ylabel("Nucleosome Counts", fontsize=8)
@@ -489,7 +491,8 @@ for me in me_names:
 chip_p_zscores = {}
 #chip_names = ['k27ac', 'k9ac', 'k4me3', 'k36me3_2', 'k9me2_2', 'k9me3_2', 'k27me3a_2']
 #chip_names = ['k27ac', 'k9ac', 'k4me3', 'k36me3', 'k9me2', 'k9me3', 'k27me3a'
-chip_names = ['H3k27ac', 'H3K9ac', 'H3K4me3', 'H2AFZ', 'H3K36me3', 'H3K9me3', 'H3K27me3']
+#chip_names = ['H3k27ac', 'H3K9ac', 'H3K4me3', 'H2AFZ', 'H3K36me3', 'H3K9me3', 'H3K27me3']
+chip_names = ['H3K27ac', 'H3K9ac', 'H3K4me3', 'H2AFZ', 'H3K36me3', 'H3K9me3', 'H3K27me3']
 for chip in chip_names:
     chip_p_zscores[chip] = get_zscore(chip_p_sigs[chip])
     img2.append([np.mean(zscores) for zscores in chip_p_zscores[chip]])

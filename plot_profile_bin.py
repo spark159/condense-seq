@@ -61,17 +61,32 @@ xtick_names = ["-2.5kb", "TSS", "TTS", "2.5kb"]
 xtick_loc_name = [xtick_locs, xtick_names]
 moving_average_win = 20
 
-cells = ['H1']
-samples = ['DNA', 'NCP']
-agents = ['sp', 'spd', 'CoH', 'PEG', 'Mg', 'Ca']
+#cells = ['H1']
+#cells = ['GM']
+cells = ['mCD8T']
+samples = ['KO-NCP']
+#samples = ['WT-NCP', 'inht-NCP']
+#samples = ['DNA', 'NCP']
+#agents = ['sp', 'spd', 'CoH', 'PEG', 'Mg', 'Ca']
+#samples = ['NCP']
+#agents = ['sp', 'spd', 'CoH', 'PEG']
+agents = ['sp']
+#agents = ['CoH', 'PEG']
+#agents = ['HP1a', 'HP1bSUV', 'LKH', 'Ki67', 'FUS']
+#agents = ['HP1bSUV']
+#agents = ['FUS']
+
+
 
 for cell in cells:
     for sample in samples:
         for agent in agents:
             profile_fname = '_'.join([cell, sample, agent, '1kb', feature]) + "_profile.txt"
+            print profile_fname
             try:
                 name_mean_profile, name_ID_profile = load_file.read_profile(profile_fname)
             except:
+                print 'd'
                 break
             AT_profile = statis.moving_average(name_mean_profile['ATcontent'], moving_average_win)
             #AT_profile = name_mean_profile['ATcontent']

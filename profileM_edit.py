@@ -117,8 +117,8 @@ def read_hgtable(fname, chr_list, mode='gene'):
     if mode == 'both':
         return ID_field_values, field_ID_values
 
-# read GTF file
-def read_GTF (fname, chr_list, mode="gene"):
+# read GTF file (updated for new GTF format)
+def read_GTF (fname, chr_list=None, mode="gene", strip_ver=True):
     ID_field_values = {}
     for line in open(fname):
         if line.startswith("#"):
@@ -127,7 +127,7 @@ def read_GTF (fname, chr_list, mode="gene"):
         chr, source, feature, start, end, score, strand, frame, attribute = cols[:9]
         if not chr.startswith('chr'):
             chr = "chr" + chr
-        if chr not in  chr_list:
+        if chr_list and chr not in chr_list:
             continue
         if feature not in ["gene", "exon", "start_codon", "stop_codon"]:
             continue
@@ -140,7 +140,10 @@ def read_GTF (fname, chr_list, mode="gene"):
             value = value.strip('"')
             tag_value[tag] = value
         geneID = tag_value["gene_id"]
+        if strip_ver:
+            geneID = geneID.split('.')[0]
         geneType = tag_value["gene_type"]
+        geneName = tag_value["gene_name"]
         if geneID not in ID_field_values:
             ID_field_values[geneID] = {}
         if "chr" not in ID_field_values[geneID]:
@@ -149,6 +152,8 @@ def read_GTF (fname, chr_list, mode="gene"):
             ID_field_values[geneID]["strand"] = strand
         if "geneType" not in ID_field_values[geneID]:
             ID_field_values[geneID]["geneType"] = geneType
+        if "geneName" not in ID_field_values[geneID]:
+            ID_field_values[geneID]["geneName"] = geneName            
         if feature == "gene":
             if strand == "+":
                 TSS, TTS = start, end
@@ -219,7 +224,6 @@ def read_GTF (fname, chr_list, mode="gene"):
         return field_ID_values
     if mode == "both":
         return ID_field_values, field_ID_values
-
 
 def Profiling (sig_fname,
                region_fname,

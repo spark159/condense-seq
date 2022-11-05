@@ -32,13 +32,30 @@ def read_data (fname):
 #conc_list2, mean_list2, std_list2 = read_data("/home/spark159/Projects/condense-seq/H1_DNA_CoHex.csv")
 #conc_list1, mean_list1, std_list1 = read_data("/home/spark159/Projects/condense-seq/H1_NCP_PEG.csv")
 #conc_list2, mean_list2, std_list2 = read_data("/home/spark159/Projects/condense-seq/H1_DNA_PEG.csv")
-conc_list1, mean_list1, std_list1 = read_data("/home/spark159/Projects/condense-seq/H1_NCP_Mg.csv")
-conc_list2, mean_list2, std_list2 = read_data("/home/spark159/Projects/condense-seq/H1_NCP_Ca2.csv")
+#conc_list1, mean_list1, std_list1 = read_data("/home/spark159/Projects/condense-seq/H1_NCP_Mg.csv")
+#conc_list2, mean_list2, std_list2 = read_data("/home/spark159/Projects/condense-seq/H1_NCP_Ca2.csv")
 #conc_list1, mean_list1, std_list1 = read_data("NCP_PstI.csv")
 #conc_list2, mean_list2, std_list2 = read_data("NCPDNA_PstI.csv")
 
+# GM ionic condensing agent
+#conc_list1, mean_list1, std_list1 = read_data("/home/spark159/Projects/condense-seq/GM_NCP_spermine.csv")
+#conc_list2, mean_list2, std_list2 = read_data("/home/spark159/Projects/condense-seq/H1_DNA_spermine.csv")
+
+#conc_list1, mean_list1, std_list1 = read_data("/home/spark159/Projects/condense-seq/GM_NCP_spermidine.csv")
+#conc_list2, mean_list2, std_list2 = read_data("/home/spark159/Projects/condense-seq/GM_DNA_spermidine.csv")
+
+#conc_list1, mean_list1, std_list1 = read_data("/home/spark159/Projects/condense-seq/GM_NCP_CoHex.csv")
+#conc_list2, mean_list2, std_list2 = read_data("/home/spark159/Projects/condense-seq/GM_DNA_CoHex.csv")
+
+#conc_list1, mean_list1, std_list1 = read_data("/home/spark159/Projects/condense-seq/GM_NCP_CoHex.csv")
+#conc_list2, mean_list2, std_list2 = read_data("/home/spark159/Projects/condense-seq/H1_DNA_CoHex.csv")
+
+#conc_list1, mean_list1, std_list1 = read_data("/home/spark159/Projects/condense-seq/GM_NCP_PEG.csv")
+#conc_list2, mean_list2, std_list2 = read_data("/home/spark159/Projects/condense-seq/H1_DNA_CoHex.csv")
+
 # H1 protein condensing agent
 #conc_list1, mean_list1, std_list1 = read_data("/home/spark159/Projects/condense-seq/H1_NCP_HP1a_with_PEG.csv")
+#conc_list1, mean_list1, std_list1 = read_data("/home/spark159/Projects/condense-seq/H1_NCP_HP1a_with_PEG_new.csv")
 #conc_list2, mean_list2, std_list2 = read_data("/home/spark159/Projects/condense-seq/H1_DNA_HP1a_with_PEG.csv")
 
 #conc_list1, mean_list1, std_list1 = read_data("/home/spark159/Projects/condense-seq/H1_NCP_HP1b+tSUV39H1_with_PEG.csv")
@@ -51,13 +68,14 @@ conc_list2, mean_list2, std_list2 = read_data("/home/spark159/Projects/condense-
 #conc_list3, mean_list3, std_list3 = read_data("/home/spark159/Projects/condense-seq/H1_NCP_HP1b+tTRIM28_with_PEG.csv")
 
 #conc_list1, mean_list1, std_list1 = read_data("/home/spark159/Projects/condense-seq/H1_NCP_Ki67_with_PEG.csv")
+#conc_list1, mean_list1, std_list1 = read_data("/home/spark159/Projects/condense-seq/H1_NCP_Ki67_with_PEG_new.csv")
 #conc_list2, mean_list2, std_list2 = read_data("/home/spark159/Projects/condense-seq/H1_DNA_Ki67_with_PEG.csv")
 
 #conc_list1, mean_list1, std_list1 = read_data("/home/spark159/Projects/condense-seq/H1_NCP_LKH1_redoredo.csv")
 #conc_list2, mean_list2, std_list2 = read_data("/home/spark159/Projects/condense-seq/H1_DNA_LKH1.csv")
 
 #conc_list1, mean_list1, std_list1 = read_data("/home/spark159/Projects/condense-seq/H1_NCP_WT_FUS_with_PEG.csv")
-#conc_list2, mean_list2, std_list2 = read_data("/home/spark159/Projects/condense-seq/H1_DNA_Ki67_with_PEG.csv")
+#conc_list2, mean_list2, std_list2 = read_data("/home/spark159/Projects/condense-seq/H1_DNA_WT_FUS_with_PEG.csv")
 
 # Synthetic mono-nucleosome library
 #conc_list, mean_list, std_list = read_data("/home/spark159/Projects/condense-seq/BC1_6_NCP_spermine.csv")
@@ -78,14 +96,29 @@ conc_list2, mean_list2, std_list2 = read_data("/home/spark159/Projects/condense-
 #conc_list1, mean_list1, std_list1 = read_data("/home/spark159/Projects/condense-seq/PTMlib_spermine_filter.csv")
 #conc_list1, mean_list1, std_list1 = read_data("/home/spark159/Projects/condense-seq/PTMlib_spermidine_filter.csv")
 
+#mouse T cell
+#conc_list1, mean_list1, std_list1 = read_data("/home/spark159/Projects/condense-seq/mCD8Tcell_NCP_spermine.csv")
+#conc_list2, mean_list2, std_list2 = read_data("/home/spark159/Projects/condense-seq/mCD8Tcell_ODCinhibitor_NCP_spermine.csv")
+conc_list1, mean_list1, std_list1 = read_data("/home/spark159/Projects/condense-seq/mCD8Tcell_ODCKO_NCP_spermine.csv")
 
-del conc_list1[0]
-del mean_list1[0]
-del std_list1[0]
 
-del conc_list2[0]
-del mean_list2[0]
-del std_list2[0]
+#Progeria cell
+#conc_list1, mean_list1, std_list1 = read_data("/home/spark159/Projects/condense-seq/Progeria_NCP_spermine.csv")
+
+
+#compNCP No salt sp4+ buffer (low power
+#conc_list1, mean_list1, std_list1 = read_data("/home/spark159/Projects/condense-seq/compNCP_NoSaltSpLowPowerSp4+.csv")
+#4conc_list2, mean_list2, std_list2 = read_data("/home/spark159/Projects/condense-seq/GM_NCP_NoSaltSpLowPowerSp4+.csv")
+
+
+
+#del conc_list1[0]
+#del mean_list1[0]
+#del std_list1[0]
+
+#del conc_list2[0]
+#del mean_list2[0]
+#del std_list2[0]
 
 #del conc_list3[0]
 #del mean_list3[0]
@@ -96,30 +129,36 @@ del std_list2[0]
 #del std_list2[0:3]
 
 
-fig = plt.figure(figsize=(2.4,1.8))
+fig = plt.figure()
+#fig = plt.figure(figsize=(2.4,1.8))
 #fig = plt.figure(figsize=(2, 1.4))
 #plt.plot(conc_list1, mean_list1, 'bo-', label='NCP')
-#plt.plot(conc_list1, mean_list1, 'bo-', label='Mg2+')
-#plt.errorbar(conc_list1, mean_list1, yerr=std_list1, fmt='.', alpha=0.8)
 
-plt.plot(conc_list1, mean_list1, 'bo-', lw=1.5, markersize=3.5, label='Mg2+')
-plt.errorbar(conc_list1, mean_list1, yerr=std_list1, fmt='.', markersize=3, mfc='b', mec='b', lw=1, color='tab:blue', alpha=0.8)
-plt.plot(conc_list2, mean_list2, 'ro-', lw=1.5, markersize=3.5, label='Ca2+')
-plt.errorbar(conc_list2, mean_list2, yerr=std_list2, fmt='.', markersize=3, mfc='r', mec='r', lw=1, color='tab:red', alpha=0.8)
-#plt.plot(conc_list3, mean_list3, 'bo-', label='HP1$\\beta$ + tTRIM28')
-#plt.errorbar(conc_list3, mean_list3, yerr=std_list3, color='b', fmt='.', alpha=0.8)
+plt.plot(conc_list1, mean_list1, 'bo-', label='NCP')
+plt.errorbar(conc_list1, mean_list1, yerr=np.asarray(std_list1), fmt='.', alpha=0.8)
 
-#plt.xlabel("Spermine concentration (mM)", fontsize=8)
+#plt.plot(conc_list2, mean_list2, 'ro-', label='GM NCP')
+#plt.errorbar(conc_list2, mean_list2, yerr=std_list2, fmt='.', alpha=0.8)
+
+
+#plt.plot(conc_list1, mean_list1, 'bo-', lw=1.5, markersize=3.5, label='NCP')
+#plt.errorbar(conc_list1, mean_list1, yerr=std_list1, fmt='.', markersize=3, mfc='b', mec='b', lw=1, color='tab:blue', alpha=0.8)
+#plt.plot(conc_list2, mean_list2, 'ro-', lw=1.5, markersize=3.5, label='DNA')
+#plt.errorbar(conc_list2, mean_list2, yerr=std_list2, fmt='.', markersize=3, mfc='r', mec='r', lw=1, color='tab:red', alpha=0.8)
+
+plt.xlabel("Spermine concentration (mM)", fontsize=8)
+#plt.xlabel("Spermine concentration (mM)")
 #plt.xlabel("Spermidine concentration (mM)", fontsize=8)
 #plt.xlabel("HP1$\\alpha$ concentration ($\\mu$M)")
 #plt.xlabel("CoHex concentration (mM)", fontsize=8)
 #plt.xlabel("PEG 8000 (%)", fontsize=8)
-plt.xlabel("Concentration (mM)", fontsize=8)
+#plt.xlabel("Concentration (mM)", fontsize=8)
 #plt.xlabel("Ki-67 concentration ($\\mu$M)")
 #plt.xlabel("HP1 concentration ($\\mu$M)")
 #plt.xlabel("Linker histone H1.0 concentraion ($\\mu$M)")
 #plt.xlabel("WT FUS concentraion ($\\mu$M)")
-plt.ylabel("Soluble fraction", fontsize=8)
+plt.ylabel("Soluble fraction")
+#plt.ylabel("Soluble fraction", fontsize=8)
 #plt.xscale("log")
 #plt.xscale("log", basex=2)
 #plt.ylim([-0.1,1.2])
@@ -132,16 +171,25 @@ plt.ylabel("Soluble fraction", fontsize=8)
 #plt.ylim([-0.05,1.5])
 #plt.ylim([-0.05, 0.9])
 #plt.ylim([0.2,1.1])
-#plt.xscale('log', basex=2)
+plt.xscale('log', basex=10)
+plt.title("Mouse CD8 T cell ODC KO NCP")
+#plt.title("Progeria NCP")
 #plt.title("BC1~6 NCP mix 1% spike-in")
 #plt.title("BC1~6 NCP mix HP1$\\alpha$")
 #plt.title("Yeast-Widom 601 library", fontsize=10)
+#plt.title("NoSalt buffer spermine($4+$)", fontsize=15)
+#plt.title("601 26N33 XL NCP spermine($4+$)", fontsize=15)
+#plt.title("Mouse CD8 T cell spermine($4+$)", fontsize=15)
+#plt.title("GM12878 spermine($4+$)", fontsize=15)
+#plt.title("GM12878 spermidine($3+$)", fontsize=15)
+#plt.title("GM12878 CoHex($3+$)", fontsize=15)
+#plt.title("GM12878 PEG 8000", fontsize=15)
 #plt.title("H1-hESC spermine($4+$)", fontsize=25)
 #plt.title("H1-hESC spermidine($3+$)", fontsize=10)
 #plt.title("PstI treatment test")
 #plt.title("H1-hESC CoHex($3+$)", fontsize=10)
 #plt.title("H1-hESC PEG 8000", fontsize=10)
-plt.title("H1-hESC Mg2+/Ca2+", fontsize=10)
+#plt.title("H1-hESC Mg2+/Ca2+", fontsize=10)
 #plt.title("H1 Ki-67")
 #plt.title("H1 HP1$\\alpha$")
 #plt.title("PTM MN library 1% spike-in")
@@ -150,12 +198,14 @@ plt.title("H1-hESC Mg2+/Ca2+", fontsize=10)
 #plt.title("H1 HP1$\\beta+$tSUV39H1")
 #plt.title("H1 HP1$\\beta+$tTRIM28")
 plt.legend(fontsize=8)
+plt.legend()
 #plt.title("PTM library", fontsize=8)
 #plt.title("Oncohistone library", fontsize=8)
-ax = plt.gca()
-ax.tick_params(axis='both', which='major', labelsize=5)
-ax.tick_params(axis='both', which='minor', labelsize=5)
+#ax = plt.gca()
+#ax.tick_params(axis='both', which='major', labelsize=5)
+#ax.tick_params(axis='both', which='minor', labelsize=5)
 #plt.tight_layout()
-plt.savefig('titration.svg', format='svg', bbox_inches='tight')
+#plt.savefig('titration.svg', format='svg', bbox_inches='tight')
+plt.savefig('titration.png', bbox_inches='tight')
 #plt.show()
 plt.close()

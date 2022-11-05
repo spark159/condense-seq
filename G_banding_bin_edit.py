@@ -220,8 +220,8 @@ for chr_choice in chr_choices:
 
     #feature_names = ["H2AZ", "H3k27ac", "H3k27me3", "H3k36me3", "H3k4me1", "H3k4me3", "H3k9ac", "H3k9me3"]
     #feature_names = ["H3k27ac"]
-    #feature_names = ["Gene activity"]
-    feature_names = ['eigen']
+    feature_names = ["Gene activity"]
+    #feature_names = ['eigen']
     names = target_names + feature_names
     cmap_list = ['rainbow']
 
@@ -375,7 +375,7 @@ for chr_choice in chr_choices:
         if not np.isnan(tempsig[c]) and tempsig[c] > 0.6:
             tempsig[c] = np.nan
     make_bedgraph("H1-NCP-sp-8.bedgraph", tempsig, bin_size=bin_size)
-    make_bedgraph("eigen_H1_100kb.bedgraph", name_sig['eigen'], bin_size=bin_size)
+    #make_bedgraph("eigen_H1_100kb.bedgraph", name_sig['eigen'], bin_size=bin_size)
 
     aspect = (0.05*bin_size) / (10**6)
     """
@@ -497,7 +497,9 @@ for chr_choice in chr_choices:
         #ax1.set_ylim([-0.15, 0.25])
         #ax1.set_ylim([0.1, 0.4])
         #ax1.set_ylim([0.05, 0.5])
+
         ax1.set_ylim([-0.4, 0.6])
+
         #ax1.set_ylim([0, 0.4])
         #ax1.set_ylim([0.1, 0.3])
         #ax1.set_ylim([-0.3, 0.6])
@@ -510,16 +512,16 @@ for chr_choice in chr_choices:
 
         ax1p = ax1.twinx()
         feature_name = feature_names[i]
-        #ax1p.plot(name_sig[feature_name], '#d62728', alpha=0.5, lw=3)
-        ax1p.plot(name_sig[feature_name], 'tab:orange', alpha=0.8, lw=3)
+        ax1p.plot(name_sig[feature_name], '#d62728', alpha=0.5, lw=3)
+        #ax1p.plot(name_sig[feature_name], 'tab:orange', alpha=0.8, lw=3)
         #ax1p.plot(np.log(-1*np.asarray(name_sig[feature_name])), '#d62728', alpha=0.5)
         #ax1p.set_ylabel(feature_name, color='r', fontsize=20)
-        #ax1p.set_ylabel('Gene expression', color='r', fontsize=20)
-        ax1p.set_ylabel('A/B score', color='orangered', fontsize=20)
+        ax1p.set_ylabel('Gene expression', color='r', fontsize=20)
+        #ax1p.set_ylabel('A/B score', color='orangered', fontsize=20)
         #ax1p.tick_params('y', colors='#d62728', labelsize=15)
-        ax1p.tick_params('y', colors='orangered', labelsize=15)
-        ax1p.set_ylim([-0.05, 0.05])
-        #ax1p.set_ylim([-0.1, 2.0])
+        #ax1p.tick_params('y', colors='orangered', labelsize=15)
+        #ax1p.set_ylim([-0.05, 0.05])
+        ax1p.set_ylim([-0.1, 2.0])
 
         ax2.imshow(np.transpose(gband_img), cmap='Greys', aspect=0.3/aspect)
         ax2.imshow(np.transpose(gband_cenimg), cmap ='Reds', vmin=0, vmax=20, aspect=0.3/aspect)

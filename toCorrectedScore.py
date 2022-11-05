@@ -2,20 +2,52 @@ import math
 import numpy as np
 import sys
 
-total_num = 1.6*(10**12)
-#total_fracs = [0.274827749, 0.152922919, 1.0] # survival fraction for titration #4, #8, #0
-total_fracs = [0.150847925,0.008715373, 1.0] # bg corrected survival fraction for titration #4, #8, #0
 
-chr_list = ['chr' + str(i) for i in range(1, 23)]
+# parameters
+path = "/home/spark159/../../media/spark159/sw/"
+
+cell = 'H1'
+#cell = 'mCD8T'
+sample = 'NCP'
+#sample = 'WT-NCP'
+#sample = 'inht-NCP'
+agent = 'sp'
+note = 'Ncov'
+#note = '1001win501step_cov_Bsig'
+
+chr_list = ['chr' + str(i) for i in range(1, 23)] #human
+#chr_list = ['chr' + str(i) for i in range(1, 20)] #mouse
+#chr_list += ['chrX']
 chr_list += ['chrX', 'chrY']
 #chr_list = ['chr' + str(i) for i in range(1, 2)]
+
+
+total_num = 1.6*(10**12) # total nucleosome input number
+
+# H1 NCP sp4+
+total_fracs = [0.178899286, 0.028922932, 1.0] # bg corrected survival fraction for titration #4, #8, #0
+
+# GM NCP sp4+
+#total_fracs = [0.113430444, 0.005803754, 1.0] # bg corrected survival fraction for titration #4, #8, #0
+
+# H1 NCP HP1a
+#total_fracs = [0.108659824, 1.0] # bg corrected survival fraction for titration #3, #0
+
+# mouse CD8 Tcell (WT)
+#total_fracs = [0.0720702, 0.018194008, 1.0] # bg corrected survival fraction for titration #4, #8, #0
+
+# mouse CD8 Tcell (+inht)
+#total_fracs = [0.084142467, 0.013857276, 1.0] # bg corrected survival fraction for titration #4, #8, #0
+
 
 # get total of all nucleosome coverage
 total_covs = [0.0 for i in range(len(total_fracs))]
 print "get total coverage"
 for chr in chr_list:
     print "reading %s" % (chr)
-    fname = "H1_NCP_sp_%s_Ncov.cn" % (chr)
+    #fname = path + '_'.join([cell, sample, agent, chr, note]) + '.cn'
+    fname = path + '_'.join([cell, sample, agent, chr, note]) + '.cn'
+    #fname = "H1_NCP_sp_%s_Ncov.cn" % (chr)
     First = True
     for line in open(fname):
         if not line.strip():
@@ -40,8 +72,13 @@ print
 print "calculate real number"
 for chr in chr_list:
     print "reading %s" % (chr)
-    input_fname = "H1_NCP_sp_%s_Ncov.cn" % (chr)
-    output_fname = "H1_NCP_sp_%s_num.cn" % (chr)
+    #input_fname = "H1_NCP_sp_%s_Ncov.cn" % (chr)
+    #output_fname = "H1_NCP_sp_%s_num.cn" % (chr)
+    #input_fname = path + '_'.join([cell, sample, agent, chr]) + '_Ncov.cn'
+    #output_fname = path + '_'.join([cell, sample, agent, chr]) + '_num.cn'
+    input_fname = path + '_'.join([cell, sample, agent, chr, note]) + '.cn'
+    #output_fname = path + '_'.join([cell, sample, agent, chr, note]) + '_num.cn'
+    output_fname = path + '_'.join([cell, sample, agent, chr]) + '_num.cn'
     f = open(output_fname, 'w')
     s = 'SNP\tChromosome\tPhysicalPosition'
     First = True
@@ -89,7 +126,9 @@ for chr in chr_list:
     print "reading %s" % (chr)
     total, weird = 0, 0
     First = True
-    fname = "H1_NCP_sp_%s_num.cn" % (chr)
+    #fname = "H1_NCP_sp_%s_num.cn" % (chr)
+    #fname = path + '_'.join([cell, sample, agent, chr]) + '_num.cn'
+    fname = path + '_'.join([cell, sample, agent, chr]) + '_num.cn'
     for line in open(fname):
         if not line.strip():
             continue

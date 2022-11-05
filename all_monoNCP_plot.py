@@ -51,21 +51,27 @@ def density_scatter(x , y, ax = None, sort = True, bins = 20, density = False, *
 
 #path = "/home/spark159/../../media/spark159/sw/sp_spd_tests_detail/"
 #path='./data/'
-path = ""
+#path = ""
+path = "/home/spark159/../../media/spark159/sw/"
 
 #GC/me/PTM analysis
 #ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+ "hg19_chr1_1001win501step_anot.cn")
-ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+ "H1_NCP_sp_chr1_anot.cn")
+#ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+ "H1_NCP_sp_chr1_anot.cn")
+#ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+ "GM_NCP_sp_chr1_anot.cn")
+#ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+ "H1_DNA_HP1a_chr1_anot.cn")
+ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+ "mCD8T_inht-NCP_sp_chr1_anot.cn")
 
-ID_score1 = name_ID_value["work/2021_06_07_H1_sp_detail/H1-NCP-sp-4"]
-ID_score2 = name_ID_value["work/2021_06_07_H1_sp_detail/H1-NCP-sp-8"]
+ID_score1 = name_ID_value["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-8"]
+#ID_score2 = name_ID_value["/home/spark159/scratch4-tha4/sangwoo/2022_09_08_GM_sp_H1_HP1a_deep/GM-NCP-sp-8"]
 ID_AT = name_ID_value['ATcontent']
 
 for ID in ID_AT:
     ID_AT[ID] = 100*ID_AT[ID]
 
-graphics.Scatter_plot(ID_AT, ID_score1, note='H1-NCP-sp-4', ylim=[-2.5, 3])
-graphics.Scatter_plot(ID_AT, ID_score2, note='H1-NCP-sp-8', ylim=[-2.5, 3])
+#graphics.Scatter_plot(ID_AT, ID_score1, note='H1-NCP-sp-4', ylim=[-3.5, 4])
+#graphics.Scatter_plot(ID_AT, ID_score2, note='H1-NCP-sp-8', ylim=[-3.5, 4])
+#graphics.Scatter_plot(ID_AT, ID_score1, note='H1-DNA-HP1a-3', ylim=[-2.5, 4.5])
+#graphics.Scatter_plot(ID_AT, ID_score1, note='mCD8T:WT-NCP-sp-8', ylim=[-3.5, 4])
 
 #sys.exit(1)
 
@@ -73,9 +79,9 @@ graphics.Scatter_plot(ID_AT, ID_score2, note='H1-NCP-sp-8', ylim=[-2.5, 3])
 ID_score = ID_score1
 X, Y = [], []
 xvalue_scores = {}
-for ID in ID_score1.keys():
+for ID in ID_score.keys():
     xvalue = ID_AT[ID]
-    score = ID_score2[ID]
+    score = ID_score[ID]
     X.append(xvalue)
     Y.append(score)
     if xvalue not in xvalue_scores:
@@ -102,7 +108,9 @@ plt.ylabel("Condensability (A.U.)", fontsize=8)
 plt.gca().tick_params(axis='both', which='major', labelsize=5)
 plt.gca().tick_params(axis='both', which='minor', labelsize=5)
 plt.xlim([0, 100])
-plt.ylim([-2.5, 3])
+#plt.ylim([-2.5, 3])
+plt.ylim([-3.5, 4])
+#plt.ylim([-2.5, 4.5])
 plt.savefig("ATvsCondensability_scatter.png", bbox_inches='tight', dpi=500)
 #plt.savefig("ATvsCondensability_scatter.svg", format='svg', bbox_inches='tight')
 plt.close()

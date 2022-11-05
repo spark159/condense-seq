@@ -116,7 +116,7 @@ names = ['AT content', 'poly-G/C length', 'meCpG density', 'meCHG density', 'meC
 
 #names = ['ATcontent', 'meCpGfrac', 'H2AFZ', 'H3K4me1', 'H3K4me2', 'H3K4me3', 'H3k27ac', 'H3K9ac', 'H3K36me3', 'H3K9me3', 'H3K27me3', 'H4k20me1']
 IDs = sorted(ID_pos.keys())
-#IDs = random.sample(sorted(ID_pos.keys()), 10000)
+#IDs = random.sample(sorted(ID_pos.keys()), 1000)
 
 #sys.exit(1)
 
@@ -252,3 +252,16 @@ plt.savefig("condensability_by_class.svg", format='svg', bbox_inches='tight')
 #plt.savefig("anatomy_pbox.png")
 #plt.show()
 plt.close()
+
+# print NMF result
+f = open("NMF_property_class.txt", 'w')
+print >> f, "Class#" + "\t" + "\t".join(names)
+for i in range(len(cID_prog)):
+    print >> f, str(i+1) + "\t" + "\t".join([str(value) for value in cID_prog[i]])
+f.close()
+
+f = open("NMF_NCPClass.txt", 'w')
+print >> f, "ID" + "\t" + "Class#"
+for ID in ID_cID:
+    print >> f, str(ID) + "\t" + str(ID_cID[ID]+1)
+f.close()

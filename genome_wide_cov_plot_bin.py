@@ -16,6 +16,7 @@ def read_bincountfile (fname, chr_list=None):
         if First:
             cols = line.strip().split()
             names = [name.rsplit('.')[-2] for name in cols[4:-1]]
+            #names = [name.rsplit('.')[-2] for name in cols[4:-2]]
             chr_binID_counts = [{} for i in range(len(names))]
             chr_binID_range = {}
             chr_binID_GC = {}
@@ -104,14 +105,54 @@ path = ""
 #fname = "H1_NCP_Ca_10kb_bin.cn"
 
 #fname = "H1_NCP_sp_1kb_bin.cn"
-fname = "H1_NCP_sp_1kb_tlen_bin.cn"
+#fname = "H1_NCP_sp_1kb_tlen_bin.cn"
+
+# proteins
+#fname = "H1_DNA_HP1a_10kb_bin.cn"
+#fname = "H1_NCP_HP1a_10kb_bin.cn"
+#fname = "H1_DNA_HP1bSUV_10kb_bin.cn"
+#fname = "H1_NCP_HP1bSUV_10kb_bin.cn"
+#fname = "H1_DNA_LKH_10kb_bin.cn"
+#fname = "H1_NCP_LKH_10kb_bin.cn"
+#fname = "H1_DNA_Ki67_10kb_bin.cn"
+#fname = "H1_NCP_Ki67_10kb_bin.cn"
+#fname = "H1_DNA_FUS_10kb_bin.cn"
+#fname = "H1_NCP_FUS_10kb_bin.cn"
+
+#path = "../H1_protein_qc_again/"
+
+# protein filling
+#path = ""
+#fname = "H1_new-NCP_HP1a_10kb_bin.cn"
+#fname = "H1_new-NCP_LKH_10kb_bin.cn"
+#fname = "H1_new-NCP_Ki67_10kb_bin.cn"
+#fname = "H1_NCP_FUS_10kb_bin.cn"
+
+# GM NCP
+#path=""
+#fname = "GM_NCP_sp_10kb_bin.cn"
+#fname = "GM_NCP_spd_10kb_bin.cn"
+#fname = "GM_NCP_CoH_10kb_bin.cn"
+#fname = "GM_NCP_PEG_10kb_bin.cn"
+
+# Progeria NCP
+path = '/media/spark159/sw/'
+fname = 'HGPS_NCP_sp_bin.cn'
+
+# mouse CD8 T cell
+#path= ""
+#path = '/media/spark159/sw/'
+#fname = "mCD8T_WT-NCP_sp_10kb_bin.cn"
+#fname = "mCD8T_inht-NCP_sp_10kb_bin.cn"
+#fname = 'mCD8T_KO-NCP_sp_bin.cn'
 
 
 
-#names, chr_binID_counts, chr_binID_range, chr_binID_GC = read_bincountfile(fname, chr_list=['chr1'])
-names, chr_binID_counts, chr_binID_range, chr_binID_GC, chr_binID_tlen = read_bintlenfile(fname, chr_list=['chr1'])
+
+#names, chr_binID_counts, chr_binID_range, chr_binID_GC = read_bincountfile(path+fname, chr_list=['chr1'])
+names, chr_binID_counts, chr_binID_range, chr_binID_GC, chr_binID_tlen = read_bintlenfile(path+fname, chr_list=['chr1'])
+
 chr_binID_control = chr_binID_counts[-1]
-
 ID_pos = {}
 ID_count = {}
 for i in range(len(chr_binID_control['chr1'])):
@@ -119,10 +160,49 @@ for i in range(len(chr_binID_control['chr1'])):
     pos = (start+end)/2
     ID_pos[i] = pos
     ID_count[i] = chr_binID_control['chr1'][i]
+mean = np.median(ID_count.values())
+std = np.std(ID_count.values())
+graphics.draw_along_genome (ID_pos, [ID_count], win=1000, labels=['Input'], ylabel='Read counts per 10kb', ylim=[max(mean-3*std, -5), mean+2*std], title='Chromosome 1', scatt=True, note="_" + fname.rsplit('.',1)[0])
 
-#ID_counts = chr_binID_control['chr1']
-#graphics.draw_along_genome (ID_pos, [ID_count], win=1000, labels=['Input'], ylabel='Read counts per 10kb', ylim=[-5,180], title='Chromosome 1', scatt=True, note="_" + fname.rsplit('.',1)[0])
-#graphics.draw_along_genome (ID_pos, [ID_count], win=1000, labels=['Input'], ylabel='Read counts per 1kb',ylim=[-5, 200],  title='Chromosome 1', scatt=True, note="_" + fname.rsplit('.',1)[0])
+#graphics.draw_along_genome (ID_pos, [ID_count], win=1000, labels=['Input'], ylabel='Read counts per 10kb', ylim=[max(mean-5*std, -5), mean+4*std], title='Chromosome 1', scatt=True, note="_" + fname.rsplit('.',1)[0])
 
-ID_tlen = chr_binID_tlen['chr1']
-graphics.draw_along_genome (ID_pos, [ID_tlen], win=1000, labels=['Input'], ylabel='Read length', ylim=[100,250], title='Chromosome 1', scatt=True, note="_" + fname.rsplit('.',1)[0])
+
+
+
+#for k in range(12):
+#    fname = "%d_100kb_bin.cn" % (k+1)
+#    names, chr_binID_counts, chr_binID_range, chr_binID_GC = read_bincountfile(path+fname, chr_list=['chr1'])
+#    chr_binID_control = chr_binID_counts[0]
+#    ID_pos = {}
+#    ID_count = {}
+#    for i in range(len(chr_binID_control['chr1'])):
+#        start, end = chr_binID_range['chr1'][i]
+#        pos = (start+end)/2
+#        ID_pos[i] = pos
+#        ID_count[i] = chr_binID_control['chr1'][i]
+#    mean = np.median(ID_count.values())
+#    std = np.std(ID_count.values())
+#    graphics.draw_along_genome (ID_pos, [ID_count], win=100, labels=['Input'], ylabel='Read counts per 100kb', ylim=[max(mean-3*std, -5), mean+2*std], title='Chromosome 1', scatt=True, note="_" + fname.rsplit('.',1)[0])
+
+
+
+#names, chr_binID_counts, chr_binID_range, chr_binID_GC, chr_binID_tlen = read_bintlenfile(fname, chr_list=['chr1'])
+#chr_binID_control = chr_binID_counts[5]
+
+#for k in range(6):
+#    chr_binID_control = chr_binID_counts[k]
+#    ID_pos = {}
+#    ID_count = {}
+#    for i in range(len(chr_binID_control['chr1'])):
+#        start, end = chr_binID_range['chr1'][i]
+#        pos = (start+end)/2
+#        ID_pos[i] = pos
+#        ID_count[i] = chr_binID_control['chr1'][i]
+#    graphics.draw_along_genome (ID_pos, [ID_count], win=1000, labels=['Input'], ylabel='Read counts per 10kb', ylim=[-5,160], title='Chromosome 1', scatt=True, note="_" + fname.rsplit('.',1)[0] + '_' + str(k))
+
+    #ID_counts = chr_binID_control['chr1']
+    #graphics.draw_along_genome (ID_pos, [ID_count], win=1000, labels=['Input'], ylabel='Read counts per 10kb', ylim=[-5,180], title='Chromosome 1', scatt=True, note="_" + fname.rsplit('.',1)[0])
+    #graphics.draw_along_genome (ID_pos, [ID_count], win=1000, labels=['Input'], ylabel='Read counts per 1kb',ylim=[-5, 200],  title='Chromosome 1', scatt=True, note="_" + fname.rsplit('.',1)[0])
+
+    #ID_tlen = chr_binID_tlen['chr1']
+    #graphics.draw_along_genome (ID_pos, [ID_tlen], win=1000, labels=['Input'], ylabel='Read length', ylim=[100,250], title='Chromosome 1', scatt=True, note="_" + fname.rsplit('.',1)[0])

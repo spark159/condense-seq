@@ -63,11 +63,31 @@ def AG_freq (NCP_seq_list):
                 Gfreq[i] += 1.0
     return Afreq / len(NCP_seq_list), Gfreq / len(NCP_seq_list)
 
-names = ['work/2021_06_07_H1_sp_detail/H1-NCP-sp-0', 'work/2021_06_07_H1_sp_detail/H1-NCP-sp-4', 'work/2021_06_07_H1_sp_detail/H1-NCP-sp-8']
+#names = ['work/2021_06_07_H1_sp_detail/H1-NCP-sp-0', 'work/2021_06_07_H1_sp_detail/H1-NCP-sp-4', 'work/2021_06_07_H1_sp_detail/H1-NCP-sp-8']
+
+#names = ["/home/spark159/scratch4-tha4/sangwoo/2022_09_08_GM_sp_H1_HP1a_deep/GM-NCP-sp-0", "/home/spark159/scratch4-tha4/sangwoo/2022_09_08_GM_sp_H1_HP1a_deep/GM-NCP-sp-4", "/home/spark159/scratch4-tha4/sangwoo/2022_09_08_GM_sp_H1_HP1a_deep/GM-NCP-sp-8"]
+
+#names = ["/home/spark159/scratch4-tha4/sangwoo/2022_09_08_GM_sp_H1_HP1a_deep/H1-DNA-HP1a-0", "/home/spark159/scratch4-tha4/sangwoo/2022_09_08_GM_sp_H1_HP1a_deep/H1-DNA-HP1a-3"]
+
+
+# mouse CD8 T cell in detail
+#path = "/home/spark159/../../media/spark159/sw/"
+#names = ["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-WT-NCP-sp-0",
+#         "/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-WT-NCP-sp-4",
+#         "/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-WT-NCP-sp-8"]
+#fname = "mCD8T_WT-NCP_sp_chr1_motif.txt"
+
+path = "/home/spark159/../../media/spark159/sw/"
+names = ["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-0",
+         "/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-4",
+         "/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-8"]
+fname = "mCD8T_inht-NCP_sp_chr1_motif.txt"
+
+
 
 name_Afreq, name_Gfreq = {}, {}
 for name in names:
-    ID_info, ID_seq = read_motif("H1_NCP_sp_chr1_motif.txt", data_choice=name)
+    ID_info, ID_seq = read_motif(path + fname, data_choice=name)
     print name, "reading done"
     
     weight_seq = []

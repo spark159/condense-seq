@@ -75,7 +75,7 @@ def read_bivalent (fname, chr_choices=None):
 # chr list for analysis
 chr_list = ['chr' + str(i) for i in range(1, 23)]
 chr_list += ['chrX', 'chrY']
-#chr_list = ['chr9']
+#chr_list = ['chr1']
 #chr_list.remove('chr13')
 
 # stem cell marker genes
@@ -185,11 +185,170 @@ for chr in chr_list:
 
     print len(set(chr_gID_mscore1.keys()) & set(chr_gID_mscore2.keys()))
 
-    print 
+    print
+
+# get ATAC score for all genes
+gID_mascore = {}
+for chr in chr_list:
+    print "processing " + chr
+    
+    fname = '%s_gene_ATACscore' % (chr)
+
+    try:
+        chr_gID_mascore = pickle.load(open(fname + ".pickle", "rb"))
+
+    except:
+        # read gene locations
+        chr_gID_field_values = load_file.read_GTF ("ENCFF159KBI.gtf", chr_list=[chr], mode="gene")
+        gIDs = list(set(chr_gID_field_values.keys()))
+
+        gID_ginterval = {}
+        for gID in gIDs:
+            try:
+                TSS = chr_gID_field_values[gID]['TSS']
+                interval = (TSS-2500, TSS+2500)
+            except:
+                continue
+            gID_ginterval[gID] = interval
+
+        del chr_gID_field_values
+
+        # read NCP scores
+        ATAC_fname = "H1_ATAC_%s_Bsig.cn" % (chr)
+        aID_chr, aID_pos, name_aID_value = load_file.read_anot_file(ATAC_fname)
+        aID_score = name_aID_value['Binsig']
+        del aID_chr, name_aID_value
+
+        # get scores near TSS
+        data_sets = [(gID_ginterval, aID_pos, aID_score)]
+        output_sets = []
+        for i in range(len(data_sets)):
+            gID_ginterval, aID_pos, aID_score = data_sets[i]
+            ginterval_dict = Interval_dict.double_hash(gID_ginterval, 100000, 250000000)
+            gID_scores = {}
+            for aID in aID_pos:
+                pos = aID_pos[aID]
+                score = aID_score[aID]
+                for gID in ginterval_dict.find(pos):
+                    if gID not in gID_scores:
+                        gID_scores[gID] = []
+                    gID_scores[gID].append(score)
+            output_sets.append(gID_scores)
+
+        gID_scores = output_sets[0]
+        del ginterval_dict, data_sets, output_sets
+
+        gIDs = gID_scores.keys()
+
+        # get average scores near TSS
+        chr_gID_mascore = {}
+        for gID in gIDs:
+            if len(gID_scores[gID]) >= 10:
+                chr_gID_mascore[gID] = np.mean(gID_scores[gID])
+
+        # save pickle file
+        pickle.dump(chr_gID_mascore, open(fname + ".pickle", "wb"))
+
+    # update total data set
+    gID_mascore.update(chr_gID_mascore)
+
+    print len(chr_gID_mascore.keys())
+
+    print
+
 
 # finalize common gene set
-gIDs = list(set(gID_mscore1) & set(gID_mscore2) & set(gID_FPKM1.keys()) & set(gID_FPKM2.keys()))
+gIDs = list(set(gID_mscore1) & set(gID_mascore) & set(gID_FPKM1.keys()))
+#gIDs = list(set(gID_mscore1) & set(gID_mscore2) & set(gID_FPKM1.keys()) & set(gID_FPKM2.keys()))
 print 'Total gene count:' + str(len(gIDs))
+
+# H1-hESC ATAC signal VS condensability
+X, Y = [], []
+Z = []
+for gID in gIDs:
+    X.append(np.log2(1+gID_FPKM1[gID]))
+    Y.append(gID_mscore1[gID])
+    Z.append(np.log2(1+gID_mascore[gID]))
+    #Z.append(gID_mascore[gID])
+
+fig = plt.figure()
+plt.plot(X, Y, color='tab:blue', marker=',', linestyle='none', markersize=3.5, alpha=0.35)
+plt.xlabel('Gene expression (logFPKM)')
+plt.ylabel('Condensabiltiy (A.U.)')
+plt.title("H1-hESC")
+plt.ylim([-2.5, 2.5])
+#plt.xlim([-0.1, 2.0]) 
+plt.savefig("geneVScondense.png")
+#plt.show()
+plt.close()
+
+fig = plt.figure()
+plt.plot(X, Z, color='tab:blue', marker=',', linestyle='none', markersize=3.5, alpha=0.35)
+plt.xlabel('Gene expression (logFPKM)')
+plt.ylabel('ATAC score (log(foldchange))')
+plt.title("H1-hESC")
+#plt.ylim([-2.5, 2.5])
+#plt.xlim([-0.1, 2.0]) 
+plt.savefig("geneVSATAC.png")
+#plt.show()
+plt.close()
+
+fig = plt.figure()
+#plt.plot(X, Y, '.', markersize=2)
+plt.scatter(X, Y, c=Z, s=1, cmap='jet', alpha=0.2)
+plt.xlabel('Gene expression (logFPKM)')
+plt.ylabel('Condensabiltiy (A.U.)')
+plt.title("H1-hESC")
+plt.ylim([-2.5, 2])
+cbar = plt.colorbar()
+cbar.ax.set_ylabel('ATAC score', rotation=-90, va="bottom")
+#plt.xlim([-0.2, 4])
+plt.savefig("geneVScondenVSATAC.png")
+#plt.show()
+plt.close()
+
+fig = plt.figure()
+plt.plot(Z, Y, color='tab:blue', marker=',', linestyle='none', markersize=3.5, alpha=0.35)
+plt.xlabel('ATAC score (log(foldchange))')
+plt.ylabel('Condensabiltiy (A.U.)')
+plt.title("H1-hESC")
+plt.ylim([-2.5, 2.5])
+plt.xlim([-0.1, 2.0]) 
+plt.savefig("condenVSATAC.png")
+#plt.show()
+plt.close()
+
+
+sys.exit(1)
+
+
+
+# finalize common gene set
+gIDs = list(set(gID_mscore1) & set(gID_mascore))
+#gIDs = list(set(gID_mscore1) & set(gID_mscore2) & set(gID_FPKM1.keys()) & set(gID_FPKM2.keys()))
+print 'Total gene count:' + str(len(gIDs))
+
+# H1-hESC ATAC signal VS condensability
+X, Y = [], []
+for gID in gIDs:
+    X.append(gID_mascore[gID])
+    Y.append(gID_mscore1[gID])
+
+fig = plt.figure()
+plt.plot(X, Y, '.', markersize=2)
+plt.xlabel("ATAC score")
+plt.ylabel("Condensability")
+plt.title('H1-hESC (Near TSS)')
+plt.ylim([-2.5, 2.5])
+plt.xlim([-0.2, 4])
+plt.show()
+plt.close()
+
+sys.exit(1)
+
+
+
+
 
 # find Ensemble Gene ID for ESC marker genes / PC marker genes
 ESC_gname_gIDs = {gname :[] for gname in ESC_gnames}

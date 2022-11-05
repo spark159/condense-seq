@@ -18,12 +18,12 @@ def read_genome_size(fname):
         genome_size[key] += len(line)
     return genome_size
 
-def read_tabular_file (fname, mode='row', jump=None):
+def read_tabular_file (fname, mode='row', delim='\t', jump=None):
     ID_field_value = {}
     First = True
     counter = -1
     for line in open(fname):
-        cols = line.strip().split()
+        cols = line.strip().split(delim)
         if First:
             field_names = cols[1:]
             First = False
@@ -35,6 +35,7 @@ def read_tabular_file (fname, mode='row', jump=None):
         if ID not in ID_field_value:
             ID_field_value[ID] = {}
         cols = cols[1:]
+        #print cols
         for i in range(len(cols)):
             field = field_names[i]
             try:
@@ -494,6 +495,7 @@ def read_GTF_old (fname, chr_list=None, mode="gene"):
 
 def read_RPKM (fname, gtf_fname, chr_list=None):
     gID_field_values, field_gID_values = read_GTF_old (gtf_fname, chr_list=chr_list, mode="both")
+    #gID_field_values, field_gID_values = read_GTF (gtf_fname, chr_list=chr_list, mode="both")
     
     gID_exons = field_gID_values['exons']
     gID_exonlen = {}
@@ -506,6 +508,9 @@ def read_RPKM (fname, gtf_fname, chr_list=None):
     gID_exp_counts, exp_gID_counts = read_tabular_file (fname, mode="both")
     gID_counts1 = exp_gID_counts['38-Per_rep1']
     gID_counts2 = exp_gID_counts['38-Per_rep2']
+    #gID_counts1 = exp_gID_counts['group4Stim_1']
+    #gID_counts2 = exp_gID_counts['group4Stim_3']
+
 
     total_counts = 0.0
     gID_counts = {}
@@ -525,6 +530,42 @@ def read_RPKM (fname, gtf_fname, chr_list=None):
         gID_RPKM[gID] = RPKM
 
     return gID_RPKM
+
+def read_RPKM_new (fname, gtf_fname, chr_list=None):
+    gID_field_values, field_gID_values = read_GTF (gtf_fname, chr_list=chr_list, mode="both")
+    
+    gID_exons = field_gID_values['exons']
+    gID_exonlen = {}
+    for gID in gID_exons:
+        length = 0
+        for start, end in gID_exons[gID]:
+            length +=  end - start + 1
+        gID_exonlen[gID] = length
+
+    gname_exp_counts, exp_gname_counts = read_tabular_file (fname, mode="both")
+    gname_counts1 = exp_gname_counts['group4Stim_1']
+    gname_counts2 = exp_gname_counts['group4Stim_3']
+
+    total_counts = 0.0
+    gname_counts = {}
+    for gname in gname_counts1:
+        counts = (gname_counts1[gname] + gname_counts2[gname])*0.5
+        counts += 1  # exclude the case of zero counts
+        gname_counts[gname] = counts
+        total_counts += counts
+
+    gID_RPKM = {}
+    for gID in gID_exonlen:
+        try:
+            gname = gID_field_values[gID]['geneName']
+            RPM = (gname_counts[gname] / total_counts)*(10**6)
+            RPKM = float(RPM)/(gID_exonlen[gID]/1000.0)
+        except:
+            continue
+        gID_RPKM[gID] = RPKM
+
+    return gID_RPKM
+
 
 
 

@@ -9,6 +9,22 @@ import numpy as np
 import math
 import Interval_dict
 
+def read_ATAC_foldchange (fname, chr_choice):
+    lID_score = {}
+    lID_interval = {}
+    lID = 0
+    for line in open(fname):
+        cols = line.strip().split()
+        chr, st, ed, foldchange = cols
+        if chr != chr_choice:
+            continue
+        st, ed = int(st), int(ed)
+        foldchange = float(foldchange)
+        lID_score[lID] = np.log2(1.0+foldchange)
+        lID_interval[lID] = (st, ed)
+        lID +=1
+    return lID_score, lID_interval
+
 def read_chromHMM(fname, chr_target, change=False):
     state_intervals = {}
     for line in open(fname):
@@ -54,79 +70,43 @@ def pair_boxplot (key_values1, key_values2, ylabel1='', ylabel2='Condensability 
     #plt.show()
     plt.close('all')
 
-path = "/home/spark159/../../media/spark159/sw/"
 #path = "/home/spark159/../../media/spark159/sw/sp_spd_tests_detail/"
-#path =""
+path =""
 #ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path + "hg19_chr1_167win25step_anot.cn", jump=10)
-#ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path + "H1_NCP_sp_chr1_anot.cn")
-ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path + "mCD8T_inht-NCP_sp_chr1_anot.cn")
+ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path + "H1_NCP_sp_chr1_anot.cn")
+lID_score, lID_interval = read_ATAC_foldchange(path + "H1_ATAC_foldchange.bedgraph", chr_choice="chr1")
 
-#ID_meGC = name_ID_value['meCNumber(CpG)']
-#ID_CpG = name_ID_value['CNumber(CpG)']
-#ID_meCpG = {}
-#for ID in ID_meGC:
-#    meGC = ID_meGC[ID]
-#    CpG = ID_CpG[ID]
-#    if CpG <= 0:
-#        meCpG = 0.0
-#    else:
-#        meCpG = float(meGC) / CpG
-#    ID_meCpG[ID] = meCpG
-#name_ID_value['meCpGfrac'] = ID_meCpG
+ID_meGC = name_ID_value['meCNumber(CpG)']
+ID_CpG = name_ID_value['CNumber(CpG)']
+ID_meCpG = {}
+for ID in ID_meGC:
+    meGC = ID_meGC[ID]
+    CpG = ID_CpG[ID]
+    if CpG <= 0:
+        meCpG = 0.0
+    else:
+        meCpG = float(meGC) / CpG
+    ID_meCpG[ID] = meCpG
+name_ID_value['meCpGfrac'] = ID_meCpG
 
 #name_dict = {'E1':'TssBiv', 'E2':'TssA', 'E3':'EnhA', 'E4':'TxWk', 'E5':'Tx', 'E6':'me3Het', 'E7':'Quies', 'E8':'me2Het', 'E9':'PcWk', 'E10':'Pc'}
 #state_intervals = read_chromHMM("/home/spark159/../../media/spark159/sw/dataforcondense/38-Per_10_segments.bed", chr_target='chr1', change=name_dict)
 #name_dict = {'E1':'Active promoter', 'E2':'Weak promoter', 'E3':'Inactive/poised promoter', 'E4':'Strong enhancer1', 'E5':'Strong enhancer2', 'E6':'Weak/poised enhancer1', 'E7':'Weak/poised enhancer2', 'E8':'Insulator', 'E9':'Transcriptional transition', 'E10':'Pc'}
 
-## for H1
-#name_dict = {"E1":"Polycomb repressed",
-#             "E2":"Poised promoter",
-#             "E3":"Weak promoter",
-#             "E4":"Strong enhancer",
-#             "E5":"Active promoter",
-#             "E6":"Weak enhancer",
-#             "E7":"Quiescence1",
-#             "E8":"Quiescence2",
-#             "E9":"Heterochromatin",
-#             "E10":"Tx elongation",
-#             "E11":"Weak Tx",
-#             "E12":"Insulator"}
+name_dict = {"E1":"Polycomb repressed",
+             "E2":"Poised promoter",
+             "E3":"Weak promoter",
+             "E4":"Strong enhancer",
+             "E5":"Active promoter",
+             "E6":"Weak enhancer",
+             "E7":"Quiescence1",
+             "E8":"Quiescence2",
+             "E9":"Heterochromatin",
+             "E10":"Tx elongation",
+             "E11":"Weak Tx",
+             "E12":"Insulator"}
 
-#state_intervals = read_chromHMM("H1_12_segments.bed", chr_target='chr1', change=name_dict)
-
-# for GM12878
-#name_dict = {"E1":"Polycomb repressed",
-#             "E2":"Quiescence",
-#             "E3":"Heterochromatin",
-#             "E4":"Weak Tx",
-#             "E5":"Tx elongation",
-#             "E6":"Weak enhancer",
-#             "E7":"Active enhancer",
-#             "E8":"Strong enhancer",
-#             "E9":"Active promoter",
-#             "E10":"Weak promoter",
-#             "E11":"Poised promoter",
-#             "E12":"Insulator"}
-
-#state_intervals = read_chromHMM("GM12878_12_segments.bed", chr_target='chr1', change=name_dict)
-
-# for mouse CD8 T cell
-name_dict = {"E1":"Weak Tx",
-             "E2":"Tx elongation",
-             "E3":"Weak enhancer2",
-             "E4":"Strong enhancer2",
-             "E5":"Strong enhancer1",
-             "E6":"Weak enhancer1",
-             "E7":"Active promoter",
-             "E8":"Poised promoter",
-             "E9":"Polycomb repressed1",
-             "E10":"Polycomb repressed2",
-             "E11":"Quiescence",
-             "E12":"Heterochromatin"}
-
-state_intervals = read_chromHMM("Mouse CD8 T cell (invitro activated)_12_segments.bed", chr_target='chr1', change=name_dict)
-
-
+state_intervals = read_chromHMM("H1_12_segments.bed", chr_target='chr1', change=name_dict)
 
 dID_interval = {}
 for state in state_intervals:
@@ -164,24 +144,33 @@ for ID in ID_pos:
             state_name_values[state][name].append(value)
             name_state_values[name][state].append(value)
 
+state_lscores = {}
+for lID in lID_score:
+    rst, red = lID_interval[lID]
+    lscore = lID_score[lID]    
+    dIDs = dinterval_dict.find_range(rst, red)
+    if not dIDs:
+        continue
+    for dID in dIDs:
+        state, _ = dID.split(':')
+        if state not in state_lscores:
+            state_lscores[state] = []
+        state_lscores[state].append(lscore)
+
 #states = ['TssA', 'EnhA', 'Tx', 'TxWk', 'TssBiv', 'me2Het', 'me3Het', 'PcWk', 'Pc', 'Quies']
 #states = state_intervals.keys()
-
-# state for H1
-#states = ["Active promoter", "Weak promoter", "Poised promoter", "Strong enhancer", "Weak enhancer", "Tx elongation", "Weak Tx", "Insulator", "Polycomb repressed", "Heterochromatin", "Quiescence1", "Quiescence2"]
-
-# state for GM
-#states = ["Active promoter", "Weak promoter", "Poised promoter", "Strong enhancer", "Active enhancer", "Weak enhancer", "Tx elongation", "Weak Tx", "Insulator", "Polycomb repressed", "Heterochromatin", "Quiescence"]
-
-# state for mouse CD8 T cell
-states = ["Active promoter", "Poised promoter", "Strong enhancer1", "Strong enhancer2", "Weak enhancer1", "Weak enhancer2", "Tx elongation", "Weak Tx", "Polycomb repressed1", "Polycomb repressed2", "Heterochromatin", "Quiescence"]
-
-
+states = ["Active promoter", "Weak promoter", "Poised promoter", "Strong enhancer", "Weak enhancer", "Tx elongation", "Weak Tx", "Insulator", "Polycomb repressed", "Heterochromatin", "Quiescence1", "Quiescence2"]
 
 states_label = [state.split('_')[-1] for state in states]
-#state_scores1 = name_state_values['/home/spark159/scratch4-tha4/sangwoo/2022_09_08_GM_sp_H1_HP1a_deep/GM-NCP-sp-4']
-#state_scores2 = name_state_values['/home/spark159/scratch4-tha4/sangwoo/2022_09_08_GM_sp_H1_HP1a_deep/GM-NCP-sp-8']
-for name in ["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-8"]:
+state_scores1 = name_state_values['work/2021_06_07_H1_sp_detail/H1-NCP-sp-4']
+state_scores2 = name_state_values['work/2021_06_07_H1_sp_detail/H1-NCP-sp-8']
+
+pair_boxplot (state_scores2, state_lscores, ylabel1='Condensability', ylabel2='ATAC score', title='Condensability VS ATAC score (chr1)', keys=states, note='HMM_score_ATAC', rotation=75)
+
+
+sys.exit(1)
+
+for name in ['work/2021_06_07_H1_sp_detail/H1-NCP-sp-8']:
 #for name in name_state_values:
     print name
     state_values = name_state_values[name]

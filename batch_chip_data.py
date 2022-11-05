@@ -21,7 +21,8 @@ def read_data_info (fname):
         name_info[name]['control'] = [control.strip() for control in control_list]
         name_info[name]['peak'] = [peak.strip() for peak in peak_list]
     return name_info
-chipname_info = read_data_info("ENCODE_Histone_Chipseq_data_info.csv")
+#chipname_info = read_data_info("ENCODE_Histone_Chipseq_data_info.csv")
+chipname_info = read_data_info("ENCODE_BS_data_info.csv")
 
 def make_download_file (fname, data_list, extension='bam'):
     f = open(fname, 'w')
@@ -35,7 +36,8 @@ for name in chipname_info:
     data_list |= set(chipname_info[name]['peak'])
 data_list = list(data_list)
 
-make_download_file ("H1_histone_chip_seq_bedfiles.txt", data_list, extension='bed.gz')
+#make_download_file ("H1_histone_chip_seq_bedfiles.txt", data_list, extension='bed.gz')
+make_download_file ("H1_BS_bedfiles.txt", data_list, extension='bed.gz')
 
 """
 data_list = set([])
