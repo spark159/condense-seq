@@ -146,6 +146,16 @@ fname = 'HGPS_NCP_sp_bin.cn'
 #fname = "mCD8T_inht-NCP_sp_10kb_bin.cn"
 #fname = 'mCD8T_KO-NCP_sp_bin.cn'
 
+# some replicates QC
+path = '/media/spark159/sw/'
+#fname = 'H1_NCP_sp_10kb_bin.cn'
+#fname = 'GM_NCP_sp_10kb_bin.cn'
+#fname = 'mCD8T_WT-NCP_sp_10kb_bin.cn'
+#fname = 'mCD8T_inht-NCP_sp_10kb_bin.cn'
+#fname = 'mCD8T_KO-NCP_sp_10kb_bin.cn'
+
+
+
 
 
 
@@ -162,9 +172,9 @@ for i in range(len(chr_binID_control['chr1'])):
     ID_count[i] = chr_binID_control['chr1'][i]
 mean = np.median(ID_count.values())
 std = np.std(ID_count.values())
-graphics.draw_along_genome (ID_pos, [ID_count], win=1000, labels=['Input'], ylabel='Read counts per 10kb', ylim=[max(mean-3*std, -5), mean+2*std], title='Chromosome 1', scatt=True, note="_" + fname.rsplit('.',1)[0])
+#graphics.draw_along_genome (ID_pos, [ID_count], win=1000, labels=['Input'], ylabel='Read counts per 10kb', ylim=[max(mean-3*std, -5), mean+2*std], title='Chromosome 1', scatt=True, note="_" + fname.rsplit('.',1)[0])
 
-#graphics.draw_along_genome (ID_pos, [ID_count], win=1000, labels=['Input'], ylabel='Read counts per 10kb', ylim=[max(mean-5*std, -5), mean+4*std], title='Chromosome 1', scatt=True, note="_" + fname.rsplit('.',1)[0])
+graphics.draw_along_genome (ID_pos, [ID_count], win=1000, labels=['Input'], ylabel='Read counts per 10kb', ylim=[max(mean-5*std, -5), mean+4*std], title='Chromosome 1', scatt=True, note="_" + fname.rsplit('.',1)[0])
 
 
 

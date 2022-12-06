@@ -18,16 +18,20 @@ def read_genome_size(fname):
         genome_size[key] += len(line)
     return genome_size
 
-def read_tabular_file (fname, mode='row', delim='\t', jump=None):
+def read_tabular_file (fname, mode='row', delim='\t', header=True, jump=None):
     ID_field_value = {}
     First = True
     counter = -1
     for line in open(fname):
         cols = line.strip().split(delim)
-        if First:
+        if First and header:
             field_names = cols[1:]
             First = False
             continue
+        elif First and not header:
+            field_names = range(len(cols[1:]))
+            First = False
+            pass
         ID = cols[0]
         counter += 1
         if jump and counter % jump != 0:
@@ -106,7 +110,13 @@ def read_anot_file(fname, target_names=None, jump=None, num_max=sys.maxsize):
     return ID_chr, ID_pos, name_ID_value
 
 
-def read_profile(fname, moving_win=None, name_choice=None, ID_choice=None, strip_ver=True):
+def read_profile(fname,
+                 moving_win=None,
+                 name_choice=None,
+                 ID_choice=None,
+                 strip_ver=True,
+                 average=True):
+
     name_ID_profile = {}
     First = True
     for line in open(fname):
@@ -140,6 +150,8 @@ def read_profile(fname, moving_win=None, name_choice=None, ID_choice=None, strip
         if moving_win != None:
             profile = statis.moving_average(profile, moving_win)
         name_ID_profile[name][ID] = profile
+    if not average:
+        return name_ID_profile
     name_mean_profile = {}
     for name in name_ID_profile:
         profiles = name_ID_profile[name].values()

@@ -202,11 +202,14 @@ for i in range(len(names)):
     plt.annotate('x', (cdcorr_list[i], -i), ha='center', va='center')
 plt.axvline(x=0, linestyle='--', color='k')
 plt.xlim([-0.25, 0.25])
-plt.xlabel("Spearman correlation", fontsize=8)
+#plt.xlabel("Spearman correlation", fontsize=8)
+plt.xlabel("Spearman correlation", fontsize=8, rotation=180) # for flip version
 plt.yticks([-i for i in range(len(names))], names, fontsize=8)
-plt.title("Data Stratification", fontsize=8)
+#plt.title("Data Stratification", fontsize=8)
 plt.gca().tick_params(axis='both', which='major', labelsize=8)
 plt.gca().tick_params(axis='both', which='minor', labelsize=8)
+plt.xticks(rotation=-90) # for flip version
+plt.yticks(rotation=-20, ha="right", va='center', rotation_mode="anchor") # for flip version
 plt.savefig("Data_strat.png", bbox_inches='tight', dpi=500)
 #plt.savefig("Data_strat.svg", format='svg', bbox_inches='tight')
 #plt.show()
@@ -229,11 +232,14 @@ fig = plt.figure(figsize=(2.25, 6.4))
 plt.barh(yset1, dataset1, align='center', color='tab:red', height=0.5, edgecolor='k')
 plt.barh(yset2, dataset2, align='center', color='tab:blue', height=0.5, edgecolor='k')
 plt.axvline(x=0, linestyle='--', color='k', linewidth=1)
-plt.xlabel("Averaged correlation", fontsize=8)
+#plt.xlabel("Averaged correlation", fontsize=8)
+plt.xlabel("Averaged correlation", fontsize=8, rotation=180) # for flip version
 plt.yticks([-i for i in range(len(names))], names, fontsize=8)
-plt.title("Conditional Correlation", fontsize=8)
+#plt.title("Conditional Correlation", fontsize=8)
 plt.gca().tick_params(axis='both', which='major', labelsize=8)
 plt.gca().tick_params(axis='both', which='minor', labelsize=8)
+plt.xticks(rotation=-90) # for flip version
+plt.yticks(rotation=-20, ha="right", va='center', rotation_mode="anchor") # for flip version
 #plt.savefig("Conditional_corr.png", bbox_inches='tight')
 plt.savefig("Conditional_corr.svg", format='svg', bbox_inches='tight')
 #plt.show()

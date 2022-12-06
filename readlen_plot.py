@@ -231,8 +231,31 @@ names = ["H1-NCP-FUS-%s" % (i) for i in range(6)]
 #names = ["mCD8T:inht-NCP-sp-%s" % (i) for i in [0, 4, 8]]
 #note="mCD8T:inht_NCP_sp"
 
+#fnames = ["mCD8T_KO-NCP_sp_mCD8T-KO-NCP-sp-%s_rlen.txt" % (i) for i in [0, 4, 8]]
+#names = ["mCD8T:KO-NCP-sp-%s" % (i) for i in [0, 4, 8]]
+#note="mCD8T:KO_NCP_sp"
 
 
+# some replicate QC
+fnames = ["H1_NCP_sp_H1-NCP-sp-%s_rlen.txt" % (i) for i in [0,4,8]]
+names = ["H1-NCP-sp-%s" % (i) for i in [0,4,8]]
+note='H1_NCP_sp_qc'
+
+fnames = ["GM_NCP_sp_GM-NCP-sp-%s_rlen.txt" % (i) for i in [0,4,8]]
+names = ["GM-NCP-sp-%s" % (i) for i in [0,4,8]]
+note='GM_NCP_sp_qc'
+
+fnames = ["mCD8T_WT-NCP_sp_mCD8T-WT-NCP-sp-%s_rlen.txt" % (i) for i in [0,4,8]]
+names = ["mCD8T-WT-NCP-sp-%s" % (i) for i in [0,4,8]]
+note='mCD8T_WT-NCP_sp_qc'
+
+fnames = ["mCD8T_inht-NCP_sp_mCD8T-inht-NCP-sp-%s_rlen.txt" % (i) for i in [0,4,8]]
+names = ["mCD8T-inht-NCP-sp-%s" % (i) for i in [0,4,8]]
+note='mCD8T_inht-NCP_sp_qc'
+
+fnames = ["mCD8T_KO-NCP_sp_mCD8T-KO-NCP-sp-%s_rlen.txt" % (i) for i in [0,4,8]]
+names = ["mCD8T-KO-NCP-sp-%s" % (i) for i in [0,4,8]]
+note='mCD8T_KO-NCP_sp_qc'
 
 
 
@@ -257,8 +280,8 @@ fig = plt.figure()
 for i in range(len(names)):
     name = names[i]
     X, Y = X_list[i], Y_list[i]
-    #plt.plot(X, Y, label=name, alpha=1)
-    plt.plot(X, Y, color=cmap(color_list[i]), label=name, alpha=1)
+    plt.plot(X, Y, label=name, alpha=1)
+    #plt.plot(X, Y, color=cmap(color_list[i]), label=name, alpha=1)
     #plt.plot(X, Y, color='b', label=name, alpha=alpha_list[i])
 plt.xticks(range(0,500,50))
 #plt.xticks(range(0,500,10))

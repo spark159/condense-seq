@@ -71,7 +71,7 @@ def pair_plot (profile1, profile2, offset=-1000, xtick_loc_name=None, xlabel='Di
 path = "/home/spark159/../../media/spark159/sw/"
 
 cell = 'mCD8T'
-sample = 'inht-NCP'
+sample = 'KO-NCP'
 agent = 'sp'
 chr = 'chr1'
 
@@ -79,7 +79,7 @@ chr = 'chr1'
 tsvfname = path + "ENCFF174OMR.tsv"
 
 
-
+"""
 # mean TSS plot
 feature = 'TSS'
 profile_fname = path + '_'.join([cell, sample, agent, chr, feature]) + "_profile.txt"
@@ -114,9 +114,9 @@ for name in name_mean_profile:
     name_mean_profile[name] = statis.moving_average(name_mean_profile[name], moving_average_win)
 
 # average plot of all genes
-mean_score1_profile = name_mean_profile["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-8"]
+mean_score1_profile = name_mean_profile["/home/spark159/scratch/2022_11_08_mCD8T_KO_detail/mCD8T-KO-NCP-sp-8"]
 #mean_score2_profile = name_mean_profile["/home/spark159/scratch4-tha4/sangwoo/2022_09_08_GM_sp_H1_HP1a_deep/GM-NCP-sp-8"]
-mean_occprofile = name_mean_occprofile["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-0"]
+mean_occprofile = name_mean_occprofile["/home/spark159/scratch/2022_11_08_mCD8T_KO_detail/mCD8T-KO-NCP-sp-0"]
 pair_plot(mean_score1_profile, mean_occprofile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="Occupancy", xtick_loc_name = xtick_loc_name, note="Occ" + '_score1_' + feature)
 #pair_plot(mean_score2_profile, mean_occprofile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="Occupancy", xtick_loc_name = xtick_loc_name, note="Occ" + '_score2_' + feature)
 
@@ -140,7 +140,7 @@ for name in sorted(name_mean_profile):
 gID_RPKM = load_file.read_RPKM_new ("GSE136898_rawCounts.txt", "gencodeM21pri-UCSC-tRNAs-ERCC-phiX.gtf", chr_list=[chr]) # mouse CD8 T cell case 
 
 #ID_profile = name_ID_profile["work/2021_06_07_H1_sp_detail/H1-NCP-sp-8"]
-name_ID_profile['Occ'] = name_ID_occprofile["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-0"]
+name_ID_profile['Occ'] = name_ID_occprofile["/home/spark159/scratch/2022_11_08_mCD8T_KO_detail/mCD8T-KO-NCP-sp-0"]
 
 #ID_meCpGfrac_profile = {}
 #for ID in (set(name_ID_profile['CNumber(CpG)'].keys()) & set(name_ID_profile['meCNumber(CpG)'].keys())):
@@ -204,7 +204,7 @@ for name in name_ID_profile:
 #name_list = ['data/sp_spd_tests_detail/sp7', 'k27ac', 'k4me3', 'k9ac', 'Occ']
 #name_list = ['data/sp_spd_tests_detail/sp7']
 #name_list = ["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-8", 'H3K27ac', 'H3K4me3', 'H3K9ac', 'Occ']
-name_list = ["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-8", 'H3K27ac', 'H3K4me3', 'H3K4me1', 'Occ']
+name_list = ["/home/spark159/scratch/2022_11_08_mCD8T_KO_detail/mCD8T-KO-NCP-sp-8", 'H3K27ac', 'H3K4me3', 'H3K4me1', 'Occ']
 
 
 common_IDs = set(gID_RPKM)
@@ -262,7 +262,7 @@ for i in range(len(name_list)):
     #plt.show()
     plt.close()
 
-#sys.exit(1)
+sys.exit(1)
 
 
 
@@ -296,7 +296,7 @@ for i in range(len(name_list)):
 #    #img.append(profile[100:len(profile)-100])
 
 
-"""
+
 # mean TTS plot
 feature = 'TTS'
 profile_fname = path + 'hg19_chr1_gtf_' + feature + "_profile.txt"
@@ -366,11 +366,11 @@ for name in name_ID_profile:
     plt.savefig("RPKM_quantile_profile_" + feature + "_" + name.split('/')[-1] + ".png",bbox_inches='tight')
     #plt.show()
     plt.close()
-
+"""
 
 
 # mean TSS-TTS plot
-feature = 'TSS_TTS'
+feature = 'TSS-TTS'
 profile_fname = path + '_'.join([cell, sample, agent, chr, feature]) + "_profile.txt"
 occprofile_fname = path + '_'.join([cell, sample, agent, chr, "occ", feature]) + "_profile.txt"
 #profile_fname = path + 'hg19_chr1_gtf_' + feature + "_profile.txt"
@@ -395,9 +395,9 @@ for name in name_mean_profile:
     name_mean_profile[name] = statis.moving_average(name_mean_profile[name], moving_average_win)
 
 # average plot of all genes
-mean_score1_profile = name_mean_profile["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-8"]
+mean_score1_profile = name_mean_profile["/home/spark159/scratch/2022_11_08_mCD8T_KO_detail/mCD8T-KO-NCP-sp-8"]
 #mean_score2_profile = name_mean_profile["/home/spark159/scratch4-tha4/sangwoo/2022_09_08_GM_sp_H1_HP1a_deep/GM-NCP-sp-8"]
-mean_occprofile = name_mean_occprofile["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-0"]
+mean_occprofile = name_mean_occprofile["/home/spark159/scratch/2022_11_08_mCD8T_KO_detail/mCD8T-KO-NCP-sp-0"]
 pair_plot(mean_score1_profile, mean_occprofile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="Occupancy", xtick_loc_name = xtick_loc_name, note="Occ" + '_score1_' + feature)
 #pair_plot(mean_score2_profile, mean_occprofile, offset=offset, xlabel='Distance from ' + feature +' (bp)', ylabel1='Condensability (A.U.)', ylabel2="Occupancy", xtick_loc_name = xtick_loc_name, note="Occ" + '_score2_' + feature)
 
@@ -418,7 +418,7 @@ for name in sorted(name_mean_profile):
 #ID_profile = name_ID_profile["data/sp_spd_tests_detail/sp7"]
 #gID_RPKM = load_file.read_tsv(tsvfname)
 gID_RPKM = load_file.read_RPKM_new ("GSE136898_rawCounts.txt", "gencodeM21pri-UCSC-tRNAs-ERCC-phiX.gtf", chr_list=[chr]) # mouse CD8 T cell case 
-name_ID_profile['Occ'] = name_ID_occprofile["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-0"]
+name_ID_profile['Occ'] = name_ID_occprofile["/home/spark159/scratch/2022_11_08_mCD8T_KO_detail/mCD8T-KO-NCP-sp-0"]
 
 #ID_meCpGfrac_profile = {}
 #for ID in (set(name_ID_profile['CNumber(CpG)'].keys()) & set(name_ID_profile['meCNumber(CpG)'].keys())):
@@ -481,7 +481,7 @@ for name in name_ID_profile:
 #name_list = ['data/sp_spd_tests_detail/sp7']
 #name_list = ['data/sp_spd_tests_detail/sp7', 'meCpGfrac', 'k36me3', 'ATcontent']
 #name_list = ['data/sp_spd_tests_detail/sp7', 'ATcontent', 'k36me3', 'k9me2']
-name_list = ["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-8", 'H3K27me3', 'H3K36me3', 'ATcontent']
+name_list = ["/home/spark159/scratch/2022_11_08_mCD8T_KO_detail/mCD8T-KO-NCP-sp-8", 'H3K27me3', 'H3K36me3', 'ATcontent']
 
 common_IDs = set(gID_RPKM)
 for name in name_list:
@@ -562,4 +562,4 @@ for i in range(len(name_list)):
     plt.savefig("heatmap_profile_byRPKM_" + feature + "_" + name.split('/')[-1] + ".svg", format='svg', bbox_inches='tight')
     #plt.show()
     plt.close()
-"""
+

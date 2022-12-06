@@ -68,7 +68,8 @@ def draw_GO (fname, num, color='gold', alpha=1):
     plt.gca().tick_params(left='off')
     plt.yticks([])
     plt.xlabel('-log10(p)')
-    plt.savefig(fname.rsplit('.', 1)[0] + '.png', bbox_inches='tight')
+    #plt.savefig(fname.rsplit('.', 1)[0] + '.png', bbox_inches='tight')
+    plt.savefig(fname.rsplit('.', 1)[0] + '.svg', format='svg', bbox_inches='tight')
     #plt.show()
     plt.close()
 
@@ -277,7 +278,7 @@ chr_list += ['chrX']
 
 # mouse CD4 T cell lineage commitment genes
 mCD4Tcell_gnames = ['Tbx21', 'Gata3', 'Rorc', 'Ifng', 'Il17']
-mCD4Tcell_gnames = [gname.upper() for gname in mCD4Tcell_gnames]
+#mCD4Tcell_gnames = [gname.upper() for gname in mCD4Tcell_gnames]
 
 # stem cell marker genes
 ESC_tf_cores =  ['Pou5f1', 'Sox2', 'KLF4', 'Nanog']
@@ -450,57 +451,6 @@ gIDs = list(set(gID_mscore1) & set(gID_mscore2) & set(gID_mscore3) & set(gID_FPK
 print 'Total gene count:' + str(len(gIDs))
 
 
-ESC_gname_gIDs = {gname :[] for gname in ESC_gnames}
-PC_gname_gIDs = {gname:[] for gname in PC_gnames}
-mCD4Tcell_gname_gIDs = {gname:[] for gname in mCD4Tcell_gnames}
-HOX_gname_gID = {}
-
-for gID in gIDs:
-    gname = gID_field_values[gID]['geneName'].upper()
-    if gname.startswith('HOX'):
-        HOX_gname_gID[gname] = gID
-    try:
-        ESC_gname_gIDs[gname].append(gID)
-    except:
-        pass
-    try:
-        PC_gname_gIDs[gname].append(gID)
-    except:
-        pass
-    try:
-        mCD4Tcell_gname_gIDs[gname].append(gID)
-    except:
-        pass
-
-ESC_gID_gname = {}
-for gname in ESC_gname_gIDs:
-    if len(ESC_gname_gIDs[gname]) == 1:
-        gID = ESC_gname_gIDs[gname][0]
-        assert gID not in ESC_gID_gname
-        ESC_gID_gname[gID] = gname
-
-PC_gID_gname = {}
-for gname in PC_gname_gIDs:
-    if len(PC_gname_gIDs[gname]) == 1:
-        gID = PC_gname_gIDs[gname][0]
-        assert gID not in PC_gID_gname
-        PC_gID_gname[gID] = gname
-
-mCD4Tcell_gID_gname = {}
-for gname in mCD4Tcell_gname_gIDs:
-    if len(mCD4Tcell_gname_gIDs[gname]) == 1:
-        gID = mCD4Tcell_gname_gIDs[gname][0]
-        assert gID not in mCD4Tcell_gID_gname
-        mCD4Tcell_gID_gname[gID] = gname
-
-
-HOX_gID_gname = {}
-for gname in HOX_gname_gID:
-    gID = HOX_gname_gID[gname]
-    HOX_gID_gname[gID] = gname
-
-
-
 ## standardization of scores
 scores1 = [gID_mscore1[gID] for gID in gIDs]
 scores2 = [gID_mscore2[gID] for gID in gIDs]
@@ -518,46 +468,88 @@ for gID in gIDs:
     #gID_mscore2[gID] = float(gID_mscore2[gID] - score_mean2)
 
 
-# write background gID list
-f = open("gID_bg.txt", 'w')
+## map gname to gIDs (not unique)
+gname_gIDs = {}
 for gID in gIDs:
-    #print >> f, gID_field_values[gID]['geneName']
-    print >> f, gID
+    gname = gID_field_values[gID]['geneName']
+    if gname not in gname_gIDs:
+        gname_gIDs[gname] = []
+    gname_gIDs[gname].append(gID)
+
+### averaging values by gname
+gnames = gname_gIDs.keys()
+gname_score1, gname_score2, gname_score3 = {}, {}, {}
+gname_FPKM1, gname_FPKM2 = {}, {}
+for gname in gnames:
+    score1 = np.mean([gID_mscore1[gID] for gID in gname_gIDs[gname]])
+    score2 = np.mean([gID_mscore2[gID] for gID in gname_gIDs[gname]])
+    score3 = np.mean([gID_mscore3[gID] for gID in gname_gIDs[gname]])
+    gname_score1[gname] = score1
+    gname_score2[gname] = score2
+    gname_score3[gname] = score3
+    FPKM1 = np.mean([gID_FPKM1[gID] for gID in gname_gIDs[gname]])
+    FPKM2 = np.mean([gID_FPKM2[gID] for gID in gname_gIDs[gname]])
+    gname_FPKM1[gname] = FPKM1
+    gname_FPKM2[gname] = FPKM2
+
+
+# write all gnames as background
+f = open("gname_bg.txt", 'w')
+for gname in gnames:
+    print >> f, gname
 f.close()
 
 
-# by gID
-diff_gIDs = set([])
-up_gIDs1, up_gIDs2 = [], []
-down_gIDs1, down_gIDs2 =[], []
-gID_test_list = [gID_mscore2, gID_mscore3]
-gID_control = gID_mscore1
+# by gname
+diff_gnames = set([])
+up_gnames1, up_gnames2 = [], []
+down_gnames1, down_gnames2 =[], []
+gname_test_list = [gname_score2, gname_score3]
+gname_control = gname_score1
 test_names = ['inht', 'KO']
-for gID_test, tname in zip(gID_test_list, test_names):
+
+#for gID_test, tname in zip(gID_test_list, test_names):
+for gname_test, tname in zip(gname_test_list, test_names):
 
     X, Y = [], []
     C = []
-    for gID in gIDs:
-        X.append(gID_control[gID])
-        Y.append(gID_test[gID])
-        C.append(np.log2(1+gID_FPKM2[gID]) - np.log2(1+gID_FPKM1[gID]))
-        #C.append(1)
-    #C = stats.zscore(C)
-    mean_C = np.mean(C)
-    std_C = np.std(C)
+
+    for gname in gnames:
+        X.append(gname_control[gname])
+        Y.append(gname_test[gname])
+        C.append(np.log2(1+gname_FPKM2[gname]) - np.log2(1+gname_FPKM1[gname]))
+    C = stats.zscore(C)
+
+    #for gID in gIDs:
+    #    X.append(gID_control[gID])
+    #    Y.append(gID_test[gID])
+    #    C.append(np.log2(1+gID_FPKM2[gID]) - np.log2(1+gID_FPKM1[gID]))
+    #    #C.append(1)
+    ##C = stats.zscore(C)
+    #mean_C = np.mean(C)
+    #std_C = np.std(C)
 
     # draw all genes
     fig = plt.figure()
     #plt.scatter(X, Y, c=C, cmap='Spectral', vmin=-3, vmax=3, alpha=0.3, s=3)
-    #plt.scatter(X, Y, c=C, cmap=pastel_jet_div, vmin=-5, vmax=5, alpha=0.3, s=2)
-    plt.scatter(X, Y, c=C, cmap=pastel_jet_div, vmin=mean_C-std_C, vmax=mean_C+std_C, alpha=0.3, s=2)
+    plt.scatter(X, Y, c=C, cmap=pastel_jet_div, vmin=-5, vmax=5, alpha=0.3, s=2)
+    #plt.scatter(X, Y, c=C, cmap=pastel_jet_div, vmin=mean_C-std_C, vmax=mean_C+std_C, alpha=0.3, s=2)
     #plt.plot(X, Y, 'k.', alpha=0.2, markersize=1.5)
 
-    for gID in mCD4Tcell_gID_gname:
-        gname = mCD4Tcell_gID_gname[gID]
-        x, y = gID_control[gID], gID_test[gID]
+    #for gID in mCD4Tcell_gID_gname:
+    #    gname = mCD4Tcell_gID_gname[gID]
+    #    x, y = gID_control[gID], gID_test[gID]
+    #    plt.plot(x, y, 'kx', markersize=5, alpha=1, zorder=10, mew=1.5)
+    #    plt.annotate(gname, (x, y), color='black', zorder=40, size=8, weight='bold')
+
+    for gname in mCD4Tcell_gnames:
+        try:
+            x, y = gname_control[gname], gname_test[gname]
+        except:
+            continue
         plt.plot(x, y, 'kx', markersize=5, alpha=1, zorder=10, mew=1.5)
         plt.annotate(gname, (x, y), color='black', zorder=40, size=8, weight='bold')
+
 
     #plt.plot([min(X), max(X)], [min(Y), max(Y)], 'k--', alpha=0.7)
     #plt.plot([-2.5, 2], [-3.5, 3.5], 'k--', alpha=0.5)
@@ -584,69 +576,70 @@ for gID_test, tname in zip(gID_test_list, test_names):
     plt.close()
 
 
+    # write up rank file for GSEA
+    dscore_gname = []
+    for gname in gnames:
+        dscore = gname_test[gname] - gname_control[gname]
+        dscore_gname.append((dscore, gname))
+    dscore_gname = sorted(dscore_gname, reverse=True)
+    
+    f = open("%s-WT.rnk" % (tname), 'w')
+    for dscore, gname in dscore_gname:
+        print >> f, "%s\t%f" % (gname, dscore)
+    f.close()
+
+    
     # find up/down differential genes by rank (top 15%)
-    dscore_gID = []
-    for gID in gIDs:
-        dscore = gID_test[gID] - gID_control[gID]
-        dscore_gID.append((dscore, gID))
-    dscore_gID = sorted(dscore_gID)
+    sample_size = int(len(gnames)*0.15)
 
-    sample_size = int(len(gIDs)*0.05)
+    up_gnames, down_gnames = [], []
 
-    up_gIDs, down_gIDs = [], []
+    for dscore, gname in dscore_gname[:sample_size]:
+        up_gnames.append(gname)
 
-    for dscore, gID in dscore_gID[:sample_size]:
-        down_gIDs.append(gID)
+    for dscore, gname in dscore_gname[::-1][:sample_size]:
+        down_gnames.append(gname)
 
-    for dscore, gID in dscore_gID[::-1][:sample_size]:
-        up_gIDs.append(gID)
 
-    diff_gIDs |= set(up_gIDs)
-    diff_gIDs |= set(down_gIDs)
+    f = open("rank_up_" + tname + ".txt", 'w')
+    for gname in up_gnames:
+        #print >> f, gID_field_values[gID]['geneName']
+        print >> f, gname
+    f.close()
+
+    f = open("rank_down_" + tname + ".txt", 'w')
+    for gname in down_gnames:
+        #print >> f, gID_field_values[gID]['geneName']
+        print >> f, gname
+    f.close()
+
+
+    diff_gnames |= set(up_gnames)
+    diff_gnames |= set(down_gnames)
 
     if tname == 'inht':
-        up_gIDs1 += up_gIDs
-        down_gIDs1 += down_gIDs
+        up_gnames1 += up_gnames
+        down_gnames1 += down_gnames
     else:
-        up_gIDs2 += up_gIDs
-        down_gIDs2 += down_gIDs
+        up_gnames2 += up_gnames
+        down_gnames2 += down_gnames
 
-
-    ## write down rank file
-    #dscore_gname = []
-    #for gname in gname_gIDs:
-    #    dscore = np.mean([gID_test[gID] - gID_control[gID] for gID in gname_gIDs[gname]])
-    #    dscore_gname.append((dscore, gname))
-    #dscore_gname = sorted(dscore_gname, reverse=True)
-
-    f = open("%s-WT_gID.rnk" % (tname), 'w')
-    for dscore, gID in dscore_gID[::-1]:
-        print >> f, "%s\t%f" % (gID, dscore)
-    f.close()
-    
-
-    #f = open("%s-WT.rnk" % (tname), 'w')
-    ##print >> f, "# %s-WT score difference" % (tname)
-    #for dscore, gID in dscore_gID[::-1]:
-    #    #print >> f, "%s\t%f" % (gID_field_values[gID]['geneName'], dscore)
-    #    print >> f, "%s\t%f" % (gID_field_values[gID]['geneName'], dscore)
-    #f.close()
 
     # plot scatter with differential genes
     middleX, middleY = [], []
-    for gID in list(set(gIDs)-set(up_gIDs + down_gIDs)):
-        middleX.append(gID_control[gID])
-        middleY.append(gID_test[gID])
+    for gname in list(set(gnames)-set(up_gnames + down_gnames)):
+        middleX.append(gname_control[gname])
+        middleY.append(gname_test[gname])
 
     upX, upY = [], []
-    for gID in up_gIDs:
-        upX.append(gID_control[gID])
-        upY.append(gID_test[gID])
+    for gname in up_gnames:
+        upX.append(gname_control[gname])
+        upY.append(gname_test[gname])
 
     downX, downY = [], []
-    for gID in down_gIDs:
-        downX.append(gID_control[gID])
-        downY.append(gID_test[gID])
+    for gname in down_gnames:
+        downX.append(gname_control[gname])
+        downY.append(gname_test[gname])
 
     fig = plt.figure()
     plt.plot(middleX, middleY, color='tab:gray', marker='.', alpha=0.15, markersize=1.5)
@@ -658,25 +651,13 @@ for gID_test, tname in zip(gID_test_list, test_names):
     plt.ylabel('Mouse CD8 T cell (ODC %s)' % (tname))
     plt.xlim([-5, 3.5])
     plt.ylim([-5, 3.5])
-    leg = plt.legend(loc='best', numpoints=1, prop={'size': 6})
+    leg = plt.legend(loc='best', numpoints=1, prop={'size': 10})
     for lh in leg.legendHandles:
-        lh._legmarker.set_markersize(15)
+        lh._legmarker.set_markersize(10)
         lh._legmarker.set_alpha(1)
-    plt.savefig('WTVSODC%s_diff.png' % (tname))
+    plt.savefig('WTVSODC%s_diff.png' % (tname), dpi=500, bbox_inches='tight')
     #plt.show()
     plt.close()
-
-    f = open("rank_up_" + tname + "_gID.txt", 'w')
-    for gID in up_gIDs:
-        #print >> f, gID_field_values[gID]['geneName']
-        print >> f, gID
-    f.close()
-
-    f = open("rank_down_" + tname + "_gID.txt", 'w')
-    for gID in down_gIDs:
-        #print >> f, gID_field_values[gID]['geneName']
-        print >> f, gID
-    f.close()
 
     # plot bar graph of GO analysis
     #fname1 = "GO_top_raw.csv"
@@ -684,45 +665,48 @@ for gID_test, tname in zip(gID_test_list, test_names):
     #fname3 = "GO_bott_raw.csv"
     #fname4 = "GO_bott.csv"
 
-    fname1 = "GO_%s_up.csv" % (tname)
-    fname2 = "GO_%s_down.csv" % (tname)
+    #fname1 = "GO_%s_up.csv" % (tname)
+    #fname2 = "GO_%s_down.csv" % (tname)
+
+    fname1 = "new_GO_%s_up.csv" % (tname)
+    fname2 = "new_GO_%s_down.csv" % (tname)
 
     draw_GO(fname1, 10, 'tab:green', alpha=0.7)
     draw_GO(fname2, 10, 'tab:orange', alpha=0.7)
 
 # plot dscore VS dscore plot
 X, Y = [], []
-for gID in gIDs:
-    x = gID_mscore2[gID] - gID_mscore1[gID]
-    y = gID_mscore3[gID] - gID_mscore1[gID]
+for gname in gnames:
+    x = gname_score2[gname] - gname_score1[gname]
+    y = gname_score3[gname] - gname_score1[gname]
     X.append(x)
     Y.append(y)
 
 upX1, upY1 = [], []
-for gID in up_gIDs1:
-    x = gID_mscore2[gID] - gID_mscore1[gID]
-    y = gID_mscore3[gID] - gID_mscore1[gID]
+for gname in up_gnames1:
+    x = gname_score2[gname] - gname_score1[gname]
+    y = gname_score3[gname] - gname_score1[gname]
     upX1.append(x)
     upY1.append(y)
 
 upX2, upY2 = [], []
-for gID in up_gIDs2:
-    x = gID_mscore2[gID] - gID_mscore1[gID]
-    y = gID_mscore3[gID] - gID_mscore1[gID]
+for gname in up_gnames2:
+    x = gname_score2[gname] - gname_score1[gname]
+    y = gname_score3[gname] - gname_score1[gname]
     upX2.append(x)
     upY2.append(y)
 
 downX1, downY1 = [], []
-for gID in down_gIDs1:
-    x = gID_mscore2[gID] - gID_mscore1[gID]
-    y = gID_mscore3[gID] - gID_mscore1[gID]
+for gname in down_gnames1:
+    x = gname_score2[gname] - gname_score1[gname]
+    y = gname_score3[gname] - gname_score1[gname]
     downX1.append(x)
     downY1.append(y)
 
 downX2, downY2 = [], []
-for gID in down_gIDs2:
-    x = gID_mscore2[gID] - gID_mscore1[gID]
-    y = gID_mscore3[gID] - gID_mscore1[gID]
+for gname in down_gnames2:
+    x = gname_score2[gname] - gname_score1[gname]
+    y = gname_score3[gname] - gname_score1[gname]
     downX2.append(x)
     downY2.append(y)
 
@@ -747,9 +731,12 @@ plt.ylim([-2,2])
 plt.xlabel("$\Delta$score (+ODC inht/WT)")
 plt.ylabel("$\Delta$score (ODC KO/WT)")
 plt.title("Condensability near TSS (5kb)")
-plt.savefig("dscoreVSdscore.png")
+plt.savefig("dscoreVSdscore.png", dpi=500, bbox_inches='tight')
 #plt.show()
 plt.close()
+
+
+sys.exit(1)
 
 # PCA projection
 data = []

@@ -179,15 +179,15 @@ names, chr_binID_counts, chr_binID_range, chr_binID_GC = read_bincountfile(fname
 #names, chr_binID_counts, chr_binID_range, chr_binID_GC = read_bincountfile(fname)
 
 # GM NCP
-path=""
-fname = "GM_NCP_sp_10kb_bin.cn"
+#path=""
+#fname = "GM_NCP_sp_10kb_bin.cn"
 #fname = "GM_NCP_spd_10kb_bin.cn"
 #fname = "GM_NCP_CoH_10kb_bin.cn"
 #fname = "GM_NCP_PEG_10kb_bin.cn"
 
 # Progeria NCP
-path = '/media/spark159/sw/'
-fname = 'HGPS_NCP_sp_bin.cn'
+#path = '/media/spark159/sw/'
+#fname = 'HGPS_NCP_sp_bin.cn'
 
 # mouse CD8 T cell
 #path= ""
@@ -195,6 +195,17 @@ fname = 'HGPS_NCP_sp_bin.cn'
 #fname = "mCD8T_WT-NCP_sp_10kb_bin.cn"
 #fname = "mCD8T_inht-NCP_sp_10kb_bin.cn"
 #fname = 'mCD8T_KO-NCP_sp_bin.cn'
+
+# some replicates QC
+path = '/media/spark159/sw/'
+#path = ""
+tnums = [4, 8]
+#fname = 'H1_NCP_sp_10kb_bin.cn'
+#fname = 'GM_NCP_sp_10kb_bin.cn'
+#fname = 'mCD8T_WT-NCP_sp_10kb_bin.cn'
+#fname = 'mCD8T_inht-NCP_sp_10kb_bin.cn'
+fname = 'mCD8T_KO-NCP_sp_10kb_bin.cn'
+
 
 
 
@@ -238,7 +249,10 @@ for chr in chr_binID_control:
 
 # GC content vs normalized counts
 for i in range(len(Ys)):
-    name = 'Titration point ' + str(i+1)
+    try:
+        name = 'Titration point ' + str(tnums[i])
+    except:
+        name = 'Titration point ' + str(i+1)
     GC_rcount = GC_rcounts[i]
     Y = Ys[i]
     fig = plt.figure()

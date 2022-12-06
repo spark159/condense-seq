@@ -244,17 +244,29 @@ path = ""
 
 # mouse CD8 T cell
 #path= ""
-path = '/media/spark159/sw/'
+#path = '/media/spark159/sw/'
 #fname = "mCD8T_WT-NCP_sp_10kb_bin.cn"
 #fname = "mCD8T_inht-NCP_sp_10kb_bin.cn"
-fname = 'mCD8T_KO-NCP_sp_bin.cn'
+#fname = 'mCD8T_KO-NCP_sp_bin.cn'
+
+# some replicates QC
+#path = '/media/spark159/sw/'
+path = ""
+tnums = [4, 8]
+fname = 'H1_NCP_sp_10kb_bin.cn'
+#fname = 'GM_NCP_sp_10kb_bin.cn'
+#fname = 'mCD8T_WT-NCP_sp_10kb_bin.cn'
+#fname = 'mCD8T_inht-NCP_sp_10kb_bin.cn'
+#fname = 'mCD8T_KO-NCP_sp_10kb_bin.cn'
+
 
 
 
 
 bin_size = 10000
 chr_choice = ['chr' + str(i) for i in range(1, 23)] + ['chrX', 'chrY']
-#names, chr_binID_counts, chr_binID_range, chr_binID_GC = read_bincountfile(fname)
+#chr_choice = ['chr' + str(i) for i in range(1, 23)] + ['chrX']
+#names, chr_binID_counts, chr_binID_range, chr_binID_GC = read_bincountfile(path+fname)
 names, chr_binID_counts, chr_binID_range, chr_binID_GC, chr_binID_tlen = read_bintlenfile(path+fname)
 chr_binID_control = chr_binID_counts[-1]
 
@@ -274,20 +286,21 @@ totals = [ float(total(chr_binID_counts[i])) for i in range(len(names)-1) ]
 #chr_state_intervals = read_chromHMM("wgEncodeAwgSegmentationCombinedH1hesc.bed", change=False)
 
 # for H1
-#name_dict = {"E1":"Polycomb repressed",
-#             "E2":"Poised promoter",
-#             "E3":"Weak promoter",
-#             "E4":"Strong enhancer",
-#             "E5":"Active promoter",
-#             "E6":"Weak enhancer",
-#             "E7":"Quiescence1",
-#             "E8":"Quiescence2",
-#             "E9":"Heterochromatin",
-#             "E10":"Tx elongation",
-#             "E11":"Weak Tx",
-#             "E12":"Insulator"}
+name_dict = {"E1":"Polycomb repressed",
+             "E2":"Poised promoter",
+             "E3":"Weak promoter",
+             "E4":"Strong enhancer",
+             "E5":"Active promoter",
+             "E6":"Weak enhancer",
+             "E7":"Quiescence1",
+             "E8":"Quiescence2",
+             "E9":"Heterochromatin",
+             "E10":"Tx elongation",
+             "E11":"Weak Tx",
+             "E12":"Insulator"}
 
-#chr_state_intervals = read_chromHMM("H1_12_segments.bed", change=name_dict)
+chr_state_intervals = read_chromHMM("H1_12_segments.bed", change=name_dict)
+#chr_state_intervals = read_chromHMM("wgEncodeBroadHmmH1hescHMM.bed", change=False)
 
 # for GM12878
 #name_dict = {"E1":"Polycomb repressed",
@@ -305,21 +318,21 @@ totals = [ float(total(chr_binID_counts[i])) for i in range(len(names)-1) ]
 
 #chr_state_intervals = read_chromHMM("GM12878_12_segments.bed", change=name_dict)
 
-# for mouse CD8 T cell
-name_dict = {"E1":"Weak Tx",
-             "E2":"Tx elongation",
-             "E3":"Weak enhancer2",
-             "E4":"Strong enhancer2",
-             "E5":"Strong enhancer1",
-             "E6":"Weak enhancer1",
-             "E7":"Active promoter",
-             "E8":"Poised promoter",
-             "E9":"Polycomb repressed1",
-             "E10":"Polycomb repressed2",
-             "E11":"Quiescence",
-             "E12":"Heterochromatin"}
+## for mouse CD8 T cell
+#name_dict = {"E1":"Weak Tx",
+#             "E2":"Tx elongation",
+#             "E3":"Weak enhancer2",
+#             "E4":"Strong enhancer2",
+#             "E5":"Strong enhancer1",
+#             "E6":"Weak enhancer1",
+#             "E7":"Active promoter",
+#             "E8":"Poised promoter",
+#             "E9":"Polycomb repressed1",
+#             "E10":"Polycomb repressed2",
+#             "E11":"Quiescence",
+#             "E12":"Heterochromatin"}
 
-chr_state_intervals = read_chromHMM("Mouse CD8 T cell (invitro activated)_12_segments.bed", change=name_dict)
+#chr_state_intervals = read_chromHMM("Mouse CD8 T cell (invitro activated)_12_segments.bed", change=name_dict)
  
 chr_binID_states = {}
 for chr in chr_choice:
@@ -400,8 +413,9 @@ for i in range(len(names)-1):
 #states = sorted(state_rcounts_list[0].keys())
 
 # state for H1
+#states = [state for num, state in sorted([(int(state.split('_')[0]), state) for state in state_GCs])]
 #states = ["Active promoter", "Weak promoter", "Poised promoter", "Strong enhancer", "Weak enhancer", "Tx elongation", "Weak Tx", "Insulator", "Polycomb repressed", "Heterochromatin", "Quiescence1", "Quiescence2"]
-#states = ["Active promoter", "Weak promoter", "Poised promoter", "Strong enhancer", "Weak enhancer", "Tx elongation", "Weak Tx", "Polycomb repressed", "Heterochromatin", "Quiescence1", "Quiescence2"]
+states = ["Active promoter", "Weak promoter", "Poised promoter", "Strong enhancer", "Weak enhancer", "Tx elongation", "Weak Tx", "Polycomb repressed", "Heterochromatin", "Quiescence1", "Quiescence2"]
 #states = sorted(state_rcounts.keys())
 
 # state for GM
@@ -409,11 +423,12 @@ for i in range(len(names)-1):
 #states = ["Active promoter", "Weak promoter", "Poised promoter", "Strong enhancer", "Active enhancer", "Weak enhancer", "Tx elongation", "Weak Tx", "Polycomb repressed", "Heterochromatin", "Quiescence"]
 
 # state for mouse CD8 T cell
-states = ["Active promoter", "Poised promoter", "Strong enhancer1", "Strong enhancer2", "Weak enhancer1", "Weak enhancer2", "Tx elongation", "Weak Tx", "Polycomb repressed1", "Polycomb repressed2", "Heterochromatin", "Quiescence"]
+#states = ["Active promoter", "Poised promoter", "Strong enhancer1", "Strong enhancer2", "Weak enhancer1", "Weak enhancer2", "Tx elongation", "Weak Tx", "Polycomb repressed1", "Polycomb repressed2", "Heterochromatin", "Quiescence"]
 for i in range(len(state_rcounts_list)):
     name = names[i]
     state_rcounts = state_rcounts_list[i]
     pair_boxplot (state_GCs, state_rcounts, ylabel1='GC content(%)', ylabel2='Normalized Counts', title='Titration ' +str(i+1), keys=states, note='HMM_bin_GC' + fname + '_' + str(i+1), rotation=75)
+    #pair_boxplot (state_GCs, state_rcounts, ylabel1='GC content(%)', ylabel2='Normalized Counts', title='Titration ' +str(i+1), keys=states, note='HMM_bin_GC' + fname + '_' + str(i+1), rotation=75)
     #pair_boxplot (state_tlens, state_rcounts, ylabel1='Read length (bp)', ylabel2='Normalized Counts', title='Titration ' +str(i+1), keys=states, note='HMM_bin_tlen' + fname + '_' + str(i+1), rotation=75)
     #pair_boxplot (state_GCs, state_tlens, ylabel1='GC content(%)', ylabel2='Read length (bp)', title='Titration ' +str(i+1), keys=states, note='HMM_bin_GCvstlen' + fname + '_' + str(i+1), rotation=75
 

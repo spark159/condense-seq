@@ -39,12 +39,13 @@ def make_bedgraph (fname, binID_value, bin_size, header=None):
 
 #bin_size = 50000
 bin_size = 100000
+#bin_size = 1000000
 
 path = ""
 #path = "./data/"
 #fnames = ['eigen_WT_50kb.txt', 'eigen_CohesinKO_50kb.txt']
 #fnames = ["eigen_GM12878_50kb.txt"]
-#fnames = ["eigen_H1_1Mb.txt"]
+#fnames = ["eigen_mouseCD8Tcell_1Mb.txt"]
 fnames = ['eigen_mouseCD8Tcell_100kb.txt']
 for i in range(len(fnames)):
     fname = fnames[i]

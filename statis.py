@@ -7,6 +7,15 @@ from scipy import signal
 from scipy.fftpack import fft, ifft, ifftshift, fftshift
 import scipy.stats
 
+# rescale the data in old range (old_st, old_ed) into new range (new_st, new_ed)
+def rescale (value_list, old_st, old_ed, new_st, new_ed):
+    output = []
+    for value in value_list:
+        assert value >= old_st and value <= old_ed
+        new_value = new_st + (new_ed - new_st)*float(value-old_st)/(old_ed-old_st)
+        output.append(new_value)
+    return output
+
 def norm(L):
     total = sum(L)
     return [L[i]/float(total) for i in range(len(L))]

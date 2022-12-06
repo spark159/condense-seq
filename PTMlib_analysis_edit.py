@@ -181,7 +181,7 @@ ID_BC, BC_ID, ID_minfo, ID_shortname = read_table('PTMlibTable.csv')
 # BCs with PstI site (ID 71, 78, 113) and free DNA with PstI site (ID 117)
 all_IDs = sorted(ID_BC.keys())
 all_good_IDs = sorted(list(set(all_IDs) - set([71, 78, 113, 117])))
-agent_fullname = {'sp':'Spermine(4+)', 'spd':'Spermidine(3+)', 'CoH':'Cobalt Hexammine(3+)', 'PEG':'PEG 8000', 'HP1a':'HP1 $\\alpha$', 'sp_filter':'Spermine(4+) 100kD filter', 'spd_filter':'Spermidine(3+) 100kD filter'}
+agent_fullname = {'sp':'Spermine(4+)', 'spd':'Spermidine(3+)', 'CoH':'Cobalt Hexammine(3+)', 'PEG':'PEG 8000', 'HP1a':'HP1 $\\alpha$'}
 
 
 # categorize IDs
@@ -230,6 +230,7 @@ def categorize_IDs (IDs):
     return cate_IDs, ID_cate
 cate_IDs, ID_cate = categorize_IDs(all_good_IDs)
 
+#sys.exit(1)
 
 # grouping IDs
 #group_list = ['H2A/2Bac','H3ac','H4ac','H3ac+H4ac','H3me','H4me','H3me+H4ac','H3ph','+ub','WT','WT+mut','Var','Var+mut','WT+CpGme','GlcNAc']
@@ -313,7 +314,8 @@ def read_titration_data_new (fname):
             continue
         cols = line.split()
         conc, mean, std = float(cols[0]), float(cols[-2]), float(cols[-1])
-        fract_cols = cols[1:4]
+        #fract_cols = cols[1:4]
+        fract_cols = cols[4:4+3]
         conc_list.append(conc)
         mean_list.append(mean)
         std_list.append(std)
@@ -333,8 +335,10 @@ for agent in agent_list:
         agent_titration[agent]['conc'] = conc_list
         agent_titration[agent]['survival'] = rep_fracts[rep]
         #agent_titration[agent]['survival'] = mean_list
-        
 
+
+        
+#sys.exit(1)
 # read sort file
 def read_sort (fname):
     validity_type_count = {}
@@ -374,8 +378,9 @@ def read_sort (fname):
     return validity_type_count, name_count, agent_num_ID_count
 #sort_fname1 = "Sp-Spd-CoHex-PEG-HP1a-PTMlib_S1_L001_R1_001.sort"
 #sort_fname2 = "Sp-Spd-PTMlib-100kdfilter_S1_L001_R1_001.sort"
-#sort_fname1 = "PTMlib_1rep.sort"
-#sort_fname2 = "PTMlib_2rep.sort"
+#sort_fname1 = "../PTMlib_1rep/PTMlib_1rep.sort"
+#sort_fname2 = "../PTMlib_2rep/PTMlib_2rep.sort"
+#sort_fname2 = "../PTMlib_3rep/PTMlib_3rep.sort"
 
 #validity_type_count, name_count, agent_num_ID_count = read_sort(sort_fname2)
 
@@ -388,15 +393,11 @@ def read_sort (fname):
 #agent_num_ID_count['spd_filter'] = agent_num_ID_count2['spd']
 
 rep_agent_ID_score = []
-rep_agent_ID_Chalf = []
-
 rep_agent_ID_dscore = []
-rep_agent_ID_dChalf = []
 
-
-repnum = 2
+repnum = 3
 for rep in range(repnum):
-    sort_fname = "PTMlib_%drep.sort" % (rep+1)
+    sort_fname = "../PTMlib_%drep/PTMlib_%drep.sort" % (rep+1, rep+1)
     print "reading %s" % (sort_fname)
     
     validity_type_count, name_count, agent_num_ID_count = read_sort(sort_fname)
@@ -431,7 +432,7 @@ for rep in range(repnum):
         fig = plt.figure()
         plt.bar(X, Y)
         plt.xticks(rotation=70)
-        plt.savefig('Coveragebar_'+str(rep)+'rep.png', bbox_inches='tight')
+        plt.savefig('Coveragebar_'+str(rep+1)+'rep.png', bbox_inches='tight')
         #plt.show()
         plt.close()
 
@@ -465,6 +466,7 @@ for rep in range(repnum):
     #sys.exit(1)
 
     # get fold change over titrations
+    #agent_list = ['sp']
     agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
     #agent_list = ['sp_filter', 'spd_filter']
     #agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a', 'sp_filter', 'spd_filter']
@@ -508,7 +510,7 @@ for rep in range(repnum):
         plt.title(agent)
         #plt.legend()
         #plt.show()
-        plt.savefig('_'.join(['foldchange', agent, str(rep)]) + '.png', bbox_inches='tight')
+        #plt.savefig('_'.join(['foldchange', agent, str(rep+1)]) + '.png', bbox_inches='tight')
         plt.close()
 
 
@@ -516,6 +518,7 @@ for rep in range(repnum):
     agent_titration = rep_agent_titration[rep]
     agent_ID_titration = {}
     agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
+    #agent_list = ['sp']
 
     for agent in agent_list:
         for num in sorted(agent_num_ID_fraction[agent]):
@@ -528,7 +531,7 @@ for rep in range(repnum):
                 fraction = agent_num_ID_fraction[agent][num][ID]
                 survival = agent_titration[agent]['survival'][titr] * fraction
                 conc = agent_titration[agent]['conc'][titr]
-                if agent not  in agent_ID_titration:
+                if agent not in agent_ID_titration:
                     agent_ID_titration[agent] = {}
                 if ID not in agent_ID_titration[agent]:
                     agent_ID_titration[agent][ID] = {}
@@ -605,110 +608,29 @@ for rep in range(repnum):
 
 
     # define the condensabiltiy metrics
-    # fitting with sigmoidal curve and get "C-half"
-    # get condensabiltiy "Score" by calculating <-log(survival)>
-    def sigmoid(x, L ,x0, k):
-        y = L / (1 + np.exp(k*(x-x0)))
-        return (y)
-
-    #agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a', 'sp_filter', 'spd_filter']
     agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
-    agent_ID_Chalf = {}
-    agent_ID_fitting = {}
     agent_ID_score = {}
     for agent in agent_list:
-        #fig = plt.figure(figsize=(2, 1.4))
-        #for ID in [14, 47] + [42, 111, 112, 114, 115]:
         for ID in all_good_IDs:
-            #if ID not in ['WT #1', 'WT #2', 'Cuttable DNA', 'Uncuttable DNA']:
-            #    continue
-            #if not ID.endswith('ub'):
-            #    continue
-
-            #fig = plt.figure()
-
             X = agent_ID_titration[agent][ID]['conc']
             Y = agent_ID_titration[agent][ID]['survival']
 
+            fig = plt.figure()
+            plt.plot(X, Y, 'o-')
+            plt.title(ID_shortname[ID])
+            plt.show()
+            plt.close()
+
             X, Y = X[1:], Y[1:]
 
-            #if agent in ['sp', 'spd']:
-            #    X = X[:1] + X[2:]
-            #    Y = Y[:1] + Y[2:]
-            #elif agent in ['CoH']:
-            #    X = X[:1] + X[4:]
-            #    Y = Y[:1] + Y[4:]
-
-            p0 = [max(Y), np.median(X), 1]
-            bounds = ([0.0, 0.0, 0.0], [max(Y)+max(Y)*0.1, np.inf, np.inf])
-
-            try:
-                popt, pcov = curve_fit(sigmoid, X, Y, p0, bounds = bounds,  method='dogbox')
-            except:
-                print agent, ID_shortname[ID]
-                fig = plt.figure()
-                plt.plot(X, Y, '.', alpha=0.3, markersize=3.5)
-                #plt.show()
-                plt.close()
-                #sys.exit(1)
-                
-            residuals = np.asarray(Y)- sigmoid(X, *popt)
-            ss_res = np.sum(residuals**2)
-            ss_tot = np.sum((np.asarray(Y)-np.mean(Y))**2)
-            r_squared = 1 - (ss_res / ss_tot)
-            #pred_X = np.linspace(min(X[1:]), max(X[1:]), 1000)
-            pred_X = np.linspace(min(X), max(X), 1000)
-            pred_Y = sigmoid(pred_X, *popt)
-
-            #c = plt.plot(X[1:], Y[1:], '.', alpha=0.3)
-            c = plt.plot(X, Y, '.', alpha=0.3, markersize=3.5)
-            plt.plot(pred_X, pred_Y, '-', color=c[0].get_color(), alpha=0.3, label=ID)
-            #plt.axvline(x=popt[1], linestyle='--', color=c[0].get_color(), alpha=0.5)
-
-            #plt.title("%s %s" % (agent, ID))
-            #plt.xlabel("Concentration")
-            #plt.ylabel("Soluble fraction")
-            #if agent in ['HP1a']:
-            #    plt.xscale('log', basex=2)
-            #elif agent in ['sp', 'spd', 'CoH']:
-            #    plt.xscale('log', basex=10)
-            #plt.show()
-            #plt.close()
-
-            if agent not in agent_ID_Chalf:
-                agent_ID_Chalf[agent] = {}
-            if ID not in agent_ID_Chalf[agent]:
-                agent_ID_Chalf[agent][ID] = popt[1]
-
-            if agent not in agent_ID_fitting:
-                agent_ID_fitting[agent] = {}
-            if ID not in agent_ID_fitting[agent]:
-                agent_ID_fitting[agent][ID] = {}
-            agent_ID_fitting[agent][ID]['para'] = popt
-            agent_ID_fitting[agent][ID]['r-square'] = r_squared
-            
-
-            #if agent not in agent_ID_Chalf:
-            #    agent_ID_Chalf[agent] = {}
-            #if ID not in agent_ID_Chalf[agent]:
-            #    agent_ID_Chalf[agent][ID] = 0.5
-
-
-            #score = np.mean(-np.log2(np.asarray(Y[1:])))
             score = np.mean(-np.log2(np.asarray(Y)))
-            #score = -np.log2(np.mean(np.asarray(Y)))
-            #score = np.mean(np.asarray(Y))
-
+            
             if agent not in agent_ID_score:
                 agent_ID_score[agent] = {}
             agent_ID_score[agent][ID] = score
 
-            #print (popt)
-
         plt.gca().tick_params(axis='both', which='major', labelsize=5)
         plt.gca().tick_params(axis='both', which='minor', labelsize=5)
-        #plt.title(agent_fullname[agent])
-        #plt.xlabel("Concentration", fontsize=8)
         plt.xlabel("Spermine concentration (mM)", fontsize=8)
         plt.title("PTM library", fontsize=8)
         plt.ylabel("Soluble fraction", fontsize=8)
@@ -716,34 +638,9 @@ for rep in range(repnum):
             plt.xscale('log', basex=2)
         elif agent in ['sp', 'spd', 'CoH']:
             plt.xscale('log', basex=10)
-        #plt.legend()
-        #plt.show()
-        #plt.savefig(agent+'.svg', format='svg', bbox_inches='tight')
         plt.close()
-    #sys.exit(1)
-
-    """
-    # check r-square of fitting
-    for agent in agent_list:
-        data = []
-        for ID in agent_ID_fitting[agent]:
-            r_squared = agent_ID_fitting[agent][ID]['r-square']
-            data.append(r_squared)
-
-        fig = plt.figure()
-        p = plt.hist(data, bins=50, range=(0.5,1))
-        plt.xlim([0.5, 1])
-        #plt.title(agent)
-        plt.text(np.mean(plt.gca().get_xlim()), np.mean(plt.gca().get_ylim()), '$R^{2}=$%.2f' % (np.mean(data)), fontsize=20, horizontalalignment='left',  verticalalignment='center')
-        plt.xlabel("R-squared")
-        plt.ylabel("Counts")
-        #plt.savefig(agent+'_r.png')
-        #plt.show()
-        plt.close()
-    """
 
     rep_agent_ID_score.append(agent_ID_score)
-    rep_agent_ID_Chalf.append(agent_ID_Chalf)
 
 
     # all good IDs except WT controls
@@ -753,24 +650,17 @@ for rep in range(repnum):
     # get difference w.r.t. wild type
     #agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a', 'sp_filter', 'spd_filter']
     agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
+    #agent_list = ['sp']
     ID_list = all_good_IDs_exceptWT
-    agent_ID_dChalf = {}
     agent_ID_dscore = {}
     for agent in agent_list:
-        WT_Chalf, WT_score = [], []
+        WT_score = []
         for ID in cate_IDs['WT']:
-            WT_Chalf.append(agent_ID_Chalf[agent][ID])
             WT_score.append(agent_ID_score[agent][ID])
-        WT_Chalf = np.mean(WT_Chalf)
         WT_score = np.mean(WT_score)
 
         for ID in ID_list:
-            dChalf = agent_ID_Chalf[agent][ID] - WT_Chalf
             dscore = agent_ID_score[agent][ID] - WT_score
-
-            if agent not in agent_ID_dChalf:
-                agent_ID_dChalf[agent] = {}
-            agent_ID_dChalf[agent][ID] = dChalf
 
             if agent not in agent_ID_dscore:
                 agent_ID_dscore[agent] = {}
@@ -782,11 +672,65 @@ for rep in range(repnum):
     #f.close()
 
     rep_agent_ID_dscore.append(agent_ID_dscore)
-    rep_agent_ID_dChalf.append(agent_ID_dChalf)
 
+# combine replicates and find mean and std
+agent_ID_mscore = {}
+agent_ID_escore = {}
 
-# Check reproducibilty (QC)
 agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
+#agent_list = ['sp']
+ID_list = all_good_IDs
+
+for agent in agent_list:
+    for ID in ID_list:
+
+        scores = [rep_agent_ID_score[rep][agent][ID] for rep in range(repnum)]
+        
+        #mscore, escore = np.mean(scores), np.std(scores)/np.sqrt(repnum)
+        mscore, escore = np.mean(scores), np.std(scores)
+
+        if agent not in agent_ID_mscore:
+            agent_ID_mscore[agent] = {}
+        assert ID not in agent_ID_mscore[agent]
+        agent_ID_mscore[agent][ID] = mscore
+
+        if agent not in agent_ID_escore:
+            agent_ID_escore[agent] = {}
+        assert ID not in agent_ID_escore[agent]
+        agent_ID_escore[agent][ID] = escore
+
+# combine replicates and find mean and std (value compared to WT)
+agent_ID_mdscore = {}
+agent_ID_edscore = {}
+
+agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
+#agent_list = ['sp']
+ID_list = all_good_IDs_exceptWT
+
+for agent in agent_list:
+    for ID in ID_list:
+
+        dscores = [rep_agent_ID_dscore[rep][agent][ID] for rep in range(repnum)]
+        #mdscore, edscore = np.mean(dscores), np.std(dscores)/np.sqrt(repnum)
+
+        mdscore, edscore = np.mean(dscores), np.std(dscores)
+
+        if agent not in agent_ID_mdscore:
+            agent_ID_mdscore[agent] = {}
+        assert ID not in agent_ID_mdscore[agent]
+        agent_ID_mdscore[agent][ID] = mdscore
+
+        if agent not in agent_ID_edscore:
+            agent_ID_edscore[agent] = {}
+        assert ID not in agent_ID_edscore[agent]
+        agent_ID_edscore[agent][ID] = edscore
+
+        
+#sys.exit(1)
+
+# QC6: Check the reproducibilty
+agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
+#agent_list = ['sp']
 for i in range(repnum-1):
     for j in range(i+1, repnum):
         agent_ID_score1 = rep_agent_ID_score[i]
@@ -809,118 +753,8 @@ for i in range(repnum-1):
             plt.savefig("%s_score_rep%s_VS_rep%s.png" % (agent, i+1, j+1))
             #plt.show()
             plt.close()
-
-        agent_ID_Chalf1 = rep_agent_ID_Chalf[i]
-        agent_ID_Chalf2 = rep_agent_ID_Chalf[j]
-        for agent in agent_list:
-            X, Y = [], []
-            for ID in agent_ID_Chalf1[agent]:
-                X.append(agent_ID_Chalf1[agent][ID])
-                Y.append(agent_ID_Chalf2[agent][ID])
-            #corr = scipy.stats.spearmanr(X, Y)[0]
-            fig = plt.figure()
-            plt.plot(X, Y, '.')
-            #plt.annotate("Spearman %1.2f" % (corr), xy=(0.2, 0.75), fontsize=12, xycoords='axes fraction')
-            plt.title("%s Chalf (rep %s VS rep %s)" % (agent, i+1, j+1))
-            plt.xlabel("rep %s" % (i))
-            plt.ylabel("rep %s" % (j))
-            #plt.savefig("%s_Chalf_rep%s_VS_rep%s.png" % (agent, i+1, j+1))
-            #plt.show()
-            plt.close()
-
-        
-sys.exit(1)    
     
-        
-# find out outliers based on two metircs
-agent_outliers = {}
-for agent in agent_list:
-    data_list = []
-    for ID in ID_list:
-        dChalf = agent_ID_dChalf[agent][ID]
-        dscore = agent_ID_dscore[agent][ID]
-        data_list.append([dChalf, dscore])
 
-    clf = LocalOutlierFactor()
-    outcheck = clf.fit_predict(data_list)
-
-    for i in range(len(outcheck)):
-        if outcheck[i] < 0:
-            outlier = ID_list[i]
-            if agent not in agent_outliers:
-                agent_outliers[agent] = []
-            agent_outliers[agent].append(outlier)
-
-    fig = plt.figure(figsize=(2, 1.4))
-    #fig = plt.figure()
-    for ID in ID_list:
-        dChalf = agent_ID_dChalf[agent][ID]
-        dscore = agent_ID_dscore[agent][ID]
-        if ID not in agent_outliers[agent]:
-            plt.plot(dChalf, dscore, 'k.', markersize=2.5)
-        else:
-            #pass
-            #plt.plot(dChalf, dscore, 'r.')
-            plt.plot(dChalf, dscore, 'k.', markersize=2.5)
-            #plt.annotate(ID_shortname[ID], (dChalf, dscore), fontsize=4, annotation_clip=True)
-
-    plt.axvline(x=0, linestyle='--', color='k', alpha=0.5)
-    plt.axhline(y=0, linestyle='--', color='k', alpha=0.5)
-    plt.gca().tick_params(axis='both', which='major', labelsize=5)
-    plt.gca().tick_params(axis='both', which='minor', labelsize=5)
-    plt.title(agent_fullname[agent], fontsize=8)
-    plt.xlabel("$\Delta$ C-half", fontsize=8)
-    plt.ylabel("$\Delta$ Score", fontsize=8)
-    #plt.savefig(agent + "_ChalfVSScore.svg", format='svg', bbox_inches='tight')
-    #plt.show()
-    plt.close()
-#sys.exit(1)
-
-#sys.exit(1)
-
-# get pseudo p-value based on WT distributions
-agent_ID_pvalue = {}
-for agent in agent_list:
-    WTscores = [agent_ID_score[agent][ID] for ID in cate_IDs['WT']]
-    WTmean = np.mean(WTscores)
-    WTstd = np.std(WTscores)
-    for ID in all_good_IDs_exceptWT:
-        score = agent_ID_score[agent][ID]
-        re_score = float(score-WTmean)/WTstd
-        if re_score >=0:
-            pvalue = 1 - norm.cdf(re_score)
-        else:
-            pvalue = norm.cdf(re_score)
-        if agent not in agent_ID_pvalue:
-            agent_ID_pvalue[agent] = {}
-        agent_ID_pvalue[agent][ID] = pvalue
-
-# dscore VS p-value scatter plot
-# find outliers with p-value < 0.001
-cutoff = 0.01
-agent_outliers = {}
-for agent in agent_list:
-    if agent not in agent_outliers:
-        agent_outliers[agent] = []
-    
-    fig = plt.figure()
-    for ID in cate_IDs['WT+1PTM']:        
-        dscore = agent_ID_dscore[agent][ID]
-        pvalue = agent_ID_pvalue[agent][ID]
-        if pvalue < cutoff:
-            plt.plot(dscore, -np.log10(pvalue), 'r.')
-            plt.annotate(ID_shortname[ID], (dscore, -np.log10(pvalue)))
-            agent_outliers[agent].append(ID)
-        else:
-            plt.plot(dscore, -np.log10(pvalue), 'k.')
-            
-    plt.axvline(x=0, linestyle='--', color='k', alpha=0.5)
-    plt.axhline(y=0, linestyle='--', color='k', alpha=0.5)
-    plt.xlabel("$\Delta$ Score")
-    plt.ylabel("-log(p-value)")
-    plt.title(agent)
-    #plt.show()
-    plt.close()
 
 
 # condense-seq QC
@@ -941,7 +775,7 @@ if False:
         return ID_freeDNA
     ID_freeDNA = read_freeDNA('PTMlib_freeDNA.csv')
 
-    agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a', 'sp_filter', 'spd_filter']
+    agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
     ID_list = all_good_IDs
 
     #ID_list = []
@@ -1025,7 +859,7 @@ if False:
     #sys.exit(1)
 
     # QC2: check the correlation with input count
-    agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a', 'sp_filter', 'spd_filter']
+    agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
     ID_list = all_good_IDs
     for agent in agent_list:
         ID_count = agent_num_ID_count[agent][0]
@@ -1068,7 +902,7 @@ if False:
         plt.close()
 
     # QC3: check the correlation with AT content
-    agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a', 'sp_filter', 'spd_filter']
+    agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
     ID_list = all_good_IDs
     for agent in agent_list:
         X, Y = [], []
@@ -1215,79 +1049,57 @@ if False:
         #plt.show()
         plt.close()
 
+
+    # QC6: Check the reproducibilty
+    agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
+    for i in range(repnum-1):
+        for j in range(i+1, repnum):
+            agent_ID_score1 = rep_agent_ID_score[i]
+            agent_ID_score2 = rep_agent_ID_score[j]
+            for agent in agent_list:
+                X, Y = [], []
+                for ID in agent_ID_score1[agent]:
+                    X.append(agent_ID_score1[agent][ID])
+                    Y.append(agent_ID_score2[agent][ID])
+
+                corr = scipy.stats.spearmanr(X, Y)[0]
+                #corr = scipy.stats.pearsonr(X, Y)[0]
+                fig = plt.figure()
+                plt.plot(X, Y, '.')
+                plt.plot([min(X), max(X)], [min(Y), max(Y)], 'k--')
+                plt.annotate("Spearman %1.2f" % (corr), xy=(0.2, 0.75), fontsize=12, xycoords='axes fraction')
+                plt.title("%s score (rep %s VS rep %s)" % (agent, i+1, j+1))
+                plt.xlabel("rep %s" % (i))
+                plt.ylabel("rep %s" % (j))
+                plt.savefig("%s_score_rep%s_VS_rep%s.png" % (agent, i+1, j+1))
+                #plt.show()
+                plt.close()
+
+            agent_ID_Chalf1 = rep_agent_ID_Chalf[i]
+            agent_ID_Chalf2 = rep_agent_ID_Chalf[j]
+            for agent in agent_list:
+                X, Y = [], []
+                for ID in agent_ID_Chalf1[agent]:
+                    X.append(agent_ID_Chalf1[agent][ID])
+                    Y.append(agent_ID_Chalf2[agent][ID])
+                #corr = scipy.stats.spearmanr(X, Y)[0]
+                fig = plt.figure()
+                plt.plot(X, Y, '.')
+                #plt.annotate("Spearman %1.2f" % (corr), xy=(0.2, 0.75), fontsize=12, xycoords='axes fraction')
+                plt.title("%s Chalf (rep %s VS rep %s)" % (agent, i+1, j+1))
+                plt.xlabel("rep %s" % (i))
+                plt.ylabel("rep %s" % (j))
+                #plt.savefig("%s_Chalf_rep%s_VS_rep%s.png" % (agent, i+1, j+1))
+                #plt.show()
+                plt.close()
+
+
     #sys.exit(1)
-
-
-# mean pvalue for (subunit, domain (fold/tail), PTM)
-ID_list = cate_IDs['WT+1PTM']
-agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
-subunit_foldrange = {'H2A':[17, 96], 'H2B':[38, 122], 'H3.1':[45, 131], 'H4':[31, 93]}
-agent_section_pvalues = {}
-ptm_list = set([])
-for agent in agent_list:
-    for ID in ID_list:
-        minfo = ID_minfo[ID]
-        pos, ptm = None, None
-        for subunit in minfo:
-            try:
-                for pos in minfo[subunit]['mutations']:
-                    ptm, aa, _ = minfo[subunit]['mutations'][pos]
-                    break
-            except:
-                pass
-            
-        assert pos != None
-        assert ptm != None
-
-        if pos >= subunit_foldrange[subunit][0] and pos <= subunit_foldrange[subunit][1]:
-            domain = 'fold'
-        else:
-            domain = 'tail'
-
-        section = (subunit, domain, ptm)
-        pvalue = agent_ID_pvalue[agent][ID]
-        if agent not in agent_section_pvalues:
-            agent_section_pvalues[agent] = {}
-        if section not in agent_section_pvalues[agent]:
-            agent_section_pvalues[agent][section] = []
-        agent_section_pvalues[agent][section].append(pvalue)
-        ptm_list.add(ptm)
-
-hregion_list = []
-subunits = ['H2A', 'H2B', 'H3.1', 'H4']
-domains = ['fold', 'tail']
-for i in range(len(subunits)):
-    for j in range(len(domains)):
-        subunit = subunits[i]
-        domain = domains[j]
-        hregion_list.append((subunit, domain))
-
-ptm_list = list(ptm_list)
-
-for agent in agent_list:
-    img = np.zeros((len(hregion_list), len(ptm_list)))
-    img[:] = np.nan
-    for i in range(len(ptm_list)):
-        for j in range(len(hregion_list)):
-            subunit, domain = hregion_list[j]
-            ptm = ptm_list[i]
-            section = (subunit, domain, ptm)
-            try:
-                mpvalue = np.mean(agent_section_pvalues[agent][section])
-                img[i,j] = mpvalue
-            except:
-                continue
-
-    fig = plt.figure()
-    plt.imshow(img)
-    #plt.show()
-    plt.close()
-
-#sys.exit(1)
-            
         
 # plot ranking bar with histone modification information
-agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a', 'sp_filter', 'spd_filter']
+#agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a', 'sp_filter', 'spd_filter']
+agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
+#agent_list = ['sp']
 ID_list = list(set(all_good_IDs_exceptWT) - set([116]))
 subunit_list = ['H2A', 'H2B', 'H3', 'H4']
 subunit_len = {'H2A':130, 'H2B':126, 'H3':136, 'H4':103}
@@ -1313,17 +1125,11 @@ his_space = 2
 
 for agent in agent_list:
 
-    dChalf_ID, dscore_ID = [], []
+    dscore_ID = []
     for ID in ID_list:
-        dChalf = agent_ID_dChalf[agent][ID]
-        dscore = agent_ID_dscore[agent][ID]
-        dChalf_ID.append([dChalf, ID])
+        dscore = agent_ID_mdscore[agent][ID]
         dscore_ID.append([dscore, ID])
-    dChalf_ID = sorted(dChalf_ID, reverse=True)
     dscore_ID = sorted(dscore_ID)
-
-    #value_ID_list = [dChalf_ID, dscore_ID]
-    #ylabel_list = ["$\Delta$ C-half", "$\Delta$ Score"]
 
     value_ID_list = [dscore_ID]
     ylabel_list = ["$\Delta$ Score"]
@@ -1334,32 +1140,33 @@ for agent in agent_list:
         #fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(18,8), sharex=True, gridspec_kw={'height_ratios': [1, 2]}) # ppt version
         fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(9,7), sharex=True, gridspec_kw={'height_ratios': [0.5, 2]}) # paper version
 
-        X, Y = [], []
+        X, Y, Z = [], [], []
         xticks = []
-        X1, Y1 = [], []
-        X2, Y2 = [], []
+        X1, Y1, Z1 = [], [], []
+        X2, Y2, Z2 = [], [], []
         for i in range(len(value_ID)):
             value, ID = value_ID[i]
-            minfo = ID_minfo[ID]
 
+            if ylabel == "$\Delta$ Score":
+                error = agent_ID_edscore[agent][ID]
+            else:
+                error = agent_ID_edChalf[agent][ID]
+
+            minfo = ID_minfo[ID]
+            
             X.append(i)
             Y.append(value)
+            Z.append(error)
             xticks.append(ID_shortname[ID])
 
-            if ylabel == "$\Delta$ C-half":
-                if value < 0 :
-                    X1.append(i)
-                    Y1.append(value)
-                else:
-                    X2.append(i)
-                    Y2.append(value)
+            if value >=0 :
+                X1.append(i)
+                Y1.append(value)
+                Z1.append(error)
             else:
-                if value >=0 :
-                    X1.append(i)
-                    Y1.append(value)
-                else:
-                    X2.append(i)
-                    Y2.append(value)
+                X2.append(i)
+                Y2.append(value)
+                Z2.append(error)
 
             xpos = i
             for j in range(len(subunit_list)):
@@ -1380,8 +1187,8 @@ for agent in agent_list:
                     axes[1].plot([xpos], [ypos], 'o', markersize=3, mfc=mtype_color[mtype], mew=0.5, mec='k') # paper version
 
         #axes[0].bar(X, Y)
-        axes[0].bar(X1, Y1, color='tab:blue')
-        axes[0].bar(X2, Y2, color='tab:red')
+        axes[0].bar(X1, Y1, yerr=Z1, color='tab:blue')
+        axes[0].bar(X2, Y2, yerr=Z2, color='tab:red')
         #axes[0].set_title(agent_fullname[agent]) # ppt version only
         axes[0].set_ylabel(ylabel) # ppt version
         axes[0].set_ylabel(ylabel, fontsize=7) # paper version
@@ -1412,8 +1219,112 @@ for agent in agent_list:
         plt.savefig("%s_%s_ladder_bar.svg" % (agent, ylabel), bbox_inches='tight')
         #plt.show()
         plt.close()
-sys.exit(1)
 
+#sys.exit(1)
+
+# draw histone markers according to score
+
+# rescale the data in old range (old_st, old_ed) into new range (new_st, new_ed)
+def rescale (value_list, old_st, old_ed, new_st, new_ed):
+    output = []
+    for value in value_list:
+        assert value >= old_st and value <= old_ed
+        new_value = new_st + (new_ed - new_st)*float(value-old_st)/(old_ed-old_st)
+        output.append(new_value)
+    return output
+
+
+# plot histone cartoon
+#ID_list = list(set(all_good_IDs) & set(cate_IDs['WT+PTM']))
+ID_list = list(set(all_good_IDs) & set(cate_IDs['WT+1PTM']))
+agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
+subunit_list = ['H2A', 'H2B', 'H3', 'H4']
+
+# find IDs with single PTM
+subunit_infos = {}
+for ID in ID_list:
+    minfo = ID_minfo[ID]
+    mutations = []
+    for subunit in subunit_list:
+        for pos in minfo[subunit]['mutations']:
+            mtype, aa, mutation = minfo[subunit]['mutations'][pos]
+            mutations.append((subunit, mtype, pos))
+
+    if len(mutations) > 1:
+        continue
+
+    subunit, mtype, pos = mutations[0]
+
+    if subunit not in subunit_infos:
+        subunit_infos[subunit] = []
+    subunit_infos[subunit].append((ID, pos, mtype))
+
+agent_pdscores = {}
+for agent in agent_list:
+    for subunit in subunit_infos:
+        for ID, pos, mtype in subunit_infos[subunit]:
+            dscore = agent_ID_mdscore[agent][ID]
+            if agent not in agent_pdscores:
+                agent_pdscores[agent] = []
+            agent_pdscores[agent].append(abs(dscore))
+
+
+mtype_marker = {'ac':'o', 'me':'s', 'ub':'D', 'ph':'P', 'cr':'p', 'GlcNAc':'*'}
+
+legend_elements = [Line2D([0], [0], marker='o', color='k', label='acetylation', ms=10, markerfacecolor='w'),
+                   Line2D([0], [0], marker='s', color='k', label='methylation', ms=10, markerfacecolor='w'),
+                   Line2D([0], [0], marker='D', color='k', label='ubiquitylation', ms=10, markerfacecolor='w'),
+                   Line2D([0], [0], marker='P', color='k', label='phosphorylation', ms=10, markerfacecolor='w'),
+                   Line2D([0], [0], marker='p', color='k', label='crotonylation', ms=10, markerfacecolor='w'),
+                   Line2D([0], [0], marker='*', color='k', label='N-acetylglucosamine', ms=10, markerfacecolor='w')]
+matplotlib.rcParams['legend.handlelength'] = 0
+matplotlib.rcParams['legend.numpoints'] = 1
+
+# plot PTM symbol legend
+fig = plt.figure()
+ax = plt.gca()
+leg = ax.legend(handles=legend_elements, frameon=False, fontsize=20)
+#for lh in leg.legendHandles: 
+#    lh.set_markersize(1000.0)
+#plt.savefig('legend.svg', format='svg', bbox_inches='tight')
+plt.show()
+plt.close()
+#sys.exit(1)
+
+agent_list = ['sp']
+for agent in agent_list:
+    for subunit in subunit_infos:
+        for ID, pos, mtype in subunit_infos[subunit]:
+            mtype, aa, mutation = ID_minfo[ID][subunit]['mutations'][pos]
+            dscore = agent_ID_mdscore[agent][ID]
+            min_absdscore, max_absdscore = min(agent_pdscores[agent]), max(agent_pdscores[agent])
+            s = rescale([abs(dscore)], min_absdscore, max_absdscore, 5, 100)[0]
+
+            if dscore > 0:
+                color = 'blue'
+                fontcolor = 'white'
+            else:
+                color = 'red'
+                fontcolor = 'yellow'
+            
+            fig = plt.figure()
+            plt.plot([0,0],[0,0], marker=mtype_marker[mtype], markersize=s, mfc=color, markeredgewidth=1.5, mec='k')
+            if len(mutation) > 3:
+                fontsize = int(0.3*s)
+            else:
+                fontsize = int(0.4*s)
+            if fontsize >= 9:
+                plt.annotate(mutation.title(), (0, 0), fontsize=fontsize, color=fontcolor, weight='bold', ha='center', va='center')
+            #plt.annotate(aa+str(pos)+mutation, (0, 0), fontsize=int(0.3*s), ha='center', va='center')
+            #plt.annotate(aa+str(pos)+mutation, (0, 0), ha='center', va='center')
+            #plt.xlim([-0.2, 0.2])
+            #plt.ylim([-0.2, 0.2])
+            plt.gca().axis('off')
+            #plt.savefig(agent + '_' + ID_shortname[ID]+".png", bbox_inches='tight', pad_inches=0, transparent=True)
+            plt.savefig(agent + '_' + ID_shortname[ID]+".svg", format='svg', bbox_inches='tight', pad_inches=0, transparent=True)
+            plt.close()
+
+sys.exit(1)
 
 # correlation with physical properties of modifications (TO DO)
 

@@ -77,13 +77,17 @@ def AG_freq (NCP_seq_list):
 #         "/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-WT-NCP-sp-8"]
 #fname = "mCD8T_WT-NCP_sp_chr1_motif.txt"
 
+#path = "/home/spark159/../../media/spark159/sw/"
+#names = ["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-0",
+#         "/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-4",
+#         "/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-8"]
+#fname = "mCD8T_inht-NCP_sp_chr1_motif.txt"
+
 path = "/home/spark159/../../media/spark159/sw/"
-names = ["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-0",
-         "/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-4",
-         "/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-8"]
-fname = "mCD8T_inht-NCP_sp_chr1_motif.txt"
-
-
+names = ["/home/spark159/scratch/2022_11_08_mCD8T_KO_detail/mCD8T-KO-NCP-sp-0",
+         "/home/spark159/scratch/2022_11_08_mCD8T_KO_detail/mCD8T-KO-NCP-sp-4",
+         "/home/spark159/scratch/2022_11_08_mCD8T_KO_detail/mCD8T-KO-NCP-sp-8"]
+fname = "mCD8T_KO-NCP_sp_chr1_motif.txt"
 
 name_Afreq, name_Gfreq = {}, {}
 for name in names:

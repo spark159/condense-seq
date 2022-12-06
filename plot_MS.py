@@ -1,5 +1,9 @@
+import sys
+import re
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
+from matplotlib.colors import LinearSegmentedColormap
 
 def tuple_cmp (a, b):
     if a[0] < b[0]:
@@ -72,10 +76,166 @@ def parse_peptide (peptide):
     st, ed = int(st), int(ed)
     return histone, st, ed, seq
 
+def parse_ptm (ptm_string):
+    pattern = '([A-Z][0-9]+(?:ac|me|ph|ub)[1-3]?)'
+    ptm_list = re.findall(pattern, ptm_string)
+    return ptm_list
+
 sample_peptide_ptm_ratio = read_MS("Sangwoo_histone_ratios_092122.csv")
 
 
+# aggregate data into single ptm ratio
+histone_singleptm_ratios = {}
+histones = ['H3', 'H4']
+for peptide in sample_peptide_ptm_ratio['input'].keys():
+    histone, st, ed, seq = parse_peptide(peptide)
+
+    if histone not in histones:
+        continue
+
+    label_score1, label_score2 = {}, {}
+    for ptm in sample_peptide_ptm_ratio['input'][peptide]:
+        _, ptm_string = ptm.split(' ')
+
+        singleptm_list = parse_ptm (ptm_string)
+
+        input_ratio = sample_peptide_ptm_ratio['input'][peptide][ptm]
+        sup_ratio = sample_peptide_ptm_ratio['supernatant'][peptide][ptm]
+        pel_ratio = sample_peptide_ptm_ratio['pellet'][peptide][ptm]
+
+        for singleptm in singleptm_list:
+
+            if histone not in histone_singleptm_ratios:
+                histone_singleptm_ratios[histone] = {}
+            if singleptm not in histone_singleptm_ratios[histone]:
+                histone_singleptm_ratios[histone][singleptm] = [0.0, 0.0, 0.0]
+
+            histone_singleptm_ratios[histone][singleptm][0] += input_ratio
+            histone_singleptm_ratios[histone][singleptm][1] += pel_ratio
+            histone_singleptm_ratios[histone][singleptm][2] += sup_ratio
+            
+
+ptmname_folds = {}
+ptmname_state = {}
+for histone in histone_singleptm_ratios:
+    for singleptm in histone_singleptm_ratios[histone]:
+        ptmname = histone + singleptm
+        ratios = histone_singleptm_ratios[histone][singleptm]
+
+        if sum(ratios) <= 0:
+            continue
+
+        mean = np.mean(ratios)
+        std = np.std(ratios)
+        state = [float(ratio-mean)/std for ratio in ratios]
+        assert ptmname not in ptmname_state
+        ptmname_state[ptmname] = state
+
+        if ratios[0] <= 0:
+            continue
+        if ratios[1] <= 0:
+            continue
+        if ratios[2] <= 0:
+            continue
+
+        pel_fold = np.log2(float(ratios[1])/ratios[0])
+        sup_fold = np.log2(float(ratios[2])/ratios[0])
+        assert ptmname not in ptmname_folds
+        ptmname_folds[ptmname] = [pel_fold, sup_fold]
+
+
+# plot fold change heatamp
+
+fold_ptmname = sorted([(folds[1], ptmname) for ptmname, folds in ptmname_folds.items()], reverse=True)
+ptmname_list = [ptmname for fold, ptmname in fold_ptmname]
+data = []
+for ptmname in ptmname_list:
+    folds = ptmname_folds[ptmname]
+    data.append(folds)
+
+fig = plt.figure()
+plt.imshow(data, cmap='coolwarm', vmin=-1.5, vmax=1.5)
+plt.yticks(range(len(ptmname_list)), ptmname_list)
+plt.colorbar()
+#plt.show()
+plt.close()
+
+
+        
+#hierarchical clustering heatmap
+
+ptmname_list = ptmname_state.keys()
+data = []
+for ptmname in ptmname_list:
+    state = ptmname_state[ptmname]
+    data.append(state)
+
+pastel_jet = LinearSegmentedColormap.from_list('white_viridis',
+                                             [(0, 'tab:blue'),
+                                              (0.2, 'tab:cyan'),
+                                              (0.5, 'white'),
+                                              (0.8, 'tomato'),
+                                              (1, 'tab:red'),
+                                             ], N=256)
+
+
+hmap = sns.clustermap(data,
+                      method='average',
+                      metric='euclidean',
+                      figsize=(3,10),
+                      cbar_kws=None,
+                      row_cluster=True,
+                      col_cluster=False,
+                      dendrogram_ratio=0.2,
+                      colors_ratio=0.03,
+                      tree_kws=None,
+                      cmap='Spectral_r',
+                      center=0,
+                      xticklabels=['Input', 'Pellet', 'Supnt'],
+                      annot=True,
+                      annot_kws={"size": 8})
+                      #cbar_pos=None)
+
+new_labels = []
+for tick_label in hmap.ax_heatmap.axes.get_yticklabels():
+    idx = int(tick_label.get_text())
+    ptmname = ptmname_list[idx]
+    tick_label.set_text(ptmname)
+    new_labels.append(tick_label)
+    #tick_label.set_color(lut[species_name])
+
+hmap.ax_heatmap.axes.set_yticklabels(new_labels)
+
+plt.gca().xaxis.tick_top()
+plt.xticks(rotation=70)
+plt.savefig("hmap.svg", format='svg', bbox_inches='tight')
+#plt.show()
+plt.close()
+
+
+sys.exit(1)
+
+sns.clustermap(data,
+               method='average',
+               metric='euclidean',
+               figsize=(10, 10),
+               cbar_kws=None,
+               row_cluster=True,
+               col_cluster=False,
+               row_linkage=None,
+               col_linkage=False,
+               row_colors=None,
+               col_colors=False,
+               dendrogram_ratio=0.2,
+               colors_ratio=0.03,
+               cbar_pos=(0.02, 0.8, 0.05, 0.18),
+               tree_kws=None)
+            
+
+
+
 histones = ['H2A', 'H2B', 'H1']
+
 small = 10**(-10)
 for peptide in sample_peptide_ptm_ratio['input'].keys():
     histone, st, ed, seq = parse_peptide(peptide)

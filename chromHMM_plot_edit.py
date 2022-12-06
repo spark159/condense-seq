@@ -59,7 +59,7 @@ path = "/home/spark159/../../media/spark159/sw/"
 #path =""
 #ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path + "hg19_chr1_167win25step_anot.cn", jump=10)
 #ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path + "H1_NCP_sp_chr1_anot.cn")
-ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path + "mCD8T_inht-NCP_sp_chr1_anot.cn")
+ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path + "mCD8T_KO-NCP_sp_chr1_anot.cn")
 
 #ID_meGC = name_ID_value['meCNumber(CpG)']
 #ID_CpG = name_ID_value['CNumber(CpG)']
@@ -181,7 +181,7 @@ states = ["Active promoter", "Poised promoter", "Strong enhancer1", "Strong enha
 states_label = [state.split('_')[-1] for state in states]
 #state_scores1 = name_state_values['/home/spark159/scratch4-tha4/sangwoo/2022_09_08_GM_sp_H1_HP1a_deep/GM-NCP-sp-4']
 #state_scores2 = name_state_values['/home/spark159/scratch4-tha4/sangwoo/2022_09_08_GM_sp_H1_HP1a_deep/GM-NCP-sp-8']
-for name in ["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-8"]:
+for name in ["/home/spark159/scratch/2022_11_08_mCD8T_KO_detail/mCD8T-KO-NCP-sp-8"]:
 #for name in name_state_values:
     print name
     state_values = name_state_values[name]

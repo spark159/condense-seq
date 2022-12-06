@@ -254,10 +254,29 @@ scores2 = [gID_mscore2[gID] for gID in gIDs]
 score_mean1, score_std1 = np.mean(scores1), np.std(scores1)
 score_mean2, score_std2 = np.mean(scores2), np.std(scores2)
 
-for gID in gIDs:
-    gID_mscore1[gID] = float(gID_mscore1[gID] - score_mean1) / score_std1
-    gID_mscore2[gID] = float(gID_mscore2[gID] - score_mean2) / score_std2
+#for gID in gIDs:
+#    #gID_mscore1[gID] = float(gID_mscore1[gID] - score_mean1) / score_std1
+#    #gID_mscore2[gID] = float(gID_mscore2[gID] - score_mean2) / score_std2
+#    gID_mscore1[gID] = float(gID_mscore1[gID] - score_mean1) 
+#    gID_mscore2[gID] = float(gID_mscore2[gID] - score_mean2)
 
+# find dscore and standardization
+gID_dscore = {}
+for gID in gIDs:
+    dscore = gID_mscore2[gID] - gID_mscore1[gID]
+    gID_dscore[gID] = dscore
+
+dscore_mean = np.mean(gID_dscore.values())
+dscore_std = np.std(gID_dscore.values())
+
+gID_zscore = {}
+for gID in gIDs:
+    dscore = gID_dscore[gID]
+    zscore = float(dscore - dscore_mean) / dscore_std
+    gID_zscore[gID] = zscore
+    #gID_mscore1[gID] = -zscore
+    #gID_mscore2[gID] = zscore        
+        
 
 # find Ensemble Gene ID for ESC marker genes / PC marker genes
 ESC_gname_gIDs = {gname :[] for gname in ESC_gnames}
@@ -473,6 +492,8 @@ pastel_jet = LinearSegmentedColormap.from_list('white_viridis',
 fig = plt.figure()
 #plt.scatter(X, Y, c=C, cmap='Spectral', vmin=-3, vmax=3, alpha=0.3, s=3)
 plt.scatter(X, Y, c=C, cmap=pastel_jet, vmin=-5, vmax=5, alpha=0.2, s=2)
+#plt.scatter(X, Y, c=C, cmap=pastel_jet, vmin=np.mean(C)-np.std(C), vmax=np.mean(C)+np.std(C), alpha=0.2, s=2)
+#plt.scatter(X, Y, c=C, cmap='pastel_jet', vmin=np.mean(C)-np.std(C), vmax=np.mean(C)+np.std(C), alpha=0.2, s=2)
         
 for gID in ESC_gID_gname:
     gname = ESC_gID_gname[gID]
@@ -484,7 +505,7 @@ for gID in ESC_gID_gname:
 #plt.plot([-2.5, 2], [-3.5, 3.5], 'k--', alpha=0.5)
 #plt.plot([min(X), max(X)], [min(Y), max(Y)], 'k--', alpha=0.7)
 #plt.plot([-3, 3], [-3, 3], 'k--', alpha=0.7)
-plt.plot([-3, 3], [-3, 3], 'k--', alpha=0.7)
+#plt.plot([-3, 3], [-3, 3], 'k--', alpha=0.7)
 #plt.plot([0, 7], [0, 7], 'k--', alpha=0.7)
 plt.title("Condensability near TSS (5kb)")
 plt.xlabel('H1 hESC')
@@ -493,8 +514,8 @@ plt.ylabel('GM12878')
 #plt.ylim([-2.5, 2.5])
 #plt.xlim([-2.5, 2])
 #plt.ylim([-3.5, 3.5])
-plt.xlim([-3, 3])
-plt.ylim([-3, 3])
+#plt.xlim([-3, 3])
+#plt.ylim([-3, 3])
 #plt.xlim([0, 7])
 #plt.ylim([0, 7])
 cbar = plt.colorbar()
@@ -502,7 +523,7 @@ cbar = plt.colorbar()
 cbar.ax.set_ylabel('Gene expression (GM12878 - H1 hESC)', rotation=-90, va="bottom")
 #plt.savefig('A38VSH1hESC_all.png')
 plt.savefig('GMVSH1hESC_all.png', bbox_inches='tight', dpi=300)
-#plt.show()
+plt.show()
 plt.close()
 
 

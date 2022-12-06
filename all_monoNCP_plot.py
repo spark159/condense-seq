@@ -59,9 +59,9 @@ path = "/home/spark159/../../media/spark159/sw/"
 #ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+ "H1_NCP_sp_chr1_anot.cn")
 #ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+ "GM_NCP_sp_chr1_anot.cn")
 #ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+ "H1_DNA_HP1a_chr1_anot.cn")
-ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+ "mCD8T_inht-NCP_sp_chr1_anot.cn")
+ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+ "mCD8T_KO-NCP_sp_chr1_anot.cn")
 
-ID_score1 = name_ID_value["/home/spark159/scratch4-tha4/sangwoo/MouseCD8Tcell_detail/mCD8T-inht-NCP-sp-8"]
+ID_score1 = name_ID_value["/home/spark159/scratch/2022_11_08_mCD8T_KO_detail/mCD8T-KO-NCP-sp-8"]
 #ID_score2 = name_ID_value["/home/spark159/scratch4-tha4/sangwoo/2022_09_08_GM_sp_H1_HP1a_deep/GM-NCP-sp-8"]
 ID_AT = name_ID_value['ATcontent']
 
