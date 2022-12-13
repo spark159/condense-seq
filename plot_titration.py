@@ -99,7 +99,7 @@ def read_data (fname):
 #mouse T cell
 #conc_list1, mean_list1, std_list1 = read_data("/home/spark159/Projects/condense-seq/mCD8Tcell_NCP_spermine.csv")
 #conc_list2, mean_list2, std_list2 = read_data("/home/spark159/Projects/condense-seq/mCD8Tcell_ODCinhibitor_NCP_spermine.csv")
-conc_list1, mean_list1, std_list1 = read_data("/home/spark159/Projects/condense-seq/mCD8Tcell_ODCKO_NCP_spermine.csv")
+#conc_list1, mean_list1, std_list1 = read_data("/home/spark159/Projects/condense-seq/mCD8Tcell_ODCKO_NCP_spermine.csv")
 
 
 #Progeria cell

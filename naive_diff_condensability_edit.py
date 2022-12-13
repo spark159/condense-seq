@@ -254,9 +254,9 @@ scores2 = [gID_mscore2[gID] for gID in gIDs]
 score_mean1, score_std1 = np.mean(scores1), np.std(scores1)
 score_mean2, score_std2 = np.mean(scores2), np.std(scores2)
 
-#for gID in gIDs:
-#    #gID_mscore1[gID] = float(gID_mscore1[gID] - score_mean1) / score_std1
-#    #gID_mscore2[gID] = float(gID_mscore2[gID] - score_mean2) / score_std2
+for gID in gIDs:
+    gID_mscore1[gID] = float(gID_mscore1[gID] - score_mean1) / score_std1
+    gID_mscore2[gID] = float(gID_mscore2[gID] - score_mean2) / score_std2
 #    gID_mscore1[gID] = float(gID_mscore1[gID] - score_mean1) 
 #    gID_mscore2[gID] = float(gID_mscore2[gID] - score_mean2)
 
@@ -504,7 +504,7 @@ for gID in ESC_gID_gname:
 
 #plt.plot([-2.5, 2], [-3.5, 3.5], 'k--', alpha=0.5)
 #plt.plot([min(X), max(X)], [min(Y), max(Y)], 'k--', alpha=0.7)
-#plt.plot([-3, 3], [-3, 3], 'k--', alpha=0.7)
+plt.plot([-3, 3], [-3, 3], 'k--', alpha=0.7)
 #plt.plot([-3, 3], [-3, 3], 'k--', alpha=0.7)
 #plt.plot([0, 7], [0, 7], 'k--', alpha=0.7)
 plt.title("Condensability near TSS (5kb)")
@@ -514,8 +514,8 @@ plt.ylabel('GM12878')
 #plt.ylim([-2.5, 2.5])
 #plt.xlim([-2.5, 2])
 #plt.ylim([-3.5, 3.5])
-#plt.xlim([-3, 3])
-#plt.ylim([-3, 3])
+plt.xlim([-3, 3])
+plt.ylim([-3, 3])
 #plt.xlim([0, 7])
 #plt.ylim([0, 7])
 cbar = plt.colorbar()

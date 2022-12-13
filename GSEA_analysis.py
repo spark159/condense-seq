@@ -5,9 +5,11 @@ import matplotlib.pyplot as plt
 
 
 # read gene set libraries
-#mlib_names = gp.get_library_name(organism='mouse')
-#gmt_dict = gp.parser.gsea_gmt_parser('GO_Biological_Process_2018', organism='mouse')
+mlib_names = gp.get_library_name(organism='mouse')
+gmt_dict = gp.parser.gsea_gmt_parser('GO_Biological_Process_2018', organism='mouse')
 
+
+"""
 # parameters
 rnk_fname = 'KO-WT.rnk'
 gmt_fnames = ['m5.go.bp.v2022.1.Mm.symbols.gmt']
@@ -25,3 +27,4 @@ pre_res = gp.prerank(rnk=rnk_fname, # or rnk = rnk,
                     )
 
 
+"""

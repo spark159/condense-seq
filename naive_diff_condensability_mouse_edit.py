@@ -728,10 +728,10 @@ plt.ylim([-2,2])
 #for lh in leg.legendHandles:
 #    lh._legmarker.set_markersize(15)
 #    lh._legmarker.set_alpha(1)
-plt.xlabel("$\Delta$score (+ODC inht/WT)")
-plt.ylabel("$\Delta$score (ODC KO/WT)")
+plt.xlabel("$\Delta$zscore (+inht-WT)")
+plt.ylabel("$\Delta$zscore (ODC KO-WT)")
 plt.title("Condensability near TSS (5kb)")
-plt.savefig("dscoreVSdscore.png", dpi=500, bbox_inches='tight')
+plt.savefig("zdscoreVSzdscore.png", dpi=500, bbox_inches='tight')
 #plt.show()
 plt.close()
 

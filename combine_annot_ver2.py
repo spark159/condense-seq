@@ -329,7 +329,7 @@ def combine_all(score_fname,
                 if cols[0].startswith('SNP'):
                     data_type = 'point'
                     col_st = 3
-                    if offset != None:
+                    if offset == None:
                         offset = -bin_size/2 # point is middle of bin
                 # otherwise, assume binned data
                 else:

@@ -320,7 +320,8 @@ chr_choices = ['chr1']
 # set target names and feature names
 #target_names = [k for k in range(1,10)]
 #target_names = [k for k in range(1,10)]
-target_names = ['WT', '+inht', 'KO']
+#target_names = ['WT', '+inht', 'KO']
+target_names = ['WT-Chalf', 'inht-Chalf', 'KO-Chalf']
 #target_names = ['WT-Chalf']
 #target_names = ["H1-NCP-HP1a-%s.bam" % (k) for k in range(1,6)]
 #target_names = ["H1-DNA-HP1a-%d.bam" % (k) for k in range(1,6)]
@@ -369,39 +370,39 @@ for chr_choice in chr_choices:
     #ID_pos, field_ID_value = read_bin_Chalf("GM_NCP_sp_10kb_Chalf.cn", chr_choices=[chr_choice])
 
     # check Chalf
-    #ID_pos1, ID_Chalf1 = read_bin_Chalf("mCD8T_WT-NCP_sp_10kb_Chalf.cn", chr_choices=[chr_choice])
-    #ID_pos2, ID_Chalf2 = read_bin_Chalf("mCD8T_inht-NCP_sp_10kb_Chalf.cn", chr_choices=[chr_choice])
-    #ID_pos3, ID_Chalf3 = read_bin_Chalf("mCD8T_KO-NCP_sp_10kb_Chalf.cn", chr_choices=[chr_choice])
+    ID_pos1, ID_Chalf1 = read_bin_Chalf("mCD8T_WT-NCP_sp_10kb_Chalf.cn", chr_choices=[chr_choice])
+    ID_pos2, ID_Chalf2 = read_bin_Chalf("mCD8T_inht-NCP_sp_10kb_Chalf.cn", chr_choices=[chr_choice])
+    ID_pos3, ID_Chalf3 = read_bin_Chalf("mCD8T_KO-NCP_sp_10kb_Chalf.cn", chr_choices=[chr_choice])
 
-    #common_IDs = list(set(ID_pos1) & set(ID_pos2) & set(ID_pos3))
-    #ID_pos = {ID:ID_pos1[ID] for ID in common_IDs}
-    #field_ID_value = {'WT-Chalf':{}, 'inht-Chalf':{}, 'KO-Chalf':{}}
-    #for ID in common_IDs:
-    #    Chalf1 = ID_Chalf1[ID]
-    #    Chalf2 = ID_Chalf2[ID]
-    #    Chalf3 = ID_Chalf3[ID]
-    #    field_ID_value['WT-Chalf'][ID] = Chalf1
-    #    field_ID_value['inht-Chalf'][ID] = Chalf2
-    #    field_ID_value['KO-Chalf'][ID] = Chalf3
+    common_IDs = list(set(ID_pos1) & set(ID_pos2) & set(ID_pos3))
+    ID_pos = {ID:ID_pos1[ID] for ID in common_IDs}
+    field_ID_value = {'WT-Chalf':{}, 'inht-Chalf':{}, 'KO-Chalf':{}}
+    for ID in common_IDs:
+        Chalf1 = ID_Chalf1[ID]
+        Chalf2 = ID_Chalf2[ID]
+        Chalf3 = ID_Chalf3[ID]
+        field_ID_value['WT-Chalf'][ID] = Chalf1
+        field_ID_value['inht-Chalf'][ID] = Chalf2
+        field_ID_value['KO-Chalf'][ID] = Chalf3
 
     # bin num file
-    ID_pos1, field_ID_value1 = read_bin_num("/home/spark159/../../media/spark159/sw/" +
-                                            "mCD8T_WT-NCP_sp_10kb_num.cn", chr_choices=[chr_choice])
-    ID_pos2, field_ID_value2 = read_bin_num("/home/spark159/../../media/spark159/sw/" +
-                                            "mCD8T_inht-NCP_sp_10kb_num.cn", chr_choices=[chr_choice])
-    ID_pos3, field_ID_value3 = read_bin_num("/home/spark159/../../media/spark159/sw/" +
-                                            "mCD8T_KO-NCP_sp_10kb_num.cn", chr_choices=[chr_choice])
+    #ID_pos1, field_ID_value1 = read_bin_num("/home/spark159/../../media/spark159/sw/" +
+    #                                        "mCD8T_WT-NCP_sp_10kb_num.cn", chr_choices=[chr_choice])
+    #ID_pos2, field_ID_value2 = read_bin_num("/home/spark159/../../media/spark159/sw/" +
+    #                                        "mCD8T_inht-NCP_sp_10kb_num.cn", chr_choices=[chr_choice])
+    #ID_pos3, field_ID_value3 = read_bin_num("/home/spark159/../../media/spark159/sw/" +
+    #                                        "mCD8T_KO-NCP_sp_10kb_num.cn", chr_choices=[chr_choice])
 
-    IDs = list(set(ID_pos1.keys()) & set(ID_pos2.keys()) & set(ID_pos3.keys()))
-    ID_pos = {ID:ID_pos1[ID] for ID in IDs}
-    field_ID_value = {'WT':{}, '+inht':{}, 'KO':{}}
-    for ID in IDs:
-        try:
-            field_ID_value['WT'][ID] = -np.log(field_ID_value1[8][ID])
-            field_ID_value['+inht'][ID] = -np.log(field_ID_value2[8][ID])
-            field_ID_value['KO'][ID] = -np.log(field_ID_value3[8][ID])
-        except:
-            continue
+    #IDs = list(set(ID_pos1.keys()) & set(ID_pos2.keys()) & set(ID_pos3.keys()))
+    #ID_pos = {ID:ID_pos1[ID] for ID in IDs}
+    #field_ID_value = {'WT':{}, '+inht':{}, 'KO':{}}
+    #for ID in IDs:
+    #    try:
+    #        field_ID_value['WT'][ID] = -np.log(field_ID_value1[8][ID])
+    #        field_ID_value['+inht'][ID] = -np.log(field_ID_value2[8][ID])
+    #        field_ID_value['KO'][ID] = -np.log(field_ID_value3[8][ID])
+    #    except:
+    #        continue
 
     # read GTF file
     #geneID_field_values, field_geneID_values = load_file.read_GTF (path+"ENCFF159KBI.gtf", mode="both", chr_list=[chr_choice]) # human
@@ -692,7 +693,9 @@ for chr_choice in chr_choices:
             ax1.set_xticklabels(xtick_labels[::10])
             ax1.set_xlabel("Position (Mb)")
             #ax1.set_ylabel(target_name, color='blue')
-            ax1.set_ylabel('Condensability(A.U.)', color='blue')
+            #ax1.set_ylabel('Condensability(A.U.)', color='blue')
+            #ax1.tick_params('y', colors='blue')
+            ax1.set_ylabel('C-half', color='blue')
             ax1.tick_params('y', colors='blue')
             ax1.set_xlim([0, len(gband_img)+1])
             #ax1.set_ylim([-0.4, 0.6])

@@ -509,8 +509,8 @@ def Profiling (data_fname,
         ID, feature_choice, chr, position, strand = chr_ID_info[chr][ID]
         if skip_zero and is_empty(domain):
             continue
-        for i in range(len(target)):
-            name = target[i]
+        for i in range(len(labels)):
+            name = labels[i]
             profile = [ mean(values) for values in domain[i] ]
             if strand == '-':
                 profile = profile[::-1]

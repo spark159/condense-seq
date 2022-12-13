@@ -303,9 +303,11 @@ def plot_dendrogram(Z, idx_name, node_color=None, name_color=None):
 
 # get geneset name
 def gs_name(gs):
+    capital_words = ['B', 'STAT', 'H3K4ME2', 'H3K4ME3', 'H3K27ME3',
+                     'IPS', 'NPC', 'HCP', 'HDAC', 'ICP']
     words = gs['name'].split('_')[1:]
     for k in range(len(words)):
-        if words[k] in ['B', 'STAT']:
+        if words[k] in capital_words:
             continue
         words[k] = words[k].lower()
     words[0] = words[0][0].upper() + words[0][1:]
@@ -315,15 +317,18 @@ def gs_name(gs):
 
 
 # load data
-path1 = "NEW_GSEA_inht_GOBP"
-path2 = "NEW_GSEA_KO_GOBP"
+#path1 = "NEW_GSEA_inht_GOBP"
+#path2 = "NEW_GSEA_KO_GOBP"
+
+path1 = "GSEA_inht_pathway"
+path2 = "GSEA_KO_pathway"
 
 pos_gs_list1, neg_gs_list1 = read_GSEA(path1)
 pos_gs_list2, neg_gs_list2 = read_GSEA(path2)
 
 
 # select gene-sets with the biggest |nes|
-num = 20
+num = 30
 gs_list1 = select_best(pos_gs_list1 + neg_gs_list1, num)
 gs_list2 = select_best(pos_gs_list2 + neg_gs_list2, num)
 
@@ -438,7 +443,7 @@ if algorithm == 'Hierarchial':
 #print ()
 #print ()
 
-sys.exit(1)
+#sys.exit(1)
 
 for gs_list, note in zip([gs_list1, gs_list2], [path1, path2]):
 

@@ -128,11 +128,12 @@ exp_list = [(cell1, sample1, agent),
             (cell3, sample3, agent)]
 
 ### select regions
-#chr_list = ['chr1']
-chr_list = ['chr' + str(i) for i in range(1, 20)] #mouse
-chr_list += ['chrX']
+chr_list = ['chr1']
+#chr_list = ['chr' + str(i) for i in range(1, 20)] #mouse
+#chr_list += ['chrX']
 
 domain = 'TSS-TTS'
+#domain = 'TSS'
 
 
 # RNA-seq data fname
@@ -163,12 +164,20 @@ ID_rnkvalue2 = load_file.read_tabular_file(rnkfname2, header=False, mode='col')[
 
 # plot parameters
 if domain == 'TSS':
-    moving_average_win = 100
-    offset = -1000
-    xtick_loc_name = None
-    name_list = ["mCD8T-KO-NCP-sp-8", 'H3K27ac', 'H3K4me3', 'H3K4me1', 'Occ']
-    cmap_list = ['rainbow', 'YlOrRd', 'YlGn', 'Purples', 'Greys', 'Blues', 'Oranges']
-    vlim_list = [[None, None], [None, None], [None, None], [None, None], [None, None], [None, None]]
+    moving_average_win = 20
+    profile_len = 1000
+    up_win = 2500
+    down_win = 5000
+    pad_len = int(profile_len*0.1)
+    left_len = int(round(up_win*float(profile_len)/(up_win+down_win+1)))
+    right_len = profile_len - left_len - 1
+    offset = -left_len
+    xtick_locs = [-left_len + pad_len,
+                  0,
+                  right_len - pad_len]
+    xtick_names = ["-2.5kb", "TSS", "5kb"]
+    xtick_loc_name = [xtick_locs, xtick_names]
+
 
 elif domain == 'TSS-TTS':
     moving_average_win = 20
@@ -178,10 +187,10 @@ elif domain == 'TSS-TTS':
     profile_len = 1000
     domain_frac = 0.5
     margin_frac = 1.0 - domain_frac
-    up_len = 5000
-    down_len = 2500
-    left_len = int((margin_frac*profile_len)*(float(up_len)/(up_len + down_len)))
-    right_len = int((margin_frac*profile_len)*(float(down_len)/(up_len + down_len)))
+    up_win = 5000
+    down_win = 2500
+    left_len = int((margin_frac*profile_len)*(float(up_win)/(up_win + down_win)))
+    right_len = int((margin_frac*profile_len)*(float(down_win)/(up_win + down_win)))
     pad_len = int(profile_len*0.1)
     offset = -left_len
     xtick_locs = [-left_len+pad_len,
@@ -190,9 +199,6 @@ elif domain == 'TSS-TTS':
                   int(domain_frac*profile_len) + right_len - pad_len ]
     xtick_names = ["-5kb", "TSS", "TTS", "2.5kb"]
     xtick_loc_name = [xtick_locs, xtick_names]
-    name_list = ["mCD8T-KO-NCP-sp-8", 'H3K27me3', 'H3K36me3', 'ATcontent']
-    cmap_list = ['rainbow_r', 'cool', 'viridis', 'hot']
-    vlim_list = [[None, None], [None, None], [None, None], [None, None], [None, None], [None, None]]
     
 elif domain == 'TTS':
     moving_average_win = 100
@@ -205,12 +211,14 @@ elif domain == 'TTS':
 
 # field names
 target_names = ['mCD8T-WT-NCP-sp-8', 'mCD8T-inht-NCP-sp-8', 'mCD8T-KO-NCP-sp-8']
-feature_names = []
+feature_names = ['H3K27me3', 'H3K4me3', 'H3K27ac', 'H3K36me3', 'H3K4me1', 'H3K9me3', 'ATcontent']
 names = target_names + feature_names
 
 
 # labels for replacing field name
-labels = ['WT', '+inht', 'ODC KO']
+#labels = ['WT', '+inht', 'ODC KO']
+#labels = ['WT', '+inht', 'ODC KO', 'H3K27me3', 'H3K4me3']
+labels = ['WT', '+inht', 'ODC KO'] + feature_names
 
 # load occupancy choice
 load_occ = False
@@ -364,6 +372,8 @@ if True:
 
     name_ID_dprofile = {}
     for name, label in zip(names, labels):
+        if name not in target_names:
+            continue
         ID_profile = name_ID_profile[name]
         if label == 'WT':
             control_ID_profile = ID_profile
@@ -379,27 +389,33 @@ if True:
     for name, label in zip(names, labels):
         if label == 'WT':
             continue
-        ID_dprofile = name_ID_dprofile[name]
+        if name in target_names:
+            ID_dprofile = name_ID_dprofile[name]
+        else:
+            ID_dprofile = name_ID_profile[name]
+        fig = plt.figure(figsize=(3.5, 2.5))
+        fig = plt.figure(figsize=(4, 3))
         #fig = plt.figure(figsize=(5,3.5))
-        fig = plt.figure(figsize=(3,2))
+        #fig = plt.figure(figsize=(3,2))
         for i in range(len(q_IDs)):
             dprofile = np.nanmean([ID_dprofile[ID] for ID in q_IDs[i]], axis=0)
             dprofile = statis.moving_average(dprofile, moving_average_win)
             dprofile[:pad_len] = [np.NaN]*pad_len
             dprofile[len(dprofile)-pad_len:] = [np.NaN]*pad_len
             X = [ k + offset for k in range(len(dprofile))]
-            plt.plot(X, dprofile, label='$\Delta$zscore '+str(i+1), alpha=0.8, lw=4)
+            plt.plot(X, dprofile, label='Q '+str(i+1), alpha=0.8, lw=3.5)
         if xtick_loc_name:
             xtick_locs, xtick_names = xtick_loc_name
-            plt.xticks(xtick_locs, xtick_names, fontsize=15, rotation=45)
-        plt.xlabel('Distance from ' + domain +' (bp)', fontsize=15)
+            plt.xticks(xtick_locs, xtick_names, fontsize=10, rotation=45)
+            plt.xlim([xtick_locs[0]-pad_len, xtick_locs[-1]+pad_len])
+        plt.xlabel('Distance from ' + domain +' (bp)', fontsize=10)
         if name in target_names:
-            plt.title('Condensability', fontsize=20)
+            plt.title('Condensability', fontsize=10)
         else:
-            plt.title(name, fontsize=20)
-        plt.gca().tick_params(axis='both', which='major', labelsize=15)
-        plt.gca().tick_params(axis='both', which='minor', labelsize=15)
-        plt.legend(fontsize=14, frameon=False)
+            plt.title(name, fontsize=10)
+        plt.gca().tick_params(axis='both', which='major', labelsize=10)
+        plt.gca().tick_params(axis='both', which='minor', labelsize=10)
+        plt.legend(fontsize=11, frameon=False)
         plt.savefig("dzscore_quantile_profile_" + domain + "_" + label + ".svg",
                     format='svg',
                     bbox_inches='tight')
@@ -413,13 +429,16 @@ if True:
     ordered_IDs1 = [ID for rnkvalue, ID in rnkvalue_ID1]
     ordered_IDs2 = [ID for rnkvalue, ID in rnkvalue_ID2]
 
-    label_cmap = {'+inht':'pink', 'ODC KO':'pink'}
-    label_vlims = {'+inht':(-0.5, 0.0), 'ODC KO':(-0.5, 0.0)}
+    label_cmap = {'+inht':'binary_r', 'ODC KO':'binary_r', 'H3K4me3':'Oranges', 'H3K27me3':'Blues'}
+    #label_vlims = {'+inht':(-0.5, 0.0), 'ODC KO':(-0.5, 1.0), 'H3K27me3':(0, 100), 'H3K27me3':(0, 200)}
     name_img = {}
     for name, label in zip(names, labels):
         if label == 'WT':
             continue
-        ID_dprofile = name_ID_dprofile[name]
+        if name in target_names:
+            ID_dprofile = name_ID_dprofile[name]
+        else:
+            ID_dprofile = name_ID_profile[name]
         img = []
         for ID in ordered_IDs2:
             dprofile = ID_dprofile[ID]
@@ -437,11 +456,25 @@ if True:
         name_img[name] = img
 
     for name, label in zip(names[1:], labels[1:]):
-        cmap = label_cmap[label]
-        vmin, vmax = label_vlims[label]
         img = name_img[name]
+        try:
+            cmap = label_cmap[label]
+        except:
+            cmap = 'viridis'
+        try:
+            vmin, vmax = label_vlims[label]
+        except:
+            median = np.nanmedian(img)
+            std = np.nanstd(img)
+            if name in target_names:
+                vmin, vmax = median-0.5*std, median+0.5*std
+            else:
+                vmin, vmax = None, None
+        fig = plt.figure(figsize=(3.5,10))
+        #fig = plt.figure(figsize=(4,10))
         #fig = plt.figure(figsize=(5,8))
-        fig = plt.figure(figsize=(3,8))
+        #fig = plt.figure(figsize=(7,10))
+        #fig = plt.figure(figsize=(3,8))
         plt.imshow(img, aspect='auto', cmap=cmap, vmin=vmin, vmax=vmax)
         #plt.imshow(img, aspect='auto', cmap='jet')
         #plt.title(name)
@@ -449,9 +482,11 @@ if True:
         if xtick_loc_name:
             xtick_locs, xtick_names = xtick_loc_name
             new_xtick_locs = [loc-offset for loc in xtick_locs]
-            plt.xticks(new_xtick_locs, xtick_names, fontsize=15, rotation=45)
-        plt.gca().tick_params(axis='both', which='major', labelsize=15)
-        plt.gca().tick_params(axis='both', which='minor', labelsize=15)
+            plt.xticks(new_xtick_locs, xtick_names, fontsize=10, rotation=45)
+            #plt.xlim([0, int(domain_frac*profile_len)+right_len])
+        plt.gca().tick_params(axis='both', which='major', labelsize=10)
+        plt.gca().tick_params(axis='both', which='minor', labelsize=10)
+        plt.yticks([], [])
         plt.savefig("heatmap_dzscore_profile_" + domain + "_" + label + ".svg",
                     format='svg',
                     bbox_inches='tight')

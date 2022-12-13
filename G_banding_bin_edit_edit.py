@@ -383,8 +383,8 @@ for chr_choice in chr_choices:
     #                                      "mCD8T_WT-NCP_sp_10kb_num.cn", chr_choices=[chr_choice])
     #ID_pos, field_ID_value = read_bin_num("/home/spark159/../../media/spark159/sw/" +
     #                                      "mCD8T_inht-NCP_sp_10kb_num.cn", chr_choices=[chr_choice])
-    #ID_pos, field_ID_value = read_bin_num("/home/spark159/../../media/spark159/sw/" +
-    #                                      "mCD8T_KO-NCP_sp_10kb_num.cn", chr_choices=[chr_choice])
+    ID_pos, field_ID_value = read_bin_num("/home/spark159/../../media/spark159/sw/" +
+                                          "mCD8T_KO-NCP_sp_10kb_num.cn", chr_choices=[chr_choice])
 
         
     
