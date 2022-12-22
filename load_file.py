@@ -578,6 +578,103 @@ def read_RPKM_new (fname, gtf_fname, chr_list=None):
 
     return gID_RPKM
 
+# read score file
+def read_score (fname, chr_choice=None):
+    ID_pos = {}
+    name_ID_score = {}
+    First = True
+    for line in open(fname):
+        line = line.strip()
+        if not line:
+            continue
+        cols = line.split('\t')
+        if First:
+            names = cols[3:]
+            First = False
+            continue
+        ID, chr, pos = cols[:3]
+        if chr_choice != None and chr not in chr_choice:
+            continue
+        ID = chr + ':' + ID
+        pos = int(pos)
+        ID_pos[ID] = pos
+        scores = [float(score) for score in cols[3:]]
+        for name, score in zip(names, scores):
+            if name not in name_ID_score:
+                name_ID_score[name] = {}
+            name_ID_score[name][ID] = score
+    return ID_pos, name_ID_score
 
+# read score file
+def read_bin_score (fname, chr_choice=None):
+    name_chr_range_score = {}
+    First = True
+    for line in open(fname):
+        line = line.strip()
+        if not line:
+            continue
+        cols = line.split('\t')
+        if First:
+            names = cols[4:]
+            First = False
+            continue
+        ID, chr, st, ed = cols[:4]
+        if chr_choice != None and chr not in chr_choice:
+            continue
+        st, ed = int(st), int(ed)
+        scores = [float(score) for score in cols[4:]]
+        for name, score in zip(names, scores):
+            if name not in name_chr_range_score:
+                name_chr_range_score[name] = {}
+            if chr not in name_chr_range_score[name]:
+                name_chr_range_score[name][chr] = {}
+            name_chr_range_score[name][chr][(st,ed)] = score
+        return name_chr_range_score
 
+# read score file
+def read_bin_score_new (fname, chr_choice=None):
+    ID_chr_range = {}
+    name_ID_score = {}
+    First = True
+    for line in open(fname):
+        line = line.strip()
+        if not line:
+            continue
+        cols = line.split('\t')
+        if First:
+            names = cols[4:]
+            First = False
+            continue
+        ID, chr, st, ed = cols[:4]
+        if chr_choice != None and chr not in chr_choice:
+            continue
+        st, ed = int(st), int(ed)
+        assert ID not in ID_chr_range
+        ID_chr_range[ID] = [chr, (st, ed)]
+        scores = [float(score) for score in cols[4:]]
+        for name, score in zip(names, scores):
+            if name not in name_ID_score:
+                name_ID_score[name] = {}
+            assert ID not in name_ID_score[name]
+            name_ID_score[name][ID] = score
+    return ID_chr_range, name_ID_score
 
+# read titration file
+def read_titration (fname):
+    tnum_conc = {}
+    tnum_frac = {}
+    for line in open(fname):
+        line = line.strip()
+        if not line:
+            continue
+        cols = line.split('\t')
+        conc, frac, tnum = cols[0], cols[7], cols[-1]
+        try:
+            tnum = int(tnum)
+        except:
+            continue
+        conc = float(conc)
+        frac = float(frac)
+        tnum_conc[tnum] = conc
+        tnum_frac[tnum] = frac
+    return tnum_conc, tnum_frac

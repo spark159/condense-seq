@@ -15,12 +15,6 @@ import matplotlib as mpl
 from scipy.optimize import curve_fit
 from sklearn import linear_model
 
-# temporal sigmoid function
-def sigmoid(x, L ,x0, k):
-    y = L / (1 + np.exp(k*(x-x0)))
-    return (y)
-
-
 # temporal function for reading RNA-seq data 
 def read_txtRNA_seq (fname):
     gname_exonlen = {}
@@ -83,74 +77,10 @@ def read_Gband (fname, chr_choices=None):
         ID +=1
     return chr_ID_Gband
 
-def read_bin (fname, tlen=False, chr_choices=None):
+def read_bin_num (fname, skip_star=False, chr_choices=None):
     First = True
     ID_pos = {}
     name_ID_count = {}
-    for line in open(fname):
-        cols = line.strip().split()
-        if First:
-            if tlen:
-                names = cols[4:-2]
-            else:
-                names = cols[4:-1]
-            First = False
-            continue
-        ID, chr, start, end = cols[:4]
-        start, end = int(start), int(end)
-        if chr_choices!=None and chr not in chr_choices:
-            continue
-        pos = int(float(start + end)/2)
-        assert ID not in ID_pos
-        ID_pos[ID] = pos
-        for i in range(len(names)):
-            name = names[i]
-            count = float(cols[4+i]) + 1
-            if name not in name_ID_count:
-                name_ID_count[name] = {}
-            assert ID not in name_ID_count[name]
-            name_ID_count[name][ID] = count
-
-    name_total = {name:float(sum(name_ID_count[name].values())) for name in name_ID_count}
-    name_ID_score = {}
-    for name in names[:-1]:
-        for ID in name_ID_count[name]:
-            control_count = name_ID_count[names[-1]][ID]
-            if control_count <= 1:
-                continue
-            control_rcount = control_count / name_total[names[-1]]
-            rcount = name_ID_count[name][ID] / name_total[name]
-            score = -np.log(rcount/control_rcount)
-            if name not in name_ID_score:
-                name_ID_score[name] = {}
-            assert ID not in name_ID_score[name]
-            name_ID_score[name][ID] = score
-        
-    return ID_pos, name_ID_score
-
-def read_titration (fname):
-    tnum_conc = {}
-    tnum_frac = {}
-    for line in open(fname):
-        line = line.strip()
-        if not line:
-            continue
-        cols = line.split('\t')
-        conc, frac, tnum = cols[0], cols[7], cols[-1]
-        try:
-            tnum = int(tnum)
-        except:
-            continue
-        conc = float(conc)
-        frac = float(frac)
-        tnum_conc[tnum] = conc
-        tnum_frac[tnum] = frac
-    return tnum_conc, tnum_frac
-
-def read_bin_num (fname, chr_choices=None):
-    First = True
-    ID_pos = {}
-    name_ID_score = {}
     for line in open(fname):
         line = line.strip()
         if not line:
@@ -165,7 +95,9 @@ def read_bin_num (fname, chr_choices=None):
             First = False
             continue
         if cols[-1] == '*':
-            continue
+            if skip_star:
+                continue
+            cols = cols[:-1]
         ID, chr, start, end = cols[:4]
         start, end = int(start), int(end)
         if chr_choices!=None and chr not in chr_choices:
@@ -174,38 +106,61 @@ def read_bin_num (fname, chr_choices=None):
         assert ID not in ID_pos
         ID_pos[ID] = pos
         counts = [int(count) for count in cols[4:]]
-        if sum(counts) <= 0:
-            continue
-        control = float(counts[-1]) + 1
-        if control <=1:
-            continue
-        for i in range(len(counts)-1):
-            count = counts[i] + 1
-            score = float(count)/control
-            #score = -np.log(float(count)/control)
-            name = names[i]
-            if name not in name_ID_score:
-                name_ID_score[name] = {}
-            name_ID_score[name][ID] = score
-        
-    return ID_pos, name_ID_score
+        for name, count in zip(names, counts):
+            if name not in name_ID_count:
+                name_ID_count[name] = {}
+            assert ID not in name_ID_count[name]
+            name_ID_count[name][ID] = count
+    return ID_pos, name_ID_count
 
+
+def read_bin_file (fname, chr_choices=None):
+    First = True
+    ID_pos = {}
+    name_ID_value = {}
+    for line in open(fname):
+        line = line.strip()
+        if not line:
+            continue
+        cols = line.split()
+        if First:
+            names = []
+            for name in cols[4:]:
+                #agent = name.rsplit('.', 1)[0].split('-')[-2]
+                #tnum = int(name.rsplit('.', 1)[0].split('-')[-1])
+                #names.append(tnum)
+                names.append(name.rsplit('.', 1)[0])
+            First = False
+            continue
+        ID, chr, start, end = cols[:4]
+        start, end = int(start), int(end)
+        if chr_choices!=None and chr not in chr_choices:
+            continue
+        pos = int(float(start + end)/2)
+        assert ID not in ID_pos
+        ID_pos[ID] = pos
+        values = [float(value) for value in cols[4:]]
+        for name, value in zip(names, values):
+            if name not in name_ID_value:
+                name_ID_value[name] = {}
+            assert ID not in name_ID_value[name]
+            name_ID_value[name][ID] = value
+    return ID_pos, name_ID_value
 
 def read_bin_Chalf (fname, chr_choices=None):
     ID_pos = {}
-    #name_ID_value = {'Chalf':{}}
     ID_value = {}
     First = True
     for line in open(fname):
         line = line.strip()
         if not line:
             continue
+        cols = line.split('\t')
         if First:
             First = False
             continue
-        cols = line.split('\t')
         binID, chr, st, ed, Chalf = cols
-        if chr_choices and chr not in chr_choices:
+        if chr_choices != None and chr not in chr_choices:
             continue
         st, ed = int(st), int(ed)
         ID = (st, ed)
@@ -213,9 +168,7 @@ def read_bin_Chalf (fname, chr_choices=None):
         Chalf = float(Chalf)
         pos = int(float(st + ed)/2)
         ID_pos[ID] = pos
-        #name_ID_value['Chalf'][ID] = Chalf
         ID_value[ID] = Chalf
-    #return ID_pos, name_ID_value
     return ID_pos, ID_value
         
 def read_ATACbin (fname, chr_choices=None):
@@ -239,7 +192,6 @@ def read_ATACbin (fname, chr_choices=None):
         ID_score[ID] = score
     return ID_pos, ID_score
         
-
 # read A/B compartment annotation
 def read_eigenfile (fname, bin_size=1000000):
     eigenBinID_value = []
@@ -283,55 +235,123 @@ def read_eigenbedgraph (fname, chr_choice):
     return eigenBinID_value, eigenBinID_interval
 
 
-#### temporal
-tnum_conc, tnum_frac = read_titration("H1_NCP_sp_titration.csv")
-#tnum_conc, tnum_frac = read_titration("mCD8T_WT-NCP_sp_titration.csv")
-#tnum_conc, tnum_frac = read_titration("mCD8T_inht-NCP_sp_titration.csv")
-#tnum_conc, tnum_frac = read_titration("mCD8T_KO-NCP_sp_titration.csv")
+# parameters
+# set path
+#path = ""
+path = "/home/spark159/../../media/spark159/sw/"
+
+agent_fullname = {'sp':'Spermine(4+)',
+                  'spd':'Spermidine(3+)',
+                  'CoH':'Cobalt Hexammine(3+)',
+                  'PEG':'PEG 8000',
+                  'HP1a':'HP1$\\alpha$',
+                  'HP1bSUV':'HP1$\\beta$+tSUV',
+                  'LKH':'Linker histone1',
+                  'Ki67':'Ki67',
+                  'FUS':'FUS',
+                  'Mg':'Magnesium',
+                  'Ca':'Calcium'}
+
+cell = 'H1'
+# experiment list (cell, sample, agent)
+# it should be same cell line
+#exp_list = [(cell, 'NCP', 'sp'),
+#            (cell, 'NCP', 'spd'),
+#            (cell, 'NCP', 'CoH'),
+#            (cell, 'NCP', 'PEG'),
+#            (cell, 'NCP', 'Ca'),
+#            (cell, 'NCP', 'Mg'),
+#            (cell, 'NCP', 'HP1a'),
+#            (cell, 'NCP', 'HP1bSUV'),
+#            (cell, 'NCP', 'LKH'),
+#            (cell, 'NCP', 'Ki67'),
+#            (cell, 'NCP', 'FUS')]
+
+#exp_list = [(cell, 'NCP', 'sp'),
+#            (cell, 'NCP', 'spd'),
+#            (cell, 'NCP', 'CoH'),
+#            (cell, 'NCP', 'PEG'),
+#            (cell, 'NCP', 'Mg'),
+#            (cell, 'NCP', 'Ca'),
+#            (cell, 'NCP', 'HP1a')]
+
+exp_list = [(cell, 'NCP', 'sp', 8),
+            (cell, 'NCP', 'spd', 6),
+            (cell, 'NCP', 'CoH', 5),
+            (cell, 'NCP', 'PEG', 6),
+            (cell, 'NCP', 'Ca', 5),
+            (cell, 'NCP', 'Mg', 5),
+            (cell, 'NCP', 'HP1a', 3),
+            (cell, 'NCP', 'HP1bSUV', 4),
+            (cell, 'NCP', 'LKH', 3),
+            (cell, 'NCP', 'Ki67', 4),
+            (cell, 'NCP', 'FUS', 5)]
+
+#exp_list = [(cell, 'NCP', 'HP1a')]
+
+# set species and gender
+if cell in ['H1', 'GM']:
+    species = 'human'
+elif cell in ['mCD8T']:
+    species = 'mouse'
+
+if cell in ['H1']:
+    gender = 'male'
+elif cell in ['GM', 'mCD8T']:
+    gender = 'female'
+
+#### read G-band information
+if species == 'human':
+    Gband_fname = "Gband_information.txt"
+elif species == 'mouse':
+    Gband_fname = "Gbanding_mouse.txt"
+chr_gID_Gband = read_Gband(path+"Gband_information.txt")
+
+#### read titration file
+for cell, sample, agent, tnum in exp_list:
+    tnum_conc, tnum_frac = load_file.read_titration("%s_%s_%s_titration.csv" % (cell, sample, agent))
+
+#### read RNA-seq file
+if cell == 'H1':
+    tsv_fname = "ENCFF174OMR.tsv"
+    geneID_FPKM = load_file.read_tsv(path+tsv_fname)
+elif cell == 'GM':
+    tsv_fname = "ENCFF345SHY.tsv"
+    geneID_FPKM = load_file.read_tsv(path+tsv_fname)
+elif cell == 'mCD8T':
+    ## read txt RNA_seq file and get geneID_FPKM (mouse CD8 T cell)
+    txt_fname = "GSM3721901_W_effector_batch_1_1.txt"
+    gname_FPKM = read_txtRNA_seq(path + txt_fname)
+    geneID_FPKM = {}
+    for geneID in geneID_field_values:
+        gname = geneID_field_values[geneID]["geneName"]
+        try:
+            FPKM = gname_FPKM[gname]
+            geneID_FPKM[geneID] = FPKM
+        except:
+            continue
 
 
 #### set parameters
 # set binning resolution
-
 i = 20
-#i = 10
-#i = 5
 bin_size = int(0.5*(10**6) / i) # binsize (unit of bp)
-#bin_size = int(0.5*(10**5) / i)
-#blur_win = 1
-#blur_win = int(2*i + 1)
 blur_win = int(4*i + 1) # sliding window (unit of bin)
-#blur_win = int(6*i + 1)
-#blur_win = int(10*i + 1)
 
 # set chromosomes
 chr_choices = ['chr1']
-#chr_choices = ['chr10']
-#chr_choices = ['chr%d' % (i) for i in range(1, 13)]
-#chr_choices = ['chr1']
-#chr_choices = ['chrX', 'chrY']
-#chr_choices = ['chr%d' % (i) for i in range(1, 23)] + ['chrX', 'chrY']
-#chr_choices = ['chr%d' % (i) for i in range(1, 4)]
 
 # set target names and feature names
-#target_names = ["H1-NCP-sp-%s.bam" % (k) for k in range(1,10)]
-target_names = [k for k in range(1,10)]
-#target_names = [6]
-#target_names = ['WT-Chalf', 'inht-Chalf', 'KO-Chalf']
-#target_names = ['WT-Chalf']
-#target_names = ["H1-NCP-HP1a-%s.bam" % (k) for k in range(1,6)]
-#target_names = ["H1-DNA-HP1a-%d.bam" % (k) for k in range(1,6)]
-#target_names = ["GM-NCP-sp-%d.bam" % (k) for k in range(1,10)]
-#target_names = ["GM-NCP-sp-4.bam", "GM-NCP-sp-8.bam"]
-#target_names = ["mCD8T-WT-NCP-sp-%d.bam" % (k) for k in range(1,10)]
-#target_names = ["mCD8T-inht-NCP-sp-%d.bam" % (k) for k in range(1,10)]
-#target_names = ["mCD8T-KO-NCP-sp-%d.bam" % (k) for k in range(1,10)]
-#target_names = ["HGPS-NCP-sp-%d.bam" % (k) for k in range(1,10)]
+#target_names = [k for k in range(1,10)]
+#target_names = ['Chalf']
+
+target_names = ['-'.join([cell, sample, agent, str(tnum)]) for cell, sample, agent, tnum in exp_list]
+
+#target_names = []
+#for cell, sample, agent in exp_list:
+#    target_names.append("%s-%s-%s-Chalf" % (cell, sample, agent))
 feature_names = ['Gene activity']
 #feature_names = ['eigen']
-#target_names = ["H1-NCP-sp-8.bam"]
-#feature_names = ['ATAC score']
-#feature_names = []
 names = target_names + feature_names
 
 # plot mode
@@ -339,135 +359,128 @@ names = target_names + feature_names
 #plot_mode = 'targetVSfeature_nospace'
 #plot_mode = 'targetonly_nospace'
 
+#plot_mode = 'targetVSfeature'
+#plot_mode = 'targetByfeature'
+plot_mode = 'featureBytarget'
+
+# target file information
+target_ftype = "zscore"
+#target_ftype = "Chalf"
+#target_ftype = "zChalf"
+target_binsize = 10000
+
 # chromosome cartoon aspect ratio
 aspect = (0.05*bin_size) / (10**6)
 
+# graphics parameters
+#cmap = mpl.cm.get_cmap("Blues")
+#color_list = np.linspace(0.1, 0.9, num=len(target_names))
+#target_colors = [cmap(color_list[k]) for k in range(len(target_names))]
+#target_labels = ['[%s]=%.2fmM' % (agent, tnum_conc[tnum])
+#                 for cell, sample, agent, tnum in target_names]
+#target_ylims = [-1.2, 1.5]
+#target_ylims = [None, None]
+#target_ylabel = "Condensability"
+#target_ycolor = "blue"
+
+#target_colors = ['tab:blue']
+#target_labels = [None]
+#target_ylims = [None, None]
+#target_ylabel = "C-half"
+
+target_colors = [None for k in range(len(target_names))]
+target_labels = [agent_fullname[agent] for cell, sample, agent, tnum in exp_list]
+target_ylims = [-1.2, 1.2]
+#target_ylims = [None, None]
+target_ylabel = "zscore"
+target_ycolor = "blue"
+
+target_alpha = 0.8
+target_lw = 1.5
+target_linestyle = None
+
+
+#target_ycolor = "black"
+legend_loc = 'upper right'
+
+feature_colors = ["tab:red"]
+feature_labels = [None]
+feature_ylims = [None, None]
+feature_alpha = 0.7
+feature_lw = 1
+feature_linestyle = None
+feature_ylabel = "Gene activity"
+feature_ycolor = "red"
+
+#feature_colors = ["black"]
+#feature_labels = [None]
+#feature_ylims = [None, None]
+#feature_alpha = 0.7
+#feature_lw = 1
+#feature_linestyle = '--'
+#feature_ylabel = "A/B compartment score"
+#feature_ycolor = "black"
+
+note =""
 
 #### Binning the data and draw the genome-wide plot by chromosome
 for chr_choice in chr_choices:
 
-    #### read files
-    path = ""
-    # read G-band information
-    chr_gID_Gband = read_Gband(path+"Gband_information.txt", chr_choices=[chr_choice]) # human
-    #chr_gID_Gband = read_Gband(path+"Gbanding_mouse.txt", chr_choices=[chr_choice]) # mouse
-
-    # read annotation file
-    #field_ID_value = load_file.read_tabular_file (path+"H1_NCP_sp_10kb_anot.cn", mode='col')
-    #ID_pos = field_ID_value['PhysicalPosition']
-    #ID_pos, field_ID_value = read_bin("mCD8T_WT-NCP_sp_10kb_bin.cn", chr_choices=[chr_choice])
-    #ID_pos, field_ID_value = read_bin("mCD8T_inht-NCP_sp_10kb_bin.cn", chr_choices=[chr_choice])
-    #ID_pos, field_ID_value = read_bin("mCD8T_KO-NCP_sp_bin.cn", chr_choices=[chr_choice], tlen=True)
-    #ID_pos, field_ID_value = read_bin("GM_NCP_sp_10kb_bin.cn", chr_choices=[chr_choice])
-    #ID_pos, field_ID_value = read_bin("H1_NCP_HP1a_10kb_bin.cn", chr_choices=[chr_choice])
-    #ID_pos, field_ID_value = read_bin("H1_DNA_HP1a_10kb_bin.cn", chr_choices=[chr_choice])
-    #ID_pos, field_ID_value = read_bin("HGPS_NCP_sp_bin.cn", chr_choices=[chr_choice], tlen=True)
-    #ID_pos, field_ID_value = read_bin_Chalf("H1_NCP_sp_10kb_Chalf.cn", chr_choices=[chr_choice])
-    #ID_pos, field_ID_value = read_bin_Chalf("GM_NCP_sp_10kb_Chalf.cn", chr_choices=[chr_choice])
-
-    # check Chalf
-    #ID_pos1, ID_Chalf1 = read_bin_Chalf("mCD8T_WT-NCP_sp_10kb_Chalf.cn", chr_choices=[chr_choice])
-    #ID_pos2, ID_Chalf2 = read_bin_Chalf("mCD8T_inht-NCP_sp_10kb_Chalf.cn", chr_choices=[chr_choice])
-    #ID_pos3, ID_Chalf3 = read_bin_Chalf("mCD8T_KO-NCP_sp_10kb_Chalf.cn", chr_choices=[chr_choice])
-
-    #common_IDs = list(set(ID_pos1) & set(ID_pos2) & set(ID_pos3))
-    #ID_pos = {ID:ID_pos1[ID] for ID in common_IDs}
-    #field_ID_value = {'WT-Chalf':{}, 'inht-Chalf':{}, 'KO-Chalf':{}}
-    #for ID in common_IDs:
-    #    Chalf1 = ID_Chalf1[ID]
-    #    Chalf2 = ID_Chalf2[ID]
-    #    Chalf3 = ID_Chalf3[ID]
-    #    field_ID_value['WT-Chalf'][ID] = Chalf1
-    #    field_ID_value['inht-Chalf'][ID] = Chalf2
-    #    field_ID_value['KO-Chalf'][ID] = Chalf3
-
-    # bin num file
-    #ID_pos, field_ID_value = read_bin_num("/home/spark159/../../media/spark159/sw/" +
-    #                                      "mCD8T_WT-NCP_sp_10kb_num.cn", chr_choices=[chr_choice])
-    #ID_pos, field_ID_value = read_bin_num("/home/spark159/../../media/spark159/sw/" +
-    #                                      "mCD8T_inht-NCP_sp_10kb_num.cn", chr_choices=[chr_choice])
-    #ID_pos, field_ID_value = read_bin_num("/home/spark159/../../media/spark159/sw/" +
-    #                                      "mCD8T_KO-NCP_sp_10kb_num.cn", chr_choices=[chr_choice])
-
-    # read score file
-    ID_chr_range, name_ID_score = load_file.read_bin_score_new("/home/spark159/../../media/spark159/sw/"
-                                                               + "H1_NCP_sp_10kb_score.cn",
-                                                               chr_choice=[chr_choice])
-
-    ID_pos = {}
-    for ID in ID_chr_range:
-        assert ID_chr_range[ID][0] == chr_choice
-        st, ed = ID_chr_range[ID][1]
-        pos = (st + ed)/2
-        ID_pos[ID] = pos
-    del ID_chr_range
-
-    field_ID_value = {}
-    for name in name_ID_score:
-        new_name = int(name.rsplit('.', 1)[0].split('-')[-1])
-        field_ID_value[new_name] = copy.deepcopy(name_ID_score[name])
-    del name_ID_score
-    
-    # read GTF file
-    geneID_field_values, field_geneID_values = load_file.read_GTF (path+"ENCFF159KBI.gtf", mode="both", chr_list=[chr_choice]) # human
-
-    #geneID_field_values, field_geneID_values = load_file.read_GTF (path+"gencodeM21pri-UCSC-tRNAs-ERCC-phiX.gtf", mode="both", chr_list=[chr_choice]) # mouse
-    
-    geneID_pos = {}
-    for geneID in geneID_field_values:
-        try:
-            pos = geneID_field_values[geneID]['TSS']
-            geneID_pos[geneID] = pos
-        except:
-            continue
-
-    # read H1 tsv file
-    geneID_FPKM = load_file.read_tsv(path+"ENCFF174OMR.tsv")
-
-    # read GM tsv file
-    #geneID_FPKM = load_file.read_tsv(path + "ENCFF345SHY.tsv")
-
-
-    ## read txt RNA_seq file and get geneID_FPKM (mouse CD8 T cell)
-    #gname_FPKM = read_txtRNA_seq("GSM3721901_W_effector_batch_1_1.txt")
-    #geneID_FPKM = {}
-    #for geneID in geneID_field_values:
-    #    gname = geneID_field_values[geneID]["geneName"]
-    #    try:
-    #        FPKM = gname_FPKM[gname]
-    #        geneID_FPKM[geneID] = FPKM
-    #    except:
-    #        continue
-
-    #geneID_FPKM = load_file.read_RPKM_new ("GSE136898_rawCounts.txt", "gencodeM21pri-UCSC-tRNAs-ERCC-phiX.gtf", chr_list=[chr_choice]) 
-        
-    # read compartment score file
-    #eigenbinID_value, eigenbinID_interval = read_eigenfile(path+"eigen_H1_100kb.txt", bin_size=100000)
-    #eigenbinID_value, eigenbinID_interval = read_eigenbedgraph(path+"eigen_H1_100kb.bedgraph", chr_choice=chr_choice) # H1
-    #eigenbinID_value, eigenbinID_interval = read_eigenbedgraph(path+"eigen_GM_compart.bedgraph", chr_choice=chr_choice) # GM
-    #eigenbinID_value, eigenbinID_interval = read_eigenbedgraph(path+"eigen_mouseCD8Tcell_100kb.bedgraph", chr_choice=chr_choice) # mouse CD8 Tcell
-
-
-    #### binning the data
-    # binning the annotation data
+    #### read and binning the data
     name_binID_mean = {}
     name_binID_count = {}
-    for ID in ID_pos:
-        binID = int(ID_pos[ID]) / int(bin_size)
+
+    ## read and binning target data
+    # read target data
+    name_ID_pos = {}
+    name_ID_value = {}
+    
+    for cell, sample, agent, tnum in exp_list:
+
+        target_fname = '_'.join([cell, sample, agent,
+                                 str(int(target_binsize/1000.0)) + 'kb',
+                                 target_ftype]) + '.cn'
+
+        if target_ftype == 'anot':
+           field_ID_value = load_file.read_tabular_file (path + target_fname, mode='col')
+           ID_pos = field_ID_value['PhysicalPosition']
+
+        elif target_ftype in ['num', 'score', 'zscore']:
+            ID_pos, field_ID_value = read_bin_file(path + target_fname, chr_choices=[chr_choice])
+
+        elif target_ftype in ['Chalf', 'zChalf']:
+            ID_pos, ID_value = read_bin_Chalf(path + target_fname, chr_choices=[chr_choice])
+            field_ID_value = {}
+            field_ID_value['%s-%s-%s-Chalf' % (cell, sample, agent)] = ID_value
+
         for name in names:
-            if name not in name_binID_mean:
-                name_binID_mean[name] = {}
-            if name not in name_binID_count:
-                name_binID_count[name] = {}
             try:
-                value = field_ID_value[name][ID]
+                ID_value = field_ID_value[name]
             except:
                 continue
+            if name not in name_ID_pos:
+                name_ID_pos[name] = {}
+            name_ID_pos[name].update(ID_pos)
+            if name not in name_ID_value:
+                name_ID_value[name] = {}
+            name_ID_value[name].update(ID_value)
+    
+    # binning the target data
+    for name in name_ID_pos:
+        ID_pos = name_ID_pos[name]
+        ID_value = name_ID_value[name]
+        for ID in ID_pos:
+            binID = int(ID_pos[ID]) / int(bin_size)
+            value = ID_value[ID]
             if np.isnan(value):
                 continue
+            if name not in name_binID_mean:
+                name_binID_mean[name] = {}
             if binID not in name_binID_mean[name]:
                 name_binID_mean[name][binID] = 0.0
             name_binID_mean[name][binID] += value
+            if name not in name_binID_count:
+                name_binID_count[name] = {}
             if binID not in name_binID_count[name]:
                 name_binID_count[name][binID] = 0
             name_binID_count[name][binID] += 1
@@ -476,53 +489,63 @@ for chr_choice in chr_choices:
         for binID in name_binID_mean[name]:
             name_binID_mean[name][binID] = float(name_binID_mean[name][binID]) / name_binID_count[name][binID]
 
-    # binning the RNA-seq data
+    ## read and binning the RNA-seq data
     if 'Gene activity' in names:
-        temp = {}
-        for ID in ID_pos:
-            binID = int(ID_pos[ID]) / int(bin_size)
-            temp[binID] = 0
 
-        name_binID_mean['Gene density'] = copy.deepcopy(temp)
-        name_binID_count['Gene density'] = copy.deepcopy(temp)
-        name_binID_mean['Gene activity'] = copy.deepcopy(temp)
-        name_binID_count['Gene activity'] = copy.deepcopy(temp)
+        # read GTF file
+        if species == 'human':
+            gtf_fname = "ENCFF159KBI.gtf"
+        elif species == 'mouse':
+            gtf_fname = "gencodeM21pri-UCSC-tRNAs-ERCC-phiX.gtf"
+                
+        geneID_field_values, field_geneID_values = load_file.read_GTF (path + gtf_fname,
+                                                                       mode="both",
+                                                                       chr_list=[chr_choice])
 
+        geneID_pos = {}
+        for geneID in geneID_field_values:
+            try:
+                pos = geneID_field_values[geneID]['TSS']
+                geneID_pos[geneID] = pos
+            except:
+                continue
+        
         min_FPKM = min(geneID_FPKM.values())
-        for geneID in geneID_pos:
-            binID = int(geneID_pos[geneID]) / int(bin_size)
+
+        FPKM_binID_mean = {}
+        FPKM_binID_count = {}
+        for geneID in geneID_FPKM:
             try:
-                name_binID_mean['Gene density'][binID] += 1.0
+                binID = int(geneID_pos[geneID]) / int(bin_size)
             except:
                 continue
-            try:
-                #name_binID_mean['Gene activity'][binID] += geneID_FPKM[geneID]
-                #name_binID_mean['Gene activity'][binID] += np.log2(geneID_FPKM[geneID])
-                name_binID_mean['Gene activity'][binID] += np.log2(geneID_FPKM[geneID] - min_FPKM + 1)
-                name_binID_count['Gene activity'][binID] += 1
-            except:
-                #name_binID_mean['Gene density'][binID] += 0.0
-                #name_binID_mean['Gene activity'][binID] += np.nan
-                continue
-            #name_binID_count['Gene activity'][binID] += 1
 
-        for binID in name_binID_mean['Gene activity']:
-            if name_binID_count['Gene activity'][binID] <= 0:
-                #name_binID_mean['Gene activity'][binID] = np.nan
-                continue
-            name_binID_mean['Gene activity'][binID] /= name_binID_count['Gene activity'][binID] 
+            if binID not in FPKM_binID_mean:
+                FPKM_binID_mean[binID] = 0.0
 
-        #names.append('Gene density')
-        #names.append('Gene activity')
+            ex_level = np.log2(geneID_FPKM[geneID] - min_FPKM + 1) #rescaling
+            FPKM_binID_mean[binID] += ex_level
+
+            if binID not in FPKM_binID_count:
+                FPKM_binID_count[binID] = 0
+            FPKM_binID_count[binID] += 1
+
+        for binID in FPKM_binID_mean:
+            FPKM_binID_mean[binID] = float(FPKM_binID_mean[binID]) / FPKM_binID_count[binID]
+
+        name_binID_mean['Gene activity'] = FPKM_binID_mean
+        name_binID_count['Gene activity'] = FPKM_binID_count
 
 
-    # binning ATAC-seq score data
+
+    ## read and binning ATAC-seq score data
     if 'ATAC score' in names:
+        # read ATAC file
         ATAC_fname = "H1_ATAC_%s_Bsig.cn" % (chr_choice)
         aID_pos, aID_score = read_ATACbin(ATAC_fname, chr_choices=[chr_choice])
 
-        binID_ATAC_mean = {}
-        binID_ATAC_count = {}
+        ATAC_binID_mean = {}
+        ATAC_binID_count = {}
         for aID in aID_pos:
             binID = int(aID_pos[aID]) / int(bin_size)
             try:
@@ -531,23 +554,32 @@ for chr_choice in chr_choices:
                 continue
             if np.isnan(score):
                 continue
-            if binID not in binID_ATAC_mean:
-                binID_ATAC_mean[binID] = 0.0
-            binID_ATAC_mean[binID] += score
-            if binID not in binID_ATAC_count:
-                binID_ATAC_count[binID] = 0
-            binID_ATAC_count[binID] += 1
+            if binID not in ATAC_binID_mean:
+                ATAC_binID_mean[binID] = 0.0
+            ATAC_binID_mean[binID] += score
+            if binID not in ATAC_binID_count:
+                ATAC_binID_count[binID] = 0
+            ATAC_binID_count[binID] += 1
 
-        for binID in binID_ATAC_mean:
-            binID_ATAC_mean[binID] = float(binID_ATAC_mean[binID]) / binID_ATAC_count[binID]
+        for binID in ATAC_binID_mean:
+            ATAC_binID_mean[binID] = float(ATAC_binID_mean[binID]) / ATAC_binID_count[binID]
 
-        name_binID_mean['ATAC score'] = binID_ATAC_mean
-        name_binID_count['ATAC score'] = binID_ATAC_count
+        name_binID_mean['ATAC score'] = ATAC_binID_mean
+        name_binID_count['ATAC score'] = ATAC_binID_count
 
-        #names.append('ATAC score')
 
-    ## binning the compartment score data
-    if 'eigen' in names:    
+    ## read and binning the compartment score data
+    if 'eigen' in names:
+        # read compartment score file
+        if cell == 'H1':
+            eigen_fname = "eigen_H1_100kb.bedgraph"
+        elif cell == 'GM':
+            eigen_fname = "eigen_GM_compart.bedgraph"
+        elif cell == 'mCD8T':
+            eigen_fname = "eigen_mouseCD8Tcell_100kb.bedgraph"
+        eigenbinID_value, eigenbinID_interval = read_eigenbedgraph(path+eigen_fname,
+                                                                   chr_choice=chr_choice)
+  
         binID_eigens = {}
         for value, interval in zip(eigenbinID_value, eigenbinID_interval):
             st, ed = interval
@@ -566,7 +598,7 @@ for chr_choice in chr_choices:
         name_binID_mean['eigen'] = binID_eigen
 
 
-    # binning the G-banding data and make ideogram
+    ## binning the G-banding data and make ideogram
     gID_Gband = chr_gID_Gband[chr_choice]
     binID_Gvalue, binID_Gtype = {}, {}
     gID_binterval = {}
@@ -597,7 +629,7 @@ for chr_choice in chr_choices:
         gtick_labels.append(gname)
 
 
-    # set xtick labels along chromosome
+    #### set xtick labels along chromosome
     xtick_locs, xtick_labels = [], []
     for binID in sorted(binID_Gvalue.keys()):
         pos = bin_size*binID + bin_size/2
@@ -608,7 +640,7 @@ for chr_choice in chr_choices:
             xtick_labels.append(label)
 
             
-    # smoothing the binned data by sliding window average
+    #### smoothing the binned data by sliding window average
     name_sig = {}
     for name in names:
         binID_mean = name_binID_mean[name]
@@ -625,70 +657,24 @@ for chr_choice in chr_choices:
         else:
             sig = statis.slow_moving_average2(sig, blur_win)
         name_sig[name] = sig
-
-
-    # temporal titration plot
-    if False:
-        Y_list = []
-        sig_len = len(name_sig[1])
-        for i in range(sig_len):
-            Y = [1.0]
-            valid = True
-            for j in range(1, 10):        
-                value = name_sig[j][i]
-                if np.isnan(value):
-                    valid = False
-                    break
-                Y.append(value)
-            if valid:
-                Y_list.append(Y)
-
-        X = [tnum_conc[i] for i in range(10)]
-
-        fig = plt.figure(figsize=(2.4,1.8))
-        for Y in Y_list:
-            try:
-                p0 = [max(Y), np.median(X), 1]
-                bounds = ([0.0, 0.0, 0.0], [max(Y)+max(Y)*0.1, np.inf, np.inf])
-                popt, pcov = curve_fit(sigmoid, X, Y, p0, bounds = bounds,  method='dogbox')
-                residuals = np.asarray(Y)- sigmoid(X, *popt)
-                ss_res = np.sum(residuals**2)
-                ss_tot = np.sum((np.asarray(Y)-np.mean(Y))**2)
-                r_squared = 1 - (ss_res / ss_tot)
-                pred_X = np.linspace(min(X), max(X), 1000)
-                pred_Y = sigmoid(pred_X, *popt)
-                plt.plot(pred_X, pred_Y, 'k-', alpha=0.1)
-                #plt.plot(X, Y, '.-', color='k', alpha=0.1)
-            except:
-                pass
-        plt.xscale('log', basex=10)
-        plt.ylim([0, 1])
-        plt.xlabel("Spermine concentration (mM)", fontsize=8)
-        plt.ylabel("Soluble fraction", fontsize=8)
-        plt.tick_params(axis='both', which='major', labelsize=5)
-        plt.tick_params(axis='both', which='minor', labelsize=5)
-        plt.savefig("smoothed_10kb_curve.png", dpi=500, bbox_inches='tight')
-        #plt.show()
-        plt.close()
             
 
-    # plot genome cartoon and genome-wide data (target VS feature)
-    if True:
+    #### plot genome cartoon and genome-wide data
+    ## plot targets by feature
+    if plot_mode == 'targetByfeature':
         for i in range(len(feature_names)):
             fig = plt.figure(figsize=(15,5))
             ax1 = plt.subplot(211)
             ax2 = plt.subplot(212)
 
-            #cmap = mpl.cm.get_cmap("jet")
-            cmap = mpl.cm.get_cmap("pink_r")
-            color_list = np.linspace(0.01, 0.99, num=len(target_names))
             for j in range(len(target_names)):
                 target_name = target_names[j]
-                ax1.plot(name_sig[target_name], '#1f77b4', alpha=1)
-                #ax1.plot(name_sig[target_name], alpha=0.5, lw=2, label=str(j+1))
-                #ax1.plot(name_sig[target_name], alpha=1, lw=2, label=target_name)
-                #ax1.plot(name_sig[target_name], alpha=1, lw=2, color=cmap(color_list[j]),
-                #         label='[sp]=%.2fmM' % (tnum_conc[target_name]))
+                ax1.plot(name_sig[target_name],
+                         color=target_colors[j],
+                         alpha=target_alpha,
+                         lw=target_lw,
+                         linestyle=target_linestyle,
+                         label=target_labels[j])
 
             for gID in sorted(gID_binterval):
                 st, ed = gID_binterval[gID]
@@ -698,42 +684,28 @@ for chr_choice in chr_choices:
             ax1.set_xticks(xtick_locs[::10])
             ax1.set_xticklabels(xtick_labels[::10])
             ax1.set_xlabel("Position (Mb)")
-            #ax1.set_ylabel(target_name, color='blue')
-            #ax1.set_ylabel('Survival Probability', color='blue')
-            ax1.set_ylabel('Condensability', color='blue')
-            ax1.tick_params('y', colors='blue')
+            ax1.set_ylabel(target_ylabel, color=target_ycolor)
+            ax1.tick_params('y', colors=target_ycolor)
             ax1.set_xlim([0, len(gband_img)+1])
-            #ax1.set_ylim([-0.4, 0.6])
-            #ax1.set_ylim([-1.2, 0])
-            #ax1.set_ylim([-0.8, -0.2])
-            #ax1.set_ylim([-0.5, 0.5])
-            #ax1.set_ylim([-0.5, 1.5])
-            #ax1.set_ylim([-0.5, 2.0])
-            #ax1.set_ylim([-0.5, 1.0])
-            #ax1.set_ylim([0.14, 0.22])
-            #ax1.set_ylim([0.2, 3.5])
-            #ax1.set_ylim([0, 1.0])
-            #ax1.set_ylim([2**-4.5, 2**-0.5])
-            #ax1.set_yscale('log', basey=2)
-            #ax1.legend()
-            ax1.legend(facecolor='white', framealpha=1) # temporal
-
+            ax1.set_ylim(target_ylims)
+            leg = ax1.legend(framealpha=1, loc=legend_loc)
+            for legobj in leg.legendHandles:
+                legobj.set_alpha(1.0)
+                legobj.set_linewidth(2.0)
 
             ax1p = ax1.twinx()
             feature_name = feature_names[i]
-            ax1p.plot(name_sig[feature_name], '#d62728', alpha=0.8, lw=2)
-            #ax1p.plot(name_sig[feature_name], 'k', alpha=0.8, lw=2)
-            #ax1p.plot(name_sig[feature_name], 'k--', alpha=0.5, lw=1.5)
-            #ax1p.plot(name_sig[feature_name], 'tab:orange', alpha=0.8)
-            #ax1p.plot(np.log(-1*np.asarray(name_sig[feature_name])), '#d62728', alpha=0.5)
-            ax1p.set_ylabel(feature_name, color='r')
-            #ax1p.set_ylabel(feature_name, color='k')
-            #ax1p.set_ylabel('Eigenvector', color='orangered')
-            ax1p.tick_params('y', colors='#d62728')
-            #ax1p.tick_params('y', colors='orangered')
-            #ax1p.set_ylim([-0.1, 2.0])
-            #ax1p.set_ylim([-0.2, 3.0])
-            #ax1p.set_ylim([0.3, 0.85])
+            ax1p.plot(name_sig[feature_name],
+                      color=feature_colors[i],
+                      alpha=feature_alpha,
+                      lw=feature_lw,
+                      linestyle=feature_linestyle)
+            ax1p.set_ylabel(feature_ylabel, color=feature_ycolor)
+            ax1p.tick_params('y', colors=feature_ycolor)
+            ax1p.set_ylim(feature_ylims)
+
+            ax1.set_zorder(1)  # default zorder is 0 for ax1 and ax2
+            ax1.patch.set_visible(False)  # prevents ax1 from hiding ax2
 
             ax2.imshow(np.transpose(gband_img), cmap='Greys', aspect=0.3/aspect)
             ax2.imshow(np.transpose(gband_cenimg), cmap ='Reds', vmin=0, vmax=20, aspect=0.3/aspect)
@@ -745,10 +717,80 @@ for chr_choice in chr_choices:
             ax2.set_xlim([0, len(gband_img)+1])
             
             plt.tight_layout()
-            #plt.savefig("Gwide_" + chr_choice + '_' + target_name + '_' + feature_name + ".png", bbox_inches='tight', dpi=1000)
-            plt.savefig("Gwide_" + chr_choice + '_' + str(target_name) + '_' + feature_name + ".svg", format='svg', bbox_inches='tight')
+            plt.savefig("_".join(['Gwide', chr_choice, str(target_name), str(feature_name), note])
+                        + ".svg",
+                        format='svg',
+                        bbox_inches='tight')
             #plt.show()
             plt.close()
+
+
+    ## plot feature by target
+    if plot_mode == 'featureBytarget':
+        for i in range(len(target_names)):
+            fig = plt.figure(figsize=(15,5))
+            ax1 = plt.subplot(211)
+            ax2 = plt.subplot(212)
+
+            target_name = target_names[i]
+            ax1.plot(name_sig[target_name],
+                     color=target_colors[i],
+                     alpha=target_alpha,
+                     lw=target_lw,
+                     linestyle=target_linestyle,
+                     label=target_labels[i])
+            ax1.set_ylabel(target_ylabel, color=target_ycolor)
+            ax1.tick_params('y', colors=target_ycolor)
+            ax1.set_ylim(target_ylims)
+
+            for gID in sorted(gID_binterval):
+                st, ed = gID_binterval[gID]
+                if gID_Gband[gID]['type'] == 'pos':
+                    ax1.axvspan(st, ed-1, alpha=0.15, color='grey')
+
+            ax1.set_xticks(xtick_locs[::10])
+            ax1.set_xticklabels(xtick_labels[::10])
+            ax1.set_xlabel("Position (Mb)")
+            ax1.set_ylabel(target_ylabel, color=target_ycolor)
+            ax1.tick_params('y', colors=target_ycolor)
+            ax1.set_xlim([0, len(gband_img)+1])
+            ax1.set_ylim(target_ylims)
+            leg = ax1.legend(framealpha=1, loc=legend_loc)
+            for legobj in leg.legendHandles:
+                legobj.set_alpha(1.0)
+                legobj.set_linewidth(2.0)
+
+
+            ax1p = ax1.twinx()
+            for j in range(len(feature_names)):
+                feature_name = feature_names[j]
+                ax1p.plot(name_sig[feature_name],
+                          color=feature_colors[j],
+                          alpha=feature_alpha,
+                          lw=feature_lw,
+                          linestyle=feature_linestyle)
+
+            ax1.set_zorder(1)  # default zorder is 0 for ax1 and ax2
+            ax1.patch.set_visible(False)  # prevents ax1 from hiding ax2
+
+            ax2.imshow(np.transpose(gband_img), cmap='Greys', aspect=0.3/aspect)
+            ax2.imshow(np.transpose(gband_cenimg), cmap ='Reds', vmin=0, vmax=20, aspect=0.3/aspect)
+            ax2.imshow(np.transpose(gband_varimg), cmap ='Purples', vmin=0, vmax=20, aspect=0.3/aspect)
+            ax2.set_yticks([])
+            ax2.set_xticks(gtick_locs)
+            ax2.set_xticklabels(gtick_labels)
+            ax2.tick_params(axis="x", labelsize=5, rotation=90)
+            ax2.set_xlim([0, len(gband_img)+1])
+            
+            plt.tight_layout()
+            plt.savefig("_".join(['Gwide', chr_choice, str(target_name), str(feature_name), note])
+                        + ".svg",
+                        format='svg',
+                        bbox_inches='tight')
+            #plt.show()
+            plt.close()
+
+
 
 
     # plot genome cartoon and genome-wide data (no space, horizontal)

@@ -11,6 +11,7 @@ from sklearn import linear_model
 import random
 import matplotlib.cm as cm
 
+
 def make_bedgraph (fname, values, bin_size, header=None):
     f = open(fname, 'w')
     if header == None:
@@ -519,7 +520,7 @@ for chr_choice in chr_choices:
         ax1p.set_ylabel('Gene expression', color='r', fontsize=20)
         #ax1p.set_ylabel('A/B score', color='orangered', fontsize=20)
         #ax1p.tick_params('y', colors='#d62728', labelsize=15)
-        #ax1p.tick_params('y', colors='orangered', labelsize=15)
+        ax1p.tick_params('y', colors='orangered', labelsize=15)
         #ax1p.set_ylim([-0.05, 0.05])
         ax1p.set_ylim([-0.1, 2.0])
 

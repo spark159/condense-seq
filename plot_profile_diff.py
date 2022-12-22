@@ -393,10 +393,10 @@ if True:
             ID_dprofile = name_ID_dprofile[name]
         else:
             ID_dprofile = name_ID_profile[name]
-        fig = plt.figure(figsize=(3.5, 2.5))
-        fig = plt.figure(figsize=(4, 3))
+        #fig = plt.figure(figsize=(3.5, 2.5))
+        #fig = plt.figure(figsize=(4, 3))
         #fig = plt.figure(figsize=(5,3.5))
-        #fig = plt.figure(figsize=(3,2))
+        fig = plt.figure(figsize=(3,2))
         for i in range(len(q_IDs)):
             dprofile = np.nanmean([ID_dprofile[ID] for ID in q_IDs[i]], axis=0)
             dprofile = statis.moving_average(dprofile, moving_average_win)
@@ -470,7 +470,8 @@ if True:
                 vmin, vmax = median-0.5*std, median+0.5*std
             else:
                 vmin, vmax = None, None
-        fig = plt.figure(figsize=(3.5,10))
+        fig = plt.figure(figsize=(3,5))
+        #fig = plt.figure(figsize=(3.5,10))
         #fig = plt.figure(figsize=(4,10))
         #fig = plt.figure(figsize=(5,8))
         #fig = plt.figure(figsize=(7,10))

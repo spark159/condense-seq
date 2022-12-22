@@ -23,23 +23,40 @@ def read_titration (fname, bg=False):
     return tnum_tfrac
 
 # parameters
-path = "/home/spark159/../../media/spark159/sw/"
+#path = "/home/spark159/../../media/spark159/sw/"
+path = "/home/spark159/../../storage/"
 
 # experiment list (cell, sample, agent)
-exp_list = [('H1', 'NCP', 'sp'),
-            ('H1', 'NCP', 'spd'),
-            ('H1', 'NCP', 'CoH'),
-            ('H1', 'NCP', 'PEG'),
-            ('H1', 'NCP', 'Ca'),
-            ('H1', 'NCP', 'Mg'),
-            ('H1', 'NCP', 'HP1a'),
-            ('H1', 'NCP', 'HP1bSUV'),
-            ('H1', 'NCP', 'LKH'),
-            ('H1', 'NCP', 'Ki67'),
-            ('H1', 'NCP', 'FUS')]            
+#exp_list = [('H1', 'NCP', 'sp'),
+#            ('H1', 'NCP', 'spd'),
+#            ('H1', 'NCP', 'CoH'),
+#            ('H1', 'NCP', 'PEG'),
+#            ('H1', 'NCP', 'Ca'),
+#            ('H1', 'NCP', 'Mg'),
+#            ('H1', 'NCP', 'HP1a'),
+#            ('H1', 'NCP', 'HP1bSUV'),
+#            ('H1', 'NCP', 'LKH'),
+#            ('H1', 'NCP', 'Ki67'),
+#            ('H1', 'NCP', 'FUS')]
 
-bin_size = 10000
-#bin_size = 1000
+#exp_list = [('H1', 'NCP', 'HP1a'),
+#            ('H1', 'NCP', 'HP1bSUV'),
+#            ('H1', 'NCP', 'LKH'),
+#            ('H1', 'NCP', 'Ki67'),
+#            ('H1', 'NCP', 'FUS')]
+
+#exp_list = [('H1', 'NCP', 'LKH')]
+
+exp_list = [('H1', 'NCP', 'sp'),
+            ('H1', 'NCP', 'HP1a'),
+            ('H1', 'NCP', 'LKH'),
+            ('H1', 'NCP', 'Ki67')]
+
+
+
+#bin_size = 10000
+bin_size = 1000
+#bin_size = 5000
 skip = 0 # skip first titration points
 #offset = 1 # only GC content
 #offset = 2 # GC content and template length
@@ -118,7 +135,7 @@ for cell, sample, agent in exp_list:
 
         start, end = int(start), int(end)
 
-        counts = [int(count) for count in cols[4+skip:-offset]]
+        counts = [float(count) for count in cols[4+skip:-offset]]
 
         for i in range(len(counts)):
             count = counts[i]
