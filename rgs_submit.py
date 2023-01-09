@@ -838,8 +838,8 @@ if __name__ == '__main__':
     print >> sys.stderr, "identical binding sites: " + str(args.indis)
     print >> sys.stderr
 
-    pr = cProfile.Profile()
-    pr.enable()  # start profiling
+    #pr = cProfile.Profile()
+    #pr.enable()  # start profiling
     
     random_graph_simulation (args.cycle_num,
                              burn_in,
@@ -854,10 +854,10 @@ if __name__ == '__main__':
                              args.out_fname)
 
     
-    pr.disable()  # end profiling
-    s = StringIO.StringIO()
-    sortby = 'cumulative'
-    ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-    ps.print_stats()
-    print s.getvalue()
+    #pr.disable()  # end profiling
+    #s = StringIO.StringIO()
+    #sortby = 'cumulative'
+    #ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+    #ps.print_stats()
+    #print s.getvalue()
 

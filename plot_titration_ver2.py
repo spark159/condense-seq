@@ -28,25 +28,31 @@ agent_unit = {'sp':'mM',
               'spd':'mM',
               'CoH':'mM',
               'PEG':'%',
-              'HP1a':'$\\mu$M',
               'Mg':'mM',
-              'Ca':'mM'}
+              'Ca':'mM',
+              'HP1a':'$\\mu$M',
+              'LKH':'$\\mu$M',
+              'Ki67':'$\\mu$M'}
 
 agent_logbase = {'sp':10,
                  'spd':10,
                  'CoH':10,
                  'PEG':None,
-                 'HP1a':2,
                  'Mg':None,
-                 'Ca':None}
+                 'Ca':None,
+                 'HP1a':2,
+                 'LKH':2,
+                 'Ki67':2}
 
 agent_fullname = {'sp':'Spermine(4+)',
                   'spd':'Spermidine(3+)',
                   'CoH':'Cobalt Hexammine(3+)',
                   'PEG':'PEG 8000',
-                  'HP1a':'HP1 $\\alpha$',
                   'Mg':'Magnesium',
-                  'Ca':'Calcium'}
+                  'Ca':'Calcium',
+                  'HP1a':'HP1 $\\alpha$',
+                  'LKH':'Linker histone1',
+                  'Ki67':'Ki67'}
 
 
 ### experiment information
@@ -61,7 +67,7 @@ colors = ['tab:blue', 'tab:orange', 'tab:green']
 title = "Mouse CD8 T cell Nucleosome condensation"
 
 # proteins
-agent = 'HP1a'
+agent = 'Ki67'
 exp_list = [('H1', 'NCP'),
             ('H1', 'DNA')]
 labels = ['NCP', 'DNA']
@@ -74,7 +80,11 @@ title = "H1-hESC %s" % (agent_fullname[agent])
 
 ### plot titration
 #fig = plt.figure()
-fig = plt.figure(figsize=(4, 3))
+#fig = plt.figure(figsize=(4, 3))
+
+fig = plt.figure(figsize=(2.4,1.8))
+#fig = plt.figure(figsize=(2, 1.4))
+
 
 for i in range(len(exp_list)):
     cell, sample  = exp_list[i]
@@ -93,22 +103,22 @@ for i in range(len(exp_list)):
     else:
         ecolor = 'tab:' + color
 
-    plt.plot(conc_list, mean_list, 'o-', lw=2, color=color, label=label)
-    plt.errorbar(conc_list, mean_list, yerr=std_list, fmt='.',
-                 mfc=color, mec=color, color=ecolor, alpha=0.8)
-
-    #plt.plot(conc_list, mean_list, 'o-', color=color, markersize=5, label=label)
+    #plt.plot(conc_list, mean_list, 'o-', lw=2, color=color, label=label)
     #plt.errorbar(conc_list, mean_list, yerr=std_list, fmt='.',
-    #             markersize=5, mfc=color, mec=color, lw=1.5, color='tab:'+color, alpha=0.8)
+    #             mfc=color, mec=color, color=ecolor, alpha=0.8)
+
+    plt.plot(conc_list, mean_list, 'o-', color=color, lw=1.5, markersize=3.5, label=label)
+    plt.errorbar(conc_list, mean_list, yerr=std_list, fmt='.',
+                 markersize=3.5, mfc=color, mec=color, lw=1.5, color='tab:'+color, alpha=0.8)
 
 if agent_logbase[agent] != None:
     plt.xscale("log", basex=agent_logbase[agent])
 
-plt.gca().tick_params(axis='both', which='major', labelsize=8)
-plt.gca().tick_params(axis='both', which='minor', labelsize=8)
-plt.xlabel("%s concentration (%s)" % (agent_fullname[agent], agent_unit[agent]))
-plt.ylabel("Soluble fraction")
-plt.title(title)
-plt.legend(fontsize=10)
+plt.gca().tick_params(axis='both', which='major', labelsize=5)
+plt.gca().tick_params(axis='both', which='minor', labelsize=5)
+plt.xlabel("%s concentration (%s)" % (agent_fullname[agent], agent_unit[agent]), fontsize=8)
+plt.ylabel("Soluble fraction", fontsize=8)
+plt.title(title, fontsize=10)
+plt.legend(fontsize=8)
 plt.savefig('titration.svg', format='svg', bbox_inches='tight')
 plt.close()

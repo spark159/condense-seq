@@ -463,10 +463,11 @@ def mean_contact_matrix (IDs, Trace, burn_in=0):
         mean += matrix
     return mean/(len(Trace)-burn_in)
 
-"""
-fname = "almost_100_-10_23:1_-14_23_rgs"
+#fname = "almost_100_-10_23:1_-14_23_rgs"
 #fname = 'homo_100_23_-4_rca'
 #fname = 'check_rgs'
+#fname = 'hetero_10_10_-9.55126695895_rgs'
+fname = 'hetero_100_10_-7.24868186595_rgs'
 ctprob_fname = fname + '_ctprob.txt'
 ctnum_fname = fname + '_ctnum.txt'
 #trace_fname = fname + '_trace.txt'
@@ -495,7 +496,9 @@ plt.imshow(matrix)
 plt.colorbar()
 plt.show()
 plt.close()
-"""
+
+sys.exit(1)
+
 """
 # pure case
 N = 100

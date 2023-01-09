@@ -113,19 +113,37 @@ def multi_plot (profile_list,
 #path = "/home/spark159/../../media/spark159/sw/sp_spd_tests_detail/"
 #path = "./data/"
 #path = ""
-path = "/home/spark159/../../media/spark159/sw/"
+#path = "/home/spark159/../../media/spark159/sw/"
+path = "/home/spark159/../../storage/"
 
 
 ### experiment information
-#cell1, cell2 = "H1", "GM"
-cell1, cell2, cell3 = "mCD8T", "mCD8T", "mCD8T"
-#sample1, sample2 = "NCP", "NCP"
-sample1, sample2, sample3 = "WT-NCP", "inht-NCP", "KO-NCP"
-agent = "sp"
 
-exp_list = [(cell1, sample1, agent),
-            (cell2, sample2, agent),
-            (cell3, sample3, agent)]
+#cell = 'mCD8T'
+#exp_list = [(cell, 'WT-NCP', 'sp', 8),
+#            (cell, 'inht-NCP', 'sp', 8),
+#            (cell, 'KO-NCP', 'sp', 8)]
+
+
+#cell = 'H1'
+#exp_list = [(cell, 'NCP', 'sp', 8),
+#            (cell, 'NCP', 'HP1a', 3),
+#            (cell, 'NCP', 'LKH', 3),
+#            (cell, 'NCP', 'Ki67', 4)]
+
+
+
+
+# set species and gender
+if cell in ['H1', 'GM']:
+    species = 'human'
+elif cell in ['mCD8T']:
+    species = 'mouse'
+
+if cell in ['H1']:
+    gender = 'male'
+elif cell in ['GM', 'mCD8T']:
+    gender = 'female'
 
 ### select regions
 chr_list = ['chr1']
@@ -136,12 +154,26 @@ domain = 'TSS-TTS'
 #domain = 'TSS'
 
 
-# RNA-seq data fname
-rnafname = "GSE136898_rawCounts.txt"
-gtfname = "gencodeM21pri-UCSC-tRNAs-ERCC-phiX.gtf"
-ID_field_values = load_file.read_GTF ("gencodeM21pri-UCSC-tRNAs-ERCC-phiX.gtf",
+# read GTF file
+if species == 'human':
+    gtfname = "ENCFF159KBI.gtf"
+elif species == 'mouse':
+    gtfname = "gencodeM21pri-UCSC-tRNAs-ERCC-phiX.gtf"
+ID_field_values = load_file.read_GTF (gtfname,
                                       mode="gene",
-                                      chr_list=chr_list) #mouse    
+                                      chr_list=chr_list)
+
+
+# read RNA-seq data
+if cell == 'H1':
+    tsv_fname = "ENCFF174OMR.tsv"
+    ID_RPKM = load_file.read_tsv(path+tsv_fname)
+elif cell == 'GM':
+    tsv_fname = "ENCFF345SHY.tsv"
+    ID_RPKM = load_file.read_tsv(path+tsv_fname)
+elif cell == 'mCD8T':
+    rnafname = "GSE136898_rawCounts.txt"
+    ID_RPKM = load_file.read_RPKM_new (rnafname, gtfname, chr_list=chr_list)
 
 
 # promoter classification file
@@ -210,8 +242,13 @@ elif domain == 'TTS':
 
 
 # field names
-target_names = ['mCD8T-WT-NCP-sp-8', 'mCD8T-inht-NCP-sp-8', 'mCD8T-KO-NCP-sp-8']
-feature_names = ['H3K27me3', 'H3K4me3', 'H3K27ac', 'H3K36me3', 'H3K4me1', 'H3K9me3', 'ATcontent']
+#target_names = ['mCD8T-WT-NCP-sp-8', 'mCD8T-inht-NCP-sp-8', 'mCD8T-KO-NCP-sp-8']
+#feature_names = ['H3K27me3', 'H3K4me3', 'H3K27ac', 'H3K36me3', 'H3K4me1', 'H3K9me3', 'ATcontent']
+target_names = []
+feature_names = []
+for cell, sample, agent, tnum in exp_list:
+    target_names.append('-'.join([cell, sample, agent, str(tnum)]))
+
 names = target_names + feature_names
 
 
@@ -219,13 +256,16 @@ names = target_names + feature_names
 #labels = ['WT', '+inht', 'ODC KO']
 #labels = ['WT', '+inht', 'ODC KO', 'H3K27me3', 'H3K4me3']
 labels = ['WT', '+inht', 'ODC KO'] + feature_names
+#labels = []
+#for cell, sample, agent, tnum in exp_list:
+#    labels.append(agent)
 
 # load occupancy choice
 load_occ = False
     
 name_ID_profile = {}
 # read profile files
-for cell, sample, agent in exp_list:
+for cell, sample, agent, tnum in exp_list:
     print "loading %s-%s-%s" % (cell, sample, agent)
 
     for chr_name in chr_list:
@@ -289,8 +329,6 @@ if False:
 # partition quantiles according to gene expression level
 q_IDs = None
 if False:
-    ID_RPKM = load_file.read_RPKM_new (rnafname, gtfname, chr_list=chr_list)
-
     common_IDs = set(ID_RPKM.keys())
     for name in names:
         ID_profile = name_ID_profile[name]
@@ -363,8 +401,8 @@ if False:
         #plt.show()
         plt.close()
 
-# plot profile quantile and heatmap ored by rank score
-if True:
+# plot profile quantile and heatmap ordered by rank score
+if False:
     common_IDs = set(ID_rnkvalue1.keys()) & set(ID_rnkvalue2.keys())
     for name in names:
         ID_profile = name_ID_profile[name]

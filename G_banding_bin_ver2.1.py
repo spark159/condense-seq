@@ -238,7 +238,9 @@ def read_eigenbedgraph (fname, chr_choice):
 # parameters
 # set path
 #path = ""
-path = "/home/spark159/../../media/spark159/sw/"
+#path = "/home/spark159/../../media/spark159/sw/"
+path = "/home/spark159/../../storage/"
+
 
 agent_fullname = {'sp':'Spermine(4+)',
                   'spd':'Spermidine(3+)',
@@ -296,6 +298,10 @@ exp_list = [('H1', 'NCP', 'sp', 8),
             ('H1', 'NCP', 'LKH', 3),
             ('H1', 'NCP', 'Ki67', 4)]
 
+#exp_list = [('H1', 'NCP', 'sp', 8),
+#            ('H1', 'NCP', 'Ki67', 4)]
+
+
 
 #exp_list = [(cell, 'NCP', 'HP1a')]
 
@@ -349,7 +355,16 @@ bin_size = int(0.5*(10**6) / i) # binsize (unit of bp)
 blur_win = int(4*i + 1) # sliding window (unit of bin)
 
 # set chromosomes
-chr_choices = ['chr1']
+if species == 'human':
+    chr_choices = ['chr' + str(i) for i in range(1, 23)]
+elif species == 'mouse':
+    chr_choices = ['chr' + str(i) for i in range(1, 20)]
+chr_choices += ['chrX']
+if gender == 'male':
+    chr_choices += ['chrY']
+    
+#chr_choices = ['chr1']
+
 
 # set target names and feature names
 target_names = ['-'.join([cell, sample, agent, str(tnum)]) for cell, sample, agent, tnum in exp_list]

@@ -192,9 +192,25 @@ def stat_Kmer(seq_list, NCPlen, knum, bnum):
 
 
 #path = './data/'
-path = ''
-ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+"H1_NCP_sp_chr1_anot.cn")
-ID_score1 = name_ID_value["work/2021_06_07_H1_sp_detail/H1-NCP-sp-8"]
+#path = ''
+path = "/home/spark159/../../storage/"
+
+#fname = 'H1_NCP_sp_chr1_extended_anot.cn'
+#field = "work/2021_06_07_H1_sp_detail/H1-NCP-sp-8"
+
+#fname = 'H1_NCP_HP1a_chr1_anot.cn'
+#field = "/home/spark159/scratch4-tha4/sangwoo/2022_09_08_GM_sp_H1_HP1a_deep/H1-new-NCP-HP1a-3"
+
+fname = 'H1_NCP_LKH_chr1_anot.cn'
+field = "/home/spark159/scratch/2022_12_13_H1_LKH_deep/H1-NCP-LKH-3"
+
+#fname = 'H1_NCP_Ki67_chr1_anot.cn'
+#field = "/home/spark159/scratch/2022_10_28_H1_Ki67_deep/H1-NCP-Ki67-4"
+
+
+
+ID_chr, ID_pos, name_ID_value = load_file.read_anot_file(path+fname)
+ID_score1 = name_ID_value[field]
 #ID_score2 = name_ID_value["work/2021_06_07_H1_sp_detail/H1-NCP-sp-8"]
 ID_seq = name_ID_value['Sequence']
 ID_AT = name_ID_value['ATcontent']

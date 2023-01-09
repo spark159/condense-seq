@@ -296,7 +296,7 @@ def plot_dendrogram(Z, idx_name, node_color=None, name_color=None):
             label.set_color(name_color[name])
         new_labels.append(label)
     ax.set_yticklabels(new_labels, weight='bold')
-    plt.savefig("dendrogram.png", dpi=500, bbox_inches='tight')
+    plt.savefig("dendrogram.svg", format='svg', bbox_inches='tight')
     #plt.show()
     plt.close()
 
@@ -317,18 +317,18 @@ def gs_name(gs):
 
 
 # load data
-#path1 = "NEW_GSEA_inht_GOBP"
-#path2 = "NEW_GSEA_KO_GOBP"
+path1 = "NEW_GSEA_inht_GOBP"
+path2 = "NEW_GSEA_KO_GOBP"
 
-path1 = "GSEA_inht_pathway"
-path2 = "GSEA_KO_pathway"
+#path1 = "GSEA_inht_pathway"
+#path2 = "GSEA_KO_pathway"
 
 pos_gs_list1, neg_gs_list1 = read_GSEA(path1)
 pos_gs_list2, neg_gs_list2 = read_GSEA(path2)
 
 
 # select gene-sets with the biggest |nes|
-num = 30
+num = 20
 gs_list1 = select_best(pos_gs_list1 + neg_gs_list1, num)
 gs_list2 = select_best(pos_gs_list2 + neg_gs_list2, num)
 

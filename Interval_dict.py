@@ -40,7 +40,8 @@ class bin_hash:
         self.max_pos = max_pos
 
         # map bin idx to bin ID
-        self.idx_ID = {} 
+        self.idx_ID = {}
+        self.ID_idx = {}
         for ID in ID_interval:
             st, ed = ID_interval[ID]
             assert st % self.bin_step == 0
@@ -48,7 +49,8 @@ class bin_hash:
             idx = st / self.bin_step
             assert idx not in self.idx_ID
             self.idx_ID[idx] = ID
-        
+            self.ID_idx[ID] = idx
+            
         print >> sys.stderr, "hash function is built"
         
     def find(self, pos):
@@ -92,9 +94,11 @@ class bin_hash:
                 break
             st = self.bin_step*idx
             ed = st + self.bin_size
-        max_idx = min((red - 1) / self.bin_step, self.max_pos / self.bin_step)
 
-        for idx in range(min_idx, max_idx):
+        red = min(red, self.max_pos + 1)
+        max_idx = (red - 1) / self.bin_step
+
+        for idx in range(min_idx, max_idx+1):
             try:
                 ID = self.idx_ID[idx]
                 find_IDs.append(ID)
@@ -105,7 +109,8 @@ class bin_hash:
     def insert_range (self, rst, red, value):
         find_IDs = self.find_range(rst, red)
         for ID in find_IDs:
-            st = self.bin_step*ID
+            idx = self.ID_idx[ID]
+            st = self.bin_step*idx
             ed = st + self.bin_size
             a, b = max(st, rst), min(ed, red)
             length = b - a

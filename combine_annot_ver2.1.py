@@ -75,7 +75,8 @@ class bin_hash:
         self.max_pos = max_pos
 
         # map bin idx to bin ID
-        self.idx_ID = {} 
+        self.idx_ID = {}
+        self.ID_idx = {}
         for ID in ID_interval:
             st, ed = ID_interval[ID]
             assert st % self.bin_step == 0
@@ -83,7 +84,8 @@ class bin_hash:
             idx = st / self.bin_step
             assert idx not in self.idx_ID
             self.idx_ID[idx] = ID
-        
+            self.ID_idx[ID] = idx
+            
         print >> sys.stderr, "hash function is built"
         
     def find(self, pos):
@@ -127,9 +129,11 @@ class bin_hash:
                 break
             st = self.bin_step*idx
             ed = st + self.bin_size
-        max_idx = min((red - 1) / self.bin_step, self.max_pos / self.bin_step)
 
-        for idx in range(min_idx, max_idx):
+        red = min(red, self.max_pos + 1)
+        max_idx = (red - 1) / self.bin_step
+
+        for idx in range(min_idx, max_idx+1):
             try:
                 ID = self.idx_ID[idx]
                 find_IDs.append(ID)
@@ -140,7 +144,8 @@ class bin_hash:
     def insert_range (self, rst, red, value):
         find_IDs = self.find_range(rst, red)
         for ID in find_IDs:
-            st = self.bin_step*ID
+            idx = self.ID_idx[ID]
+            st = self.bin_step*idx
             ed = st + self.bin_size
             a, b = max(st, rst), min(ed, red)
             length = b - a
@@ -304,129 +309,190 @@ class double_hash:
         return self.ID_value
 
 
+# read score file
+def read_score_file (score_fname, chr_list, bin_size, col_st=3, offset=None):    
+    ID_chrst, chrst_ID = {}, {}
+    ID_score_list = []
+    names = []
+    data_type = None
+    First = True
+    for line in open(score_fname):
+        cols = line.strip().split()
+        if First:
+            # cn file: point data
+            if cols[2] == "PhysicalPosition":
+                data_type = 'point'
+                col_st = 3
+                if offset == None:
+                    offset = -bin_size/2 # point is middle of bin
+            # otherwise, assume binned data
+            else:
+                assert cols[2] == 'Start'
+                assert cols[3] == 'End'
+                data_type = 'binned'
+                col_st = 4
+                offset = 0
+            names = [name.rsplit('/', 1)[-1].rsplit('.', 1)[0] for name in cols[col_st:]]
+            ID_score_list = [{} for i in range(len(names))]
+            First = False
+            continue
+        ID, chr, pos = int(cols[0]), cols[1], int(cols[2])
+        if chr not in chr_list:
+            continue
+        scores = [float(score) for score in cols[col_st:]]
+        if chr not in chrst_ID:
+            chrst_ID[chr] = {}
+        st = pos + offset
+        ID_chrst[ID] = (chr, st)
+        chrst_ID[chr][st] = ID
+        for i in range(len(ID_score_list)):
+            ID_score = ID_score_list[i]
+            assert ID not in ID_score
+            ID_score[ID] = scores[i]
+    return ID_chrst, chrst_ID, ID_score_list, names, data_type
+
+
+# read reference file and get sequence for each NCP
+def get_seq(ref_fname, chr, st_ID, win):
+    seq = ""
+    pt = -1
+    k = 0
+    left = []
+    Find = False
+    stID = [[st, st_ID[st]] for st in sorted(st_ID.keys())]
+    pos, ID = stID[k]
+    ID_seq = {}
+    for line in open(ref_fname):
+        line = line.strip()
+        if line.startswith(">"):
+            if Find:
+                break
+            if line[1:] == chr:
+                Find = True
+            continue
+        if Find:
+            if len(left) == 0 and pt + len(line) < pos:
+                pt += len(line)
+                continue
+            for i in range(len(left)):
+                leftID, seq = left.pop(0)
+                ed = min(len(line), win-len(seq))
+                seq += line[:ed]
+                if len(seq) == win:
+                    #AT = AT_content(seq)
+                    #ID_AT[leftID] = AT
+                    ID_seq[leftID] = seq
+                else:
+                    left.append([leftID, seq])
+            while pt + len(line) >= pos and k < len(stID):
+                loc = pos - pt - 1
+                seq = line[loc:min(loc+win,len(line))]
+                if len(seq) == win:
+                    #AT = AT_content(seq)
+                    #ID_AT[ID] = AT
+                    ID_seq[ID] = seq
+                else:
+                    left.append([ID, seq])
+                k += 1
+                try:
+                    pos, ID = stID[k]
+                except:
+                    None
+            if len(left) == 0 and len(ID_seq) == len(stID):
+                break
+            pt += len(line)
+    while len(left) > 0:
+        leftID, seq = left.pop(0)
+        #AT = AT_content(seq)
+        #ID_AT[leftID] = AT
+        ID_seq[leftID] = seq
+    assert len(ID_seq) == len(stID)
+    return ID_seq
+
+
+# read bisulfite-seq data (ENCODE bethylbed file) and count methylated C for each bin
+def read_BS_file (fname, Int_dict, chr):
+    ID_C = {} # num of "detected" C in the target motif
+    ID_meC = {}  # num of "detected" methylated C in the target motif 
+    for line in open(fname):
+        cols = line.strip().split()
+        chrname, st, ed, _, _, strand, _, _, _, reads, frac = cols[:11]
+        if chrname != chr:
+            continue
+        pos = int(st)
+        reads, frac = int(reads), 0.01*float(frac)
+        if reads <= 0: # skip "undetected" C in the target motif
+            continue
+        findIDs = Int_dict.insert(pos, 1)
+        for ID in findIDs:
+            if ID not in ID_meC:
+                ID_meC[ID] = 0.0
+            ID_meC[ID] += frac
+    ID_C = Int_dict.get()
+    return ID_C, ID_meC
+
+
+# read chip-seq data (ENCODE peak-bed file) and get signal for each bin
+def read_chip_file (fname, Int_dict, chr, unit='signal'):
+    for line in open(fname):
+        cols = line.strip().split()
+        chrname, st, ed, peakname, _, strand, signal, pvalue, qvalue = cols[:9]
+        if chrname != chr:
+            continue
+        if unit == 'signal':
+            score = float(signal)
+        elif unit == 'pvalue':
+            score = float(pvalue)
+        elif unit == 'qvalue':
+            score = float(qvalue)
+        st, ed = int(st), int(ed)
+        Int_dict.insert_range(st, ed, score)
+    return Int_dict.get()
+
+
+# read bedgraph file and get value for each bin
+def read_bedgraph_file (fname, Int_dict, chr):
+    for line in open(fname):
+        if not line.startswith('chr'):
+            continue
+        cols = line.strip().split()
+        chrname, st, ed, value = cols
+        if chrname != chr:
+            continue
+        st, ed = int(st), int(ed)
+        value = float(value)
+        Int_dict.insert_range(st, ed, value)
+    return Int_dict.get()
+
 def combine_all(score_fname,
                 ref_fname,
                 bin_size,
                 bin_step,
                 bs_fname,
                 chip_fname,
+                bedgraph_fname,
                 full_seq,
                 chr_list,
                 genome_size,
                 out_fname):
 
     # read score file
-    def read_score_file (score_fname, chr_list, bin_size, col_st=3, offset=None):    
-        ID_chrst, chrst_ID = {}, {}
-        ID_score_list = []
-        names = []
-        data_type = None
-        First = True
-        for line in open(score_fname):
-            cols = line.strip().split()
-            if First:
-                # cn file: point data
-                if cols[0].startswith('SNP'):
-                    data_type = 'point'
-                    col_st = 3
-                    if offset == None:
-                        offset = -bin_size/2 # point is middle of bin
-                # otherwise, assume binned data
-                else:
-                    assert len(cols) > 4
-                    data_type = 'binned'
-                    col_st = 4
-                    offset = 0
-                names = [name.rsplit('/', 1)[-1].rsplit('.', 1)[0] for name in cols[col_st:]]
-                ID_score_list = [{} for i in range(len(names))]
-                First = False
-                continue
-            ID, chr, pos = int(cols[0]), cols[1], int(cols[2])
-            if chr not in chr_list:
-                continue
-            scores = [float(score) for score in cols[col_st:]]
-            if chr not in chrst_ID:
-                chrst_ID[chr] = {}
-            st = pos + offset
-            ID_chrst[ID] = (chr, st)
-            chrst_ID[chr][st] = ID
-            for i in range(len(ID_score_list)):
-                ID_score = ID_score_list[i]
-                assert ID not in ID_score
-                ID_score[ID] = scores[i]
-        return ID_chrst, chrst_ID, ID_score_list, names, data_type
-
     ID_chrst, chrst_ID, ID_score_list, names, data_type = read_score_file(score_fname, chr_list, bin_size)
     chr_list = chrst_ID.keys()
     print >> sys.stderr, "score file reading is done"
 
-    # read reference file and get sequence for each NCP
-    def get_seq(ref_fname, chr, st_ID, win):
-        seq = ""
-        pt = -1
-        k = 0
-        left = []
-        Find = False
-        stID = [[st, st_ID[st]] for st in sorted(st_ID.keys())]
-        pos, ID = stID[k]
-        ID_seq = {}
-        for line in open(ref_fname):
-            line = line.strip()
-            if line.startswith(">"):
-                if Find:
-                    break
-                if line[1:] == chr:
-                    Find = True
-                continue
-            if Find:
-                if len(left) == 0 and pt + len(line) < pos:
-                    pt += len(line)
-                    continue
-                for i in range(len(left)):
-                    leftID, seq = left.pop(0)
-                    ed = min(len(line), win-len(seq))
-                    seq += line[:ed]
-                    if len(seq) == win:
-                        #AT = AT_content(seq)
-                        #ID_AT[leftID] = AT
-                        ID_seq[leftID] = seq
-                    else:
-                        left.append([leftID, seq])
-                while pt + len(line) >= pos and k < len(stID):
-                    loc = pos - pt - 1
-                    seq = line[loc:min(loc+win,len(line))]
-                    if len(seq) == win:
-                        #AT = AT_content(seq)
-                        #ID_AT[ID] = AT
-                        ID_seq[ID] = seq
-                    else:
-                        left.append([ID, seq])
-                    k += 1
-                    try:
-                        pos, ID = stID[k]
-                    except:
-                        None
-                if len(left) == 0 and len(ID_seq) == len(stID):
-                    break
-                pt += len(line)
-        while len(left) > 0:
-            leftID, seq = left.pop(0)
-            #AT = AT_content(seq)
-            #ID_AT[leftID] = AT
-            ID_seq[leftID] = seq
-        assert len(ID_seq) == len(stID)
-        return ID_seq
     
+    # extract sequence for each bin
     ID_seq = {}
     for chr in chr_list:
         st_ID = chrst_ID[chr]
         temp = get_seq(ref_fname, chr, st_ID, bin_size)
         ID_seq.update(temp)
     print >> sys.stderr, "reference reading is done"
-
+    
     # build interval dictionary for each chromosome
     chr_intdic = {}
-    if bs_fname or chip_fname:
+    if bs_fname or chip_fname or bg_fname:
         for chr in chr_list:
             st_ID = chrst_ID[chr]
             ID_interval = {}
@@ -443,27 +509,7 @@ def combine_all(score_fname,
                 Int_dict = double_hash(ID_interval, 100000, genome_size[chr])
                 chr_intdic[chr] = Int_dict
 
-    # read bisulfite-seq file and get the number of methylated C for each NCP
-    def read_BS_file (fname, Int_dict, chr):
-        ID_C = {} # num of "detected" C in the target motif
-        ID_meC = {}  # num of "detected" methylated C in the target motif 
-        for line in open(fname):
-            cols = line.strip().split()
-            chrname, st, ed, _, _, strand, _, _, _, reads, frac = cols[:11]
-            if chrname != chr:
-                continue
-            pos = int(st)
-            reads, frac = int(reads), 0.01*float(frac)
-            if reads <= 0: # skip "undetected" C in the target motif
-                continue
-            findIDs = Int_dict.insert(pos, 1)
-            for ID in findIDs:
-                if ID not in ID_meC:
-                    ID_meC[ID] = 0.0
-                ID_meC[ID] += frac
-        ID_C = Int_dict.get()
-        return ID_C, ID_meC
-
+    # read bisulfite-seq data (ENCODE bethylbed file) and count methylated C for each bin
     bs_ID_C = {}
     bs_ID_meC = {}
     if bs_fname:
@@ -481,25 +527,7 @@ def combine_all(score_fname,
         del intdict, ID_C, ID_meC
         print >> sys.stderr, "BS reading is done"
 
-    # read chip-seq file and get signal for each NCP 
-    def read_chip_file (fname, Int_dict, chr, unit='signal'):
-        count = -1
-        for line in open(fname):
-            count += 1
-            cols = line.strip().split()
-            chrname, st, ed, peakname, _, strand, signal, pvalue, qvalue = cols[:9]
-            if chrname != chr:
-                continue
-            if unit == 'signal':
-                score = float(signal)
-            elif unit == 'pvalue':
-                score = float(pvalue)
-            elif unit == 'qvalue':
-                score = float(qvalue)
-            st, ed = int(st), int(ed)
-            Int_dict.insert_range(st, ed, score)
-        return Int_dict.get()
-
+    # read chip-seq data (ENCODE peak-bed file) and get singal for each bin
     chip_ID_signal = {}
     if chip_fname:
         for chr in chr_list:
@@ -512,6 +540,21 @@ def combine_all(score_fname,
                 chip_ID_signal[chip].update(ID_signal)
         del intdict, ID_signal
         print >> sys.stderr, "Chip reading is done"
+
+
+    # read bedgraph file and get value for each bin
+    bg_ID_value = {}
+    if bg_fname:
+        for chr in chr_list:
+            for bg in bg_fname:
+                intdict = copy.deepcopy(chr_intdic[chr])
+                fname = bg_fname[bg]
+                ID_value = read_bedgraph_file(fname, intdict, chr)
+                if bg not in bg_ID_value:
+                    bg_ID_value[bg] = ID_value
+                bg_ID_value[bg].update(ID_value)
+        del intdict, ID_value
+        print >> sys.stderr, "bedgraph file reading is done"
 
     del chr_intdic
 
@@ -539,7 +582,11 @@ def combine_all(score_fname,
     chip_names = sorted(chip_ID_signal.keys())
     for chip in chip_names:
         s += '\t' + chip
+    bg_names = sorted(bg_ID_value.keys())
+    for bg in bg_names:
+        s += '\t' + bg
     print >> f, s
+
 
     IDs = sorted(ID_score_list[0].keys())
     for ID in IDs:
@@ -585,6 +632,14 @@ def combine_all(score_fname,
                 signal = 0.0
             s += '\t' + str(signal)
 
+        for bg in bg_names:
+            ID_value = bg_ID_value[bg]
+            try:
+                value = round(ID_value[ID],5)
+            except:
+                value = 0.0
+            s += '\t' + str(value)
+
         print >> f, s
 
     f.close()
@@ -607,7 +662,7 @@ if __name__ == '__main__':
     parser.add_argument(metavar='--score',
                         dest="score_fname",
                         type=str,
-                        help='score file')
+                        help='score files')
     parser.add_argument(metavar = '--ref',
                         dest='ref_fname',
                         type=str,
@@ -620,18 +675,23 @@ if __name__ == '__main__':
     parser.add_argument('--binstep',
                         dest="bin_step",
                         type=int,
-                        nargs='+',
+                        default=0,
                         help='bin step size for the score file in bp if regular binning')
     parser.add_argument('--bs',
                         dest="bs_fname",
                         type=str,
                         nargs='+',
-                        help='bisulfite sequencing files (order: name, bedMethyl file)')
+                        help='bisulfite sequencing files (order: name, ENCODE bedMethyl file)')
     parser.add_argument('--chip',
                         dest="chip_fname",
                         type=str,
                         nargs='+',
-                        help='chip sequencing files (order: name, peak bed file)')
+                        help='chip sequencing files (order: name, ENCODE peak-bed file)')
+    parser.add_argument('--bedgraph',
+                        dest="bg_fname",
+                        type=str,
+                        nargs='+',
+                        help='bedgraph files (order: name, bedgraph file)')
     parser.add_argument('--full-seq',
                         dest="full_seq",
                         type=str2bool,
@@ -695,7 +755,20 @@ if __name__ == '__main__':
                 fname = args.chip_fname[i]
                 chip_fname[chip] = fname
 
-    if not args.bin_step:
+    bg_fname = {}
+    if args.bg_fname:
+        flen = len(args.bg_fname)
+        if flen % 2 != 0:
+            print >> sys.stderr, "not right order of names or miss name"
+            sys.exit(1)
+        for i in range(flen):
+            if i % 2 == 0:
+                bg = args.bg_fname[i]
+            else:
+                fname = args.bg_fname[i]
+                bg_fname[bg] = fname
+
+    if args.bin_step:
         bin_step = args.bin_step
     else:
         bin_step = None
@@ -706,6 +779,7 @@ if __name__ == '__main__':
                 bin_step,
                 bs_fname,
                 chip_fname,
+                bg_fname,
                 args.full_seq,
                 chr_list,
                 genome_size,

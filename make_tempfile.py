@@ -24,19 +24,28 @@ write_temp_para ("test_N100_V23_E-100", energy_list, valency_list)
 
 # heterogenous case
 
-N = 100
+N = 1000
+f = 23
+E = -7
 energy_list = []
 valency_list = []
 for i in range(N):
-    energy = -10
-    #energy = -10 + random.gauss(0,5)
+    #energy = -10
+    energy = E + random.gauss(0,5)
     energy_list.append(energy)
     #valency = 23
     #valency = 23 + int(random.randint(-5,5))
-    valency = 23 + int(random.gauss(0,5))
+    valency = f + int(random.gauss(0,5))
     valency_list.append(valency)
-write_temp_para ("hetero_100_23_-10", energy_list, valency_list)
-
+fname = 'hetero_%s_%s_%s' % (N, f, E)
+write_temp_para (fname, energy_list, valency_list)
+subprocess.call(['python',
+                 'rgs_submit.py',
+                 fname + '_para.cn',
+                 '--bethe',
+                 '-o', fname,
+                 '--replica', str(10),
+                 '--cycle', str(100000)])
 
 """
 N = 100

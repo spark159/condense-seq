@@ -259,26 +259,26 @@ H1_states = ["Active promoter", "Weak promoter", "Poised promoter", "Strong enha
 H1_HMM_fname = "H1_12_segments.bed"
 
 # experiment list (cell, sample, agent, tnum)
-#exp_list = [('H1', 'NCP', 'sp', 8),
-#            ('H1', 'NCP', 'spd', 6),
-#            ('H1', 'NCP', 'CoH', 5),
-#            ('H1', 'NCP', 'PEG', 6),
-#            ('H1', 'NCP', 'Ca', 5),
-#            ('H1', 'NCP', 'Mg', 5),
-#            ('H1', 'NCP', 'HP1a', 3),
-#            ('H1', 'NCP', 'HP1bSUV', 4),
-#            ('H1', 'NCP', 'LKH', 3),
-#            ('H1', 'NCP', 'Ki67', 4),
-#            ('H1', 'NCP', 'FUS', 5)]
-
 exp_list = [('H1', 'NCP', 'sp', 8),
             ('H1', 'NCP', 'spd', 6),
             ('H1', 'NCP', 'CoH', 5),
             ('H1', 'NCP', 'PEG', 6),
             ('H1', 'NCP', 'Ca', 5),
+            ('H1', 'NCP', 'Mg', 5),
             ('H1', 'NCP', 'HP1a', 3),
+            ('H1', 'NCP', 'HP1bSUV', 4),
             ('H1', 'NCP', 'LKH', 3),
-            ('H1', 'NCP', 'Ki67', 4)]
+            ('H1', 'NCP', 'Ki67', 4),
+            ('H1', 'NCP', 'FUS', 4)] # FUS tnum changed
+
+#exp_list = [('H1', 'NCP', 'sp', 8),
+#            ('H1', 'NCP', 'spd', 6),
+#            ('H1', 'NCP', 'CoH', 5),
+#            ('H1', 'NCP', 'PEG', 6),
+#            ('H1', 'NCP', 'Ca', 5),
+#            ('H1', 'NCP', 'HP1a', 3),
+#            ('H1', 'NCP', 'LKH', 3),
+#            ('H1', 'NCP', 'Ki67', 4)]
 
 #exp_list = [('H1', 'NCP', 'sp', 8),
 #            ('H1', 'NCP', 'spd', 6),
@@ -360,7 +360,7 @@ for ID in ID_list:
 
 fig = plt.figure()
 plt.imshow(data, aspect='auto', cmap='bwr', vmin=-1.8, vmax=1.8)
-plt.show()
+#plt.show()
 plt.close()
 
 figsize = (5, 10)

@@ -18,27 +18,44 @@ def read_genome_size(fname):
         genome_size[key] += len(line)
     return genome_size
 
-def read_tabular_file (fname, mode='row', delim='\t', header=True, jump=None):
+def read_tabular_file (fname,
+                       mode='row',
+                       delim='\t',
+                       header=True,
+                       rowID=True,
+                       jump=None):
+    if rowID:
+        col_st = 1
+    else:
+        col_st = 0
+        
     ID_field_value = {}
     First = True
     counter = -1
     for line in open(fname):
         cols = line.strip().split(delim)
         if First and header:
-            field_names = cols[1:]
+            field_names = cols[col_st:]
             First = False
             continue
         elif First and not header:
-            field_names = range(len(cols[1:]))
+            field_names = range(len(cols[col_st:]))
             First = False
             pass
-        ID = cols[0]
+
         counter += 1
         if jump and counter % jump != 0:
             continue
+
+        if rowID:
+            ID = cols[0]
+        else:
+            ID = counter
+
         if ID not in ID_field_value:
             ID_field_value[ID] = {}
-        cols = cols[1:]
+
+        cols = cols[col_st:]
         #print cols
         for i in range(len(cols)):
             field = field_names[i]
@@ -54,8 +71,10 @@ def read_tabular_file (fname, mode='row', delim='\t', header=True, jump=None):
                 if type(ID_field_value[ID][field]) != list:
                     ID_field_value[ID][field] = [ID_field_value[ID][field]]
                 ID_field_value[ID][field].append(value)
+
     if mode == 'row':
         return ID_field_value
+
     if mode == 'col' or mode == 'both':
         field_ID_value = {}
         for ID in ID_field_value:
@@ -65,8 +84,10 @@ def read_tabular_file (fname, mode='row', delim='\t', header=True, jump=None):
                 if field not in field_ID_value:
                     field_ID_value[field] = {}
                 field_ID_value[field][ID] = value
+
     if mode == 'col':
         return field_ID_value
+
     if mode == 'both':
         return ID_field_value, field_ID_value
             
