@@ -1,6 +1,6 @@
 import sys
 import numpy as np
-import statis
+#import statis
 
 def norm(L):
     total = sum(L)

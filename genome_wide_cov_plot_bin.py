@@ -146,15 +146,37 @@ fname = 'HGPS_NCP_sp_bin.cn'
 #fname = "mCD8T_inht-NCP_sp_10kb_bin.cn"
 #fname = 'mCD8T_KO-NCP_sp_bin.cn'
 
-# some replicates QC
-path = '/media/spark159/sw/'
+# replicates QC
+path = "/home/spark159/../../storage/replicates/"
+#path = "/home/spark159/../../storage/"
+
 #fname = 'H1_NCP_sp_10kb_bin.cn'
 #fname = 'GM_NCP_sp_10kb_bin.cn'
 #fname = 'mCD8T_WT-NCP_sp_10kb_bin.cn'
 #fname = 'mCD8T_inht-NCP_sp_10kb_bin.cn'
 #fname = 'mCD8T_KO-NCP_sp_10kb_bin.cn'
-
-
+#fname = 'H1_NCP_HP1a_10kb_bin.cn'
+#fname = 'H1_NCP_LKH_10kb_bin.cn'
+#fname = 'H1_NCP_Ki67_10kb_bin.cn'
+#fname = 'H1_NCP_spd_10kb_bin.cn'
+#fname = 'H1_NCP_CoH_10kb_bin.cn'
+#fname = 'H1_NCP_PEG_10kb_bin.cn'
+#fname = 'H1_NCP_Ca_10kb_bin.cn'
+#fname = 'H1_DNA_HP1a_10kb_bin.cn'
+#fname = 'H1_DNA_LKH_10kb_bin.cn'
+#fname = 'H1_DNA_Ki67_10kb_bin.cn'
+#fname = 'H1_NCP_HP1bSUV_10kb_2_bin.cn'
+#fname = 'H1_NCP_HP1bSUV_10kb_3_bin.cn'
+#fname = 'H1_NCP_HP1bTRIM_10kb_1_bin.cn'
+#fname = 'H1_NCP_HP1bTRIM_10kb_2_bin.cn'
+#fname = 'H1_DNA_HP1bSUV_10kb_2_bin.cn'
+#fname = 'H1_DNA_HP1bTRIM_10kb_1_bin.cn'
+#fname = 'H1_DNA_HP1bTRIM_10kb_2_bin.cn'
+fname = 'H1_DNA_HP1a_10kb_2_bin.cn'
+fname = 'H1_DNA_HP1a_10kb_3_bin.cn'
+fname = 'H1_NCP_PEG_10kb_2_bin.cn'
+fname = 'H1_NCP_PEG_10kb_3_bin.cn'
+fname = 'mCD8T_KO-NCP_sp_10kb_bin.cn'
 
 
 
@@ -162,19 +184,28 @@ path = '/media/spark159/sw/'
 #names, chr_binID_counts, chr_binID_range, chr_binID_GC = read_bincountfile(path+fname, chr_list=['chr1'])
 names, chr_binID_counts, chr_binID_range, chr_binID_GC, chr_binID_tlen = read_bintlenfile(path+fname, chr_list=['chr1'])
 
-chr_binID_control = chr_binID_counts[-1]
-ID_pos = {}
-ID_count = {}
-for i in range(len(chr_binID_control['chr1'])):
-    start, end = chr_binID_range['chr1'][i]
-    pos = (start+end)/2
-    ID_pos[i] = pos
-    ID_count[i] = chr_binID_control['chr1'][i]
-mean = np.median(ID_count.values())
-std = np.std(ID_count.values())
-#graphics.draw_along_genome (ID_pos, [ID_count], win=1000, labels=['Input'], ylabel='Read counts per 10kb', ylim=[max(mean-3*std, -5), mean+2*std], title='Chromosome 1', scatt=True, note="_" + fname.rsplit('.',1)[0])
+#chr_binID_control = chr_binID_counts[-1]
 
-graphics.draw_along_genome (ID_pos, [ID_count], win=1000, labels=['Input'], ylabel='Read counts per 10kb', ylim=[max(mean-5*std, -5), mean+4*std], title='Chromosome 1', scatt=True, note="_" + fname.rsplit('.',1)[0])
+for k in range(len(chr_binID_counts)):
+    chr_binID_count = chr_binID_counts[k]
+    ID_pos = {}
+    ID_count = {}
+    for i in range(len(chr_binID_count['chr1'])):
+        start, end = chr_binID_range['chr1'][i]
+        pos = (start+end)/2
+        ID_pos[i] = pos
+        ID_count[i] = chr_binID_count['chr1'][i]
+    mean = np.median(ID_count.values())
+    std = np.std(ID_count.values())
+    if k == len(chr_binID_counts) - 1:
+        title='Chromosome1 t#0'
+        note = "_" + fname.rsplit('.',1)[0]+ '_' + str(0)
+    else:
+        title='Chromosome1 t#' + str(k+1)
+        note = "_" + fname.rsplit('.',1)[0]+ '_' + str(k+1)
+        
+    #graphics.draw_along_genome (ID_pos, [ID_count], win=1000, labels=['Coverage'], ylabel='Read counts per 10kb', ylim=[max(mean-3*std, -5), mean+2*std], title=title, scatt=True, note=note)
+    graphics.draw_along_genome (ID_pos, [ID_count], win=1000, labels=['Coverage'], ylabel='Read counts per 10kb', ylim=[max(mean-5*std, -5), mean+4*std], title=title, scatt=True, note=note)
 
 
 

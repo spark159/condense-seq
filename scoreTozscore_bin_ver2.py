@@ -9,72 +9,32 @@ path = "/home/spark159/../../storage/replicates/"
 
 # sample information
 
-# experiment list (cell, sample, agent)
-#exp_list = [('H1', 'NCP', 'sp'),
-#            ('H1', 'NCP', 'spd'),
-#            ('H1', 'NCP', 'CoH'),
-#            ('H1', 'NCP', 'PEG'),
-#            ('H1', 'NCP', 'Ca'),
-#            ('H1', 'NCP', 'Mg'),
-#            ('H1', 'NCP', 'HP1a'),
-#            ('H1', 'NCP', 'HP1bSUV'),
-#            ('H1', 'NCP', 'LKH'),
-#            ('H1', 'NCP', 'Ki67'),
-#            ('H1', 'NCP', 'FUS')]
+# experiment list (cell, sample, agent, rep)
+exp_list = [('H1', 'NCP', 'HP1bSUV', 2),
+            ('H1', 'NCP', 'HP1bSUV', 3),
+            ('H1', 'NCP', 'HP1bTRIM', 1),
+            ('H1', 'NCP', 'HP1bTRIM', 2),
+            ('H1', 'DNA', 'HP1bSUV', 2),
+            ('H1', 'DNA', 'HP1bTRIM', 1),
+            ('H1', 'DNA', 'HP1bTRIM', 2)]
 
-#exp_list = [('H1', 'NCP', 'sp'),
-#            ('H1', 'NCP', 'HP1a'),
-#            ('H1', 'NCP', 'LKH'),
-#            ('H1', 'NCP', 'Ki67')]
-
-exp_list = [('H1', 'NCP', 'sp'),
-            ('H1', 'NCP', 'spd'),
-            ('H1', 'NCP', 'CoH'),
-            ('H1', 'NCP', 'PEG'),
-            ('H1', 'NCP', 'Ca'),
-            ('H1', 'NCP', 'HP1a'),
-            ('H1', 'NCP', 'LKH'),
-            ('H1', 'NCP', 'Ki67'),
-            ('H1', 'DNA', 'HP1a'),
-            ('H1', 'DNA', 'LKH'),
-            ('H1', 'DNA', 'Ki67'),
-            ('mCD8T', 'WT-NCP', 'sp'),
-            ('mCD8T', 'inht-NCP', 'sp'),
-            ('mCD8T', 'KO-NCP', 'sp')]
-
-exp_list = [('GM', 'NCP', 'sp')]
-
-exp_list = [('H1', 'DNA', 'sp'),
-            ('H1', 'DNA', 'HP1a'),
-            ('H1', 'DNA', 'LKH'),
-            ('H1', 'DNA', 'Ki67')]
-
-
-exp_list = [('mCD8T', 'WT-NCP', 'sp'),
-            ('mCD8T', 'inht-NCP', 'sp'),
-            ('mCD8T', 'KO-NCP', 'sp')]
-
-
-exp_list = [('H1', 'NCP', 'HP1a'),
-            ('H1', 'NCP', 'LKH'),
-            ('H1', 'NCP', 'Ki67'),
-            ('H1', 'DNA', 'HP1a'),
-            ('H1', 'DNA', 'LKH'),
-            ('H1', 'DNA', 'Ki67')]
-
-exp_list = [('mCD8T', 'KO-NCP', 'sp')]
+exp_list = [('H1', 'DNA', 'HP1a', 2),
+            ('H1', 'DNA', 'HP1a', 3),
+            ('H1', 'NCP', 'PEG', 2),
+            ('H1', 'NCP', 'PEG', 3)]
 
 
 
 # bin information
-#bin_size = 1000
 bin_size = 10000
+#bin_size = 1000
+#bin_size = 10000
 #bin_size = 5000
 #bin_size = 25000
 score_type = 'score'
 #score_type = 'Chalf'
 
-for cell, sample, agent in exp_list:
+for cell, sample, agent, rep in exp_list:
 
     # set species and gender
     #species = 'human'
@@ -103,7 +63,7 @@ for cell, sample, agent in exp_list:
     # read all score files
     names = []
     name_data = {}
-    score_fname = path + '_'.join([cell, sample, agent, str(int(bin_size/1000.0)) + 'kb', score_type]) + '.cn'
+    score_fname = path + '_'.join([cell, sample, agent, str(int(bin_size/1000.0)) + 'kb', str(rep), score_type]) + '.cn'
     print "working on %s" % (score_fname)
     print "reading bin_score file"
     First = True
@@ -132,7 +92,7 @@ for cell, sample, agent in exp_list:
     # write zscore files
     idx = 0
     print "writing bin_zscore file"
-    zscore_fname = path + '_'.join([cell, sample, agent, str(int(bin_size/1000.0)) + 'kb', 'z'+score_type]) + '.cn'
+    zscore_fname = path + '_'.join([cell, sample, agent, str(int(bin_size/1000.0)) + 'kb', str(rep), 'z'+score_type]) + '.cn'
     f = open(zscore_fname, 'w')
     s = ['BinID', 'Chromosome', 'Start', 'End']
     First = True

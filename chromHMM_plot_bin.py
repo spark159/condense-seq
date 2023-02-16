@@ -181,7 +181,7 @@ def pair_boxplot (key_values1, key_values2, ylabel1='', ylabel2='Condensability 
 
 
 # H1
-path = ""
+#path = ""
 #fname = "H1_DNA_sp_10kb_bin.cn"
 #fname = "H1_NCP_sp_10kb_bin.cn"
 #fname = "H1_DNA_spd_10kb_bin.cn"
@@ -251,13 +251,38 @@ path = ""
 
 # some replicates QC
 #path = '/media/spark159/sw/'
-path = ""
-tnums = [4, 8]
-fname = 'H1_NCP_sp_10kb_bin.cn'
+#path = ""
+path = "/home/spark159/../../storage/replicates/"
+tnums = range(1, 10)
+#fname = 'H1_NCP_sp_10kb_bin.cn'
 #fname = 'GM_NCP_sp_10kb_bin.cn'
 #fname = 'mCD8T_WT-NCP_sp_10kb_bin.cn'
 #fname = 'mCD8T_inht-NCP_sp_10kb_bin.cn'
 #fname = 'mCD8T_KO-NCP_sp_10kb_bin.cn'
+#fname = 'H1_NCP_HP1a_10kb_bin.cn'
+#fname = 'H1_NCP_LKH_10kb_bin.cn'
+#fname = 'H1_NCP_Ki67_10kb_bin.cn'
+#fname = 'H1_NCP_spd_10kb_bin.cn'
+#fname = 'H1_NCP_CoH_10kb_bin.cn'
+#fname = 'H1_NCP_PEG_10kb_bin.cn'
+#fname = 'H1_NCP_Ca_10kb_bin.cn'
+fname = 'H1_DNA_HP1a_10kb_bin.cn'
+fname = 'H1_DNA_LKH_10kb_bin.cn'
+fname = 'H1_DNA_Ki67_10kb_bin.cn'
+fname = 'H1_NCP_HP1bSUV_10kb_2_bin.cn'
+fname = 'H1_NCP_HP1bSUV_10kb_3_bin.cn'
+fname = 'H1_NCP_HP1bTRIM_10kb_1_bin.cn'
+fname = 'H1_NCP_HP1bTRIM_10kb_2_bin.cn'
+fname = 'H1_DNA_HP1bSUV_10kb_2_bin.cn'
+fname = 'H1_DNA_HP1bTRIM_10kb_1_bin.cn'
+fname = 'H1_DNA_HP1bTRIM_10kb_2_bin.cn'
+fname = 'H1_DNA_HP1a_10kb_3_bin.cn'
+fname = 'H1_NCP_PEG_10kb_2_bin.cn'
+fname = 'H1_NCP_PEG_10kb_3_bin.cn'
+fname = 'mCD8T_KO-NCP_sp_10kb_bin.cn'
+
+
+
 
 
 
@@ -319,20 +344,20 @@ chr_state_intervals = read_chromHMM("H1_12_segments.bed", change=name_dict)
 #chr_state_intervals = read_chromHMM("GM12878_12_segments.bed", change=name_dict)
 
 ## for mouse CD8 T cell
-#name_dict = {"E1":"Weak Tx",
-#             "E2":"Tx elongation",
-#             "E3":"Weak enhancer2",
-#             "E4":"Strong enhancer2",
-#             "E5":"Strong enhancer1",
-#             "E6":"Weak enhancer1",
-#             "E7":"Active promoter",
-#             "E8":"Poised promoter",
-#             "E9":"Polycomb repressed1",
-#             "E10":"Polycomb repressed2",
-#             "E11":"Quiescence",
-#             "E12":"Heterochromatin"}
+name_dict = {"E1":"Weak Tx",
+             "E2":"Tx elongation",
+             "E3":"Weak enhancer2",
+             "E4":"Strong enhancer2",
+             "E5":"Strong enhancer1",
+             "E6":"Weak enhancer1",
+             "E7":"Active promoter",
+             "E8":"Poised promoter",
+             "E9":"Polycomb repressed1",
+             "E10":"Polycomb repressed2",
+             "E11":"Quiescence",
+             "E12":"Heterochromatin"}
 
-#chr_state_intervals = read_chromHMM("Mouse CD8 T cell (invitro activated)_12_segments.bed", change=name_dict)
+chr_state_intervals = read_chromHMM("Mouse CD8 T cell (invitro activated)_12_segments.bed", change=name_dict)
  
 chr_binID_states = {}
 for chr in chr_choice:
@@ -415,7 +440,7 @@ for i in range(len(names)-1):
 # state for H1
 #states = [state for num, state in sorted([(int(state.split('_')[0]), state) for state in state_GCs])]
 #states = ["Active promoter", "Weak promoter", "Poised promoter", "Strong enhancer", "Weak enhancer", "Tx elongation", "Weak Tx", "Insulator", "Polycomb repressed", "Heterochromatin", "Quiescence1", "Quiescence2"]
-states = ["Active promoter", "Weak promoter", "Poised promoter", "Strong enhancer", "Weak enhancer", "Tx elongation", "Weak Tx", "Polycomb repressed", "Heterochromatin", "Quiescence1", "Quiescence2"]
+#states = ["Active promoter", "Weak promoter", "Poised promoter", "Strong enhancer", "Weak enhancer", "Tx elongation", "Weak Tx", "Polycomb repressed", "Heterochromatin", "Quiescence1", "Quiescence2"]
 #states = sorted(state_rcounts.keys())
 
 # state for GM
@@ -423,7 +448,7 @@ states = ["Active promoter", "Weak promoter", "Poised promoter", "Strong enhance
 #states = ["Active promoter", "Weak promoter", "Poised promoter", "Strong enhancer", "Active enhancer", "Weak enhancer", "Tx elongation", "Weak Tx", "Polycomb repressed", "Heterochromatin", "Quiescence"]
 
 # state for mouse CD8 T cell
-#states = ["Active promoter", "Poised promoter", "Strong enhancer1", "Strong enhancer2", "Weak enhancer1", "Weak enhancer2", "Tx elongation", "Weak Tx", "Polycomb repressed1", "Polycomb repressed2", "Heterochromatin", "Quiescence"]
+states = ["Active promoter", "Poised promoter", "Strong enhancer1", "Strong enhancer2", "Weak enhancer1", "Weak enhancer2", "Tx elongation", "Weak Tx", "Polycomb repressed1", "Polycomb repressed2", "Heterochromatin", "Quiescence"]
 for i in range(len(state_rcounts_list)):
     name = names[i]
     state_rcounts = state_rcounts_list[i]

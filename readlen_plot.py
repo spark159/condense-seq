@@ -34,7 +34,7 @@ def read_rlen(fname, chr_list=None):
 
 #path = "/home/spark159/../../media/spark159/sw/sp_spd_tests_detail/"
 #path = ""
-path = "/home/spark159/../../media/spark159/sw/"
+#path = "/home/spark159/../../media/spark159/sw/"
 
 #fnames = ["H1_DNA_spd_H1-DNA-spd-0_rlen.txt", "H1_DNA_sp_H1-DNA-sp-0_rlen.txt", "H1_NCP-new_spd_H1-NCP-new-spd-0_rlen.txt", "H1_NCP-new_sp_H1-NCP-new-sp-0_rlen.txt"]
 #names = ["H1-DNA-spd-0", "H1-DNA-sp-0", "H1-NCP-spd-0", "H1-NCP-sp-0"]
@@ -236,26 +236,127 @@ names = ["H1-NCP-FUS-%s" % (i) for i in range(6)]
 #note="mCD8T:KO_NCP_sp"
 
 
-# some replicate QC
-fnames = ["H1_NCP_sp_H1-NCP-sp-%s_rlen.txt" % (i) for i in [0,4,8]]
-names = ["H1-NCP-sp-%s" % (i) for i in [0,4,8]]
+# replicate QC
+path = "/home/spark159/../../storage/replicates/"
+
+fnames = ["H1_NCP_sp_H1-NCP-sp-%s_rlen.txt" % (i) for i in range(10)]
+names = ["H1-NCP-sp-%s" % (i) for i in range(10)]
 note='H1_NCP_sp_qc'
 
-fnames = ["GM_NCP_sp_GM-NCP-sp-%s_rlen.txt" % (i) for i in [0,4,8]]
-names = ["GM-NCP-sp-%s" % (i) for i in [0,4,8]]
+fnames = ["GM_NCP_sp_GM-NCP-sp-%s_rlen.txt" % (i) for i in range(10)]
+names = ["GM-NCP-sp-%s" % (i) for i in range(10)]
 note='GM_NCP_sp_qc'
 
-fnames = ["mCD8T_WT-NCP_sp_mCD8T-WT-NCP-sp-%s_rlen.txt" % (i) for i in [0,4,8]]
-names = ["mCD8T-WT-NCP-sp-%s" % (i) for i in [0,4,8]]
+fnames = ["mCD8T_WT-NCP_sp_mCD8T-WT-NCP-sp-%s_rlen.txt" % (i) for i in range(10)]
+names = ["mCD8T-WT-NCP-sp-%s" % (i) for i in range(10)]
 note='mCD8T_WT-NCP_sp_qc'
 
-fnames = ["mCD8T_inht-NCP_sp_mCD8T-inht-NCP-sp-%s_rlen.txt" % (i) for i in [0,4,8]]
-names = ["mCD8T-inht-NCP-sp-%s" % (i) for i in [0,4,8]]
+fnames = ["mCD8T_inht-NCP_sp_mCD8T-inht-NCP-sp-%s_rlen.txt" % (i) for i in range(10)]
+names = ["mCD8T-inht-NCP-sp-%s" % (i) for i in range(10)]
 note='mCD8T_inht-NCP_sp_qc'
 
-fnames = ["mCD8T_KO-NCP_sp_mCD8T-KO-NCP-sp-%s_rlen.txt" % (i) for i in [0,4,8]]
-names = ["mCD8T-KO-NCP-sp-%s" % (i) for i in [0,4,8]]
+fnames = ["mCD8T_KO-NCP_sp_mCD8T-KO-NCP-sp-%s_rlen.txt" % (i) for i in range(10)]
+names = ["mCD8T-KO-NCP-sp-%s" % (i) for i in range(10)]
 note='mCD8T_KO-NCP_sp_qc'
+
+fnames = ["H1_NCP_HP1a_H1-NCP-HP1a-%s_rlen.txt" % (i) for i in range(6)]
+names = ["H1-NCP-HP1a-%s" % (i) for i in range(6)]
+note='H1_NCP_HP1a_qc'
+
+fnames = ["H1_NCP_LKH_H1-NCP-LKH-%s_rlen.txt" % (i) for i in range(6)]
+names = ["H1-NCP-LKH-%s" % (i) for i in range(6)]
+note='H1_NCP_LKH_qc'
+
+fnames = ["H1_NCP_Ki67_H1-NCP-Ki67-%s_rlen.txt" % (i) for i in range(6)]
+names = ["H1-NCP-Ki67-%s" % (i) for i in range(6)]
+note='H1_NCP_Ki67_qc'
+
+fnames = ["H1_NCP_spd_H1-NCP-spd-%s_rlen.txt" % (i) for i in [0, 6]]
+names = ["H1-NCP-spd-%s" % (i) for i in [0, 6]]
+note='H1_NCP_spd_qc'
+
+fnames = ["H1_NCP_CoH_H1-NCP-CoH-%s_rlen.txt" % (i) for i in [0, 5]]
+names = ["H1-NCP-CoH-%s" % (i) for i in [0, 5]]
+note='H1_NCP_CoH_qc'
+
+fnames = ["H1_NCP_PEG_H1-NCP-PEG-%s_rlen.txt" % (i) for i in [0, 6]]
+names = ["H1-NCP-PEG-%s" % (i) for i in [0, 6]]
+note='H1_NCP_PEG_qc'
+
+fnames = ["H1_NCP_Ca_H1-NCP-Ca-%s_rlen.txt" % (i) for i in [0, 5]]
+names = ["H1-NCP-Ca-%s" % (i) for i in [0, 5]]
+note='H1_NCP_Ca_qc'
+
+fnames = ["H1_DNA_HP1a_H1-DNA-HP1a-%s_rlen.txt" % (i) for i in [0, 3]]
+names = ["H1-DNA-HP1a-%s" % (i) for i in [0, 3]]
+note='H1_DNA_HP1a_qc'
+
+#fnames = ["H1_DNA_LKH_H1-DNA-LKH-%s_rlen.txt" % (i) for i in [0, 4]]
+#names = ["H1-DNA-LKH-%s" % (i) for i in [0, 4]]
+#note='H1_DNA_LKH_qc'
+
+fnames = ["H1_DNA_Ki67_H1-DNA-Ki67-%s_rlen.txt" % (i) for i in [0, 4]]
+names = ["H1-DNA-Ki67-%s" % (i) for i in [0, 4]]
+note='H1_DNA_Ki67_qc'
+
+
+# replicates fill-in
+path = "/home/spark159/../../storage/replicates/"
+
+fnames = ["_H1_NCP_HP1bSUV_%s_2_rlen.txt" % (i) for i in range(6)]
+names = ["H1_NCP_HP1bSUV_%s_2" % (i) for i in range(6)]
+note='H1_NCP_HP1bSUV_2rep_qc'
+
+fnames = ["_H1_NCP_HP1bSUV_%s_3_rlen.txt" % (i) for i in range(6)]
+names = ["H1_NCP_HP1bSUV_%s_3" % (i) for i in range(6)]
+note='H1_NCP_HP1bSUV_3rep_qc'
+
+fnames = ["_H1_NCP_HP1bTRIM_%s_1_rlen.txt" % (i) for i in range(6)]
+names = ["H1_NCP_HP1bTRIM_%s_1" % (i) for i in range(6)]
+note='H1_NCP_HP1bTRIM_1rep_qc'
+
+#fnames = ["_H1_NCP_HP1bTRIM_%s_2_rlen.txt" % (i) for i in range(6)]
+#names = ["H1_NCP_HP1bTRIM_%s_2" % (i) for i in range(6)]
+#note='H1_NCP_HP1bTRIM_2rep_qc'
+
+fnames = ["_H1_DNA_HP1bSUV_%s_2_rlen.txt" % (i) for i in range(6)]
+names = ["H1_DNA_HP1bSUV_%s_2" % (i) for i in range(6)]
+note='H1_DNA_HP1bSUV_2rep_qc'
+
+fnames = ["_H1_DNA_HP1bTRIM_%s_1_rlen.txt" % (i) for i in range(6)]
+names = ["H1_DNA_HP1bTRIM_%s_1" % (i) for i in range(6)]
+note='H1_DNA_HP1bTRIM_1rep_qc'
+
+fnames = ["_H1_DNA_HP1bTRIM_%s_2_rlen.txt" % (i) for i in range(6)]
+names = ["H1_DNA_HP1bTRIM_%s_2" % (i) for i in range(6)]
+note='H1_DNA_HP1bTRIM_2rep_qc'
+
+fnames = ["_H1_DNA_HP1a_%s_2_rlen.txt" % (i) for i in [0, 1, 2, 4]]
+names = ["H1_DNA_HP1a_%s_2" % (i) for i in [0, 1, 2, 4]]
+note='H1_DNA_HP1a_2rep_qc'
+
+fnames = ["_H1_DNA_HP1a_%s_3_rlen.txt" % (i) for i in [0, 2, 3, 4]]
+names = ["H1_DNA_HP1a_%s_3" % (i) for i in [0, 2, 3, 4]]
+note='H1_DNA_HP1a_3rep_qc'
+
+fnames = ["_H1_NCP_PEG_%s_2_rlen.txt" % (i) for i in [0, 4, 5, 7]]
+names = ["H1_NCP_PEG_%s_2" % (i) for i in [0, 4, 5, 7]]
+note='H1_NCP_PEG_2rep_qc'
+
+fnames = ["_H1_NCP_PEG_%s_3_rlen.txt" % (i) for i in [0, 5, 6]]
+names = ["H1_NCP_PEG_%s_3" % (i) for i in [0, 5, 6]]
+note='H1_NCP_PEG_3rep_qc'
+
+fnames = ["mCD8T_KO-NCP_sp_mCD8T-KO-NCP-sp-%s_rlen.txt" % (i) for i in range(10)]
+names = ["mCD8T-KO-NCP-sp-%s" % (i) for i in range(10)]
+note='mCD8T_KO-NCP_sp_qc'
+
+
+
+
+
+
+
 
 
 
@@ -280,8 +381,8 @@ fig = plt.figure()
 for i in range(len(names)):
     name = names[i]
     X, Y = X_list[i], Y_list[i]
-    plt.plot(X, Y, label=name, alpha=1)
-    #plt.plot(X, Y, color=cmap(color_list[i]), label=name, alpha=1)
+    #plt.plot(X, Y, label=name, alpha=1)
+    plt.plot(X, Y, color=cmap(color_list[i]), label=name, alpha=1)
     #plt.plot(X, Y, color='b', label=name, alpha=alpha_list[i])
 plt.xticks(range(0,500,50))
 #plt.xticks(range(0,500,10))

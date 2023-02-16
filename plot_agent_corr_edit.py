@@ -259,17 +259,17 @@ H1_states = ["Active promoter", "Weak promoter", "Poised promoter", "Strong enha
 H1_HMM_fname = "H1_12_segments.bed"
 
 # experiment list (cell, sample, agent, tnum)
-exp_list = [('H1', 'NCP', 'sp', 8),
-            ('H1', 'NCP', 'spd', 6),
-            ('H1', 'NCP', 'CoH', 5),
-            ('H1', 'NCP', 'PEG', 6),
-            ('H1', 'NCP', 'Ca', 5),
-            ('H1', 'NCP', 'Mg', 5),
-            ('H1', 'NCP', 'HP1a', 3),
-            ('H1', 'NCP', 'HP1bSUV', 4),
-            ('H1', 'NCP', 'LKH', 3),
-            ('H1', 'NCP', 'Ki67', 4),
-            ('H1', 'NCP', 'FUS', 4)] # FUS tnum changed
+#exp_list = [('H1', 'NCP', 'sp', 8),
+#            ('H1', 'NCP', 'spd', 6),
+#            ('H1', 'NCP', 'CoH', 5),
+#            ('H1', 'NCP', 'PEG', 6),
+#            ('H1', 'NCP', 'Ca', 5),
+#            ('H1', 'NCP', 'Mg', 5),
+#            ('H1', 'NCP', 'HP1a', 3),
+#            ('H1', 'NCP', 'HP1bSUV', 4),
+#            ('H1', 'NCP', 'LKH', 3),
+#            ('H1', 'NCP', 'Ki67', 4),
+#            ('H1', 'NCP', 'FUS', 4)] # FUS tnum changed
 
 #exp_list = [('H1', 'NCP', 'sp', 8),
 #            ('H1', 'NCP', 'spd', 6),
@@ -286,6 +286,15 @@ exp_list = [('H1', 'NCP', 'sp', 8),
 #            ('H1', 'NCP', 'PEG', 6),
 #            ('H1', 'NCP', 'Ca', 5),
 #            ('H1', 'NCP', 'HP1a', 3)]
+
+exp_list = [('H1', 'NCP', 'sp', 8),
+            ('H1', 'NCP', 'spd', 6),
+            ('H1', 'NCP', 'CoH', 5),
+            ('H1', 'NCP', 'PEG', 6),
+            ('H1', 'NCP', 'Ca', 5),
+            ('H1', 'NCP', 'HP1a', 3),
+            ('H1', 'NCP', 'HP1bSUV', 4)]
+
 
 
 # bin size
@@ -396,12 +405,12 @@ plt.gca().tick_params(right='off')
 plt.gca().xaxis.tick_top()
 plt.xticks(rotation=70, ha='left', va='center', rotation_mode='anchor', weight='bold')
 
-plt.savefig("hmap_" + note + ".png", dpi=500, bbox_inches='tight')
+plt.savefig("hmap_" + note + ".svg", format='svg', bbox_inches='tight')
 #plt.show()
 plt.close()
 
 
-sys.exit(1)
+#sys.exit(1)
 
 # get correlation between experiment
 pair_corr = {}

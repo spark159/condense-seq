@@ -40,55 +40,19 @@ path = "/home/spark159/../../storage/replicates/"
 #            ('H1', 'NCP', 'Ki67'),
 #            ('H1', 'NCP', 'FUS')]
 
-#exp_list = [('H1', 'NCP', 'HP1a'),
-#            ('H1', 'NCP', 'HP1bSUV'),
-#            ('H1', 'NCP', 'LKH'),
-#            ('H1', 'NCP', 'Ki67'),
-#            ('H1', 'NCP', 'FUS')]
 
-#exp_list = [('H1', 'NCP', 'LKH')]
+exp_list = [('H1', 'NCP', 'HP1bSUV', 2),
+            ('H1', 'NCP', 'HP1bSUV', 3),
+            ('H1', 'NCP', 'HP1bTRIM', 1),
+            ('H1', 'NCP', 'HP1bTRIM', 2),
+            ('H1', 'DNA', 'HP1bSUV', 2),
+            ('H1', 'DNA', 'HP1bTRIM', 1),
+            ('H1', 'DNA', 'HP1bTRIM', 2)]
 
-#exp_list = [('H1', 'NCP', 'sp'),
-#            ('H1', 'NCP', 'HP1a'),
-#            ('H1', 'NCP', 'LKH'),
-#            ('H1', 'NCP', 'Ki67')]
-
-exp_list = [('H1', 'NCP', 'sp'),
-            ('H1', 'NCP', 'spd'),
-            ('H1', 'NCP', 'CoH'),
-            ('H1', 'NCP', 'PEG'),
-            ('H1', 'NCP', 'Ca'),
-            ('H1', 'NCP', 'HP1a'),
-            ('H1', 'NCP', 'LKH'),
-            ('H1', 'NCP', 'Ki67'),
-            ('H1', 'DNA', 'HP1a'),
-            ('H1', 'DNA', 'LKH'),
-            ('H1', 'DNA', 'Ki67'),
-            ('mCD8T', 'WT-NCP', 'sp'),
-            ('mCD8T', 'inht-NCP', 'sp'),
-            ('mCD8T', 'KO-NCP', 'sp')]
-
-exp_list = [('GM', 'NCP', 'sp')]
-
-exp_list = [('H1', 'DNA', 'sp'),
-            ('H1', 'DNA', 'HP1a'),
-            ('H1', 'DNA', 'LKH'),
-            ('H1', 'DNA', 'Ki67')]
-
-
-exp_list = [('H1', 'NCP', 'HP1a'),
-            ('H1', 'NCP', 'LKH'),
-            ('H1', 'NCP', 'Ki67'),
-            ('H1', 'DNA', 'HP1a'),
-            ('H1', 'DNA', 'LKH'),
-            ('H1', 'DNA', 'Ki67')]
-
-#exp_list = [('mCD8T', 'WT-NCP', 'sp'),
-#            ('mCD8T', 'inht-NCP', 'sp'),
-#            ('mCD8T', 'KO-NCP', 'sp')]
-
-
-exp_list = [('mCD8T', 'KO-NCP', 'sp')]
+exp_list = [('H1', 'DNA', 'HP1a', 2),
+            ('H1', 'DNA', 'HP1a', 3),
+            ('H1', 'NCP', 'PEG', 2),
+            ('H1', 'NCP', 'PEG', 3)]
 
 
 bin_size = 10000
@@ -99,7 +63,7 @@ skip = 0 # skip first titration points
 #offset = 1 # only GC content
 #offset = 2 # GC content and template length
 
-for cell, sample, agent in exp_list:
+for cell, sample, agent, rep in exp_list:
 
     # set species and gender
     if cell in ['H1', 'GM']:
@@ -133,7 +97,7 @@ for cell, sample, agent in exp_list:
     tnum_tfrac = read_titration(tfname)
 
     # get sum of all nucleosome coverage
-    fname = path + '_'.join([cell, sample, agent, str(int(bin_size/1000.0)) + 'kb']) + '_bin.cn'
+    fname = path + '_'.join([cell, sample, agent, str(int(bin_size/1000.0)) + 'kb', str(rep)]) + '_bin.cn'
     print "working on %s" % (fname)
     print "get total counts"
 
@@ -152,7 +116,8 @@ for cell, sample, agent in exp_list:
             total_counts = [0.0 for i in range(len(names))]
             total_fracs = []
             for name in names:
-                tnum = int(name.rsplit('.', 1)[0].split('-')[-1])
+                #tnum = int(name.rsplit('.', 1)[0].split('-')[-1])
+                tnum = int(name.rsplit('.', 1)[0].split('_')[-2])
                 total_frac = tnum_tfrac[tnum]
                 total_fracs.append(total_frac)
             assert total_fracs[-1] == 1
@@ -190,7 +155,7 @@ for cell, sample, agent in exp_list:
     # convert to real count
     print "calculate real number"
 
-    fname = path + '_'.join([cell, sample, agent, str(int(bin_size/1000.0)) + 'kb']) + '_num.cn'
+    fname = path + '_'.join([cell, sample, agent, str(int(bin_size/1000.0)) + 'kb', str(rep)]) + '_num.cn'
     f = open(fname, 'w')
     s = '\t'.join(['BinID', 'Chromosome', 'Start', 'End'] + names + ['note'])
     print >> f, s
@@ -230,7 +195,7 @@ for cell, sample, agent in exp_list:
     total, weird = 0, 0
     star = 0
     First = True
-    fname = path + '_'.join([cell, sample, agent, str(int(bin_size/1000.0)) + 'kb']) + '_num.cn'
+    fname = path + '_'.join([cell, sample, agent, str(int(bin_size/1000.0)) + 'kb', str(rep)]) + '_num.cn'
     for line in open(fname):
         if not line.strip():
             continue

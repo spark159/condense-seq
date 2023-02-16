@@ -197,14 +197,38 @@ names, chr_binID_counts, chr_binID_range, chr_binID_GC = read_bincountfile(fname
 #fname = 'mCD8T_KO-NCP_sp_bin.cn'
 
 # some replicates QC
-path = '/media/spark159/sw/'
-#path = ""
-tnums = [4, 8]
-#fname = 'H1_NCP_sp_10kb_bin.cn'
-#fname = 'GM_NCP_sp_10kb_bin.cn'
-#fname = 'mCD8T_WT-NCP_sp_10kb_bin.cn'
-#fname = 'mCD8T_inht-NCP_sp_10kb_bin.cn'
+path = "/home/spark159/../../storage/replicates/"
+tnums = range(1, 10)
+fname = 'H1_NCP_sp_10kb_bin.cn'
+fname = 'GM_NCP_sp_10kb_bin.cn'
+fname = 'mCD8T_WT-NCP_sp_10kb_bin.cn'
+fname = 'mCD8T_inht-NCP_sp_10kb_bin.cn'
 fname = 'mCD8T_KO-NCP_sp_10kb_bin.cn'
+fname = 'H1_NCP_spd_10kb_bin.cn'
+fname = 'H1_NCP_CoH_10kb_bin.cn'
+fname = 'H1_NCP_PEG_10kb_bin.cn'
+fname = 'H1_NCP_Ca_10kb_bin.cn'
+tnums = range(1, 6)
+#fname = 'H1_NCP_HP1a_10kb_bin.cn'
+#fname = 'H1_NCP_LKH_10kb_bin.cn'
+#fname = 'H1_NCP_Ki67_10kb_bin.cn'
+#fname = 'H1_DNA_HP1a_10kb_bin.cn'
+#fname = 'H1_DNA_LKH_10kb_bin.cn'
+#fname = 'H1_DNA_Ki67_10kb_bin.cn'
+fname = 'H1_NCP_HP1bSUV_10kb_2_bin.cn'
+fname = 'H1_NCP_HP1bSUV_10kb_3_bin.cn'
+fname = 'H1_NCP_HP1bTRIM_10kb_1_bin.cn'
+fname = 'H1_NCP_HP1bTRIM_10kb_2_bin.cn'
+fname = 'H1_DNA_HP1bSUV_10kb_2_bin.cn'
+fname = 'H1_DNA_HP1bTRIM_10kb_1_bin.cn'
+fname = 'H1_DNA_HP1bTRIM_10kb_2_bin.cn'
+fname = 'H1_DNA_HP1a_10kb_2_bin.cn'
+fname = 'H1_DNA_HP1a_10kb_3_bin.cn'
+fname = 'H1_NCP_PEG_10kb_2_bin.cn'
+fname = 'H1_NCP_PEG_10kb_3_bin.cn'
+fname = 'mCD8T_KO-NCP_sp_10kb_bin.cn'
+
+
 
 
 

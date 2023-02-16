@@ -296,58 +296,9 @@ agent_fullname = {'sp':'Spermine(4+)',
                   'Ca':'Calcium'}
 
 cell = 'H1'
-# experiment list (cell, sample, agent)
+# experiment list (cell, sample, agent, rep)
 # it should be same cell line
-
-exp_list = [(cell, 'NCP', 'sp', 8),
-            (cell, 'NCP', 'spd', 6),
-            (cell, 'NCP', 'CoH', 5),
-            (cell, 'NCP', 'PEG', 6),
-            (cell, 'NCP', 'Ca', 5),
-            (cell, 'NCP', 'HP1a', 3),
-            (cell, 'NCP', 'HP1bSUV', 4)]
-
-#exp_list = [(cell, 'NCP', 'sp'),
-#            (cell, 'NCP', 'spd'),
-#            (cell, 'NCP', 'CoH'),
-#            (cell, 'NCP', 'PEG'),
-#            (cell, 'NCP', 'Ca'),
-#            (cell, 'NCP', 'Mg'),
-#            (cell, 'NCP', 'HP1a'),
-#            (cell, 'NCP', 'HP1bSUV'),
-#            (cell, 'NCP', 'LKH'),
-#            (cell, 'NCP', 'Ki67'),
-#            (cell, 'NCP', 'FUS')]
-
-#exp_list = [(cell, 'NCP', 'sp'),
-#            (cell, 'NCP', 'spd'),
-#            (cell, 'NCP', 'CoH'),
-#            (cell, 'NCP', 'PEG'),
-#            (cell, 'NCP', 'Mg'),
-#            (cell, 'NCP', 'Ca'),
-#            (cell, 'NCP', 'HP1a')]
-
-#exp_list = [(cell, 'NCP', 'sp', 8),
-#            (cell, 'NCP', 'spd', 6),
-#            (cell, 'NCP', 'CoH', 5),
-#            (cell, 'NCP', 'PEG', 6),
-#            (cell, 'NCP', 'Ca', 5),
-#            (cell, 'NCP', 'Mg', 5),
-#            (cell, 'NCP', 'HP1a', 3),
-#            (cell, 'NCP', 'HP1bSUV', 4),
-#            (cell, 'NCP', 'LKH', 3),
-#            (cell, 'NCP', 'Ki67', 4),
-#            (cell, 'NCP', 'FUS', 5)]
-
-cell = 'mCD8T'
-#exp_list = [(cell, 'WT-NCP', 'sp', 8),
-#            (cell, 'inht-NCP', 'sp', 8),
-#            (cell, 'KO-NCP', 'sp', 8)]
-#exp_list = [(cell, 'WT-NCP', 'sp', i) for i in range(1, 10)]
-#exp_list = [(cell, 'inht-NCP', 'sp', i) for i in range(1, 10)]
-exp_list = [(cell, 'KO-NCP', 'sp', i) for i in range(1, 10)]
-
-#exp_list = [(cell, 'NCP', 'HP1bSUV', i) for i in range(1, 6)]
+exp_list = [(cell, 'NCP', 'PEG', i, 3) for i in [5,6]]
 
 
 # set species and gender
@@ -369,7 +320,7 @@ elif species == 'mouse':
 chr_gID_Gband = read_Gband(path+Gband_fname)
 
 #### read titration file
-for cell, sample, agent, tnum in exp_list:
+for cell, sample, agent, tnum, rep in exp_list:
     tnum_conc, tnum_frac = load_file.read_titration("%s_%s_%s_titration.csv" % (cell, sample, agent))
 
 #### set parameters
@@ -391,12 +342,12 @@ chr_choices = ['chr1']
 
 
 # set target names and feature names
-target_names = ['-'.join([cell, sample, agent, str(tnum)]) for cell, sample, agent, tnum in exp_list]
+target_names = ['_'.join([cell, sample, agent, str(tnum), str(rep)]) for cell, sample, agent, tnum, rep in exp_list]
 feature_names = ['Gene activity']
 names = target_names + feature_names
 
 # target file information
-target_ftype = "score"
+target_ftype = "zscore"
 #target_ftype = "Chalf"
 #target_ftype = "zChalf"
 #target_ftype = "fract"
@@ -409,13 +360,12 @@ aspect = (0.05*bin_size) / (10**6)
 alphas = [0.8, 0.4]
 lws = [2, 1.5]
 linestyles = [None, None]
-ylabels = ['Condensability', 'Gene activity']
+#ylabels = ['Condensability', 'Gene activity']
 ylabels = ["", ""]
 ycolors = ['Blue', 'Red']
 #ycolors = [None, None]
-#ylims_list = [[-1.2, 1.2], [None, None]]
+ylims_list = [[-1.2, 1.2], [None, None]]
 #ylims_list = [[0.0, 1.0], [None, None]]
-ylims_list = [[None, None], [None, None]]
 yscales = [None, None] #To dos
 legend_loc = 'upper right'
 shaded = False
@@ -426,7 +376,7 @@ name_color = {'Gene activity':'black'}
 #cmap = mpl.cm.get_cmap("jet")
 #color_list = np.linspace(0.01, 0.99, num=len(target_names))
 #name_color = {target_names[i]:cmap(color_list[i]) for i in range(len(target_names))}
-name_label = {target_name:target_name.split('-')[-1] for target_name in target_names}
+name_label = {target_name:target_name.split('_')[-2] for target_name in target_names}
 #name_label = {target:target.split('-')[2] for target in target_names}
 
 
@@ -434,8 +384,7 @@ name_label = {target_name:target_name.split('-')[-1] for target_name in target_n
 # set the list of figure frames (each frame is a matrix of varables to be plotted)
 #fig_list = [ [[[target], ['Gene activity']]] for target in target_names ]
 #fig_list = [[[[target], ['Gene activity']] for target in target_names]]
-fig_list = [ [[[target for target in target_names], []]] ]
-#fig_list = [ [[[target for target in target_names], ['Gene activity']]] ]
+fig_list = [ [[[target for target in target_names], ['Gene activity']]] ]
 note_list = [target for target in target_names]
 
 
@@ -451,16 +400,18 @@ for chr_choice in chr_choices:
     name_ID_pos = {}
     name_ID_value = {}
     
-    for cell, sample, agent, tnum in exp_list:
+    for cell, sample, agent, tnum, rep in exp_list:
 
         if target_ftype == 'fract':
             target_fname = '_'.join([cell, sample, agent,
                                      str(int(target_binsize/1000.0)) + 'kb',
+                                     str(rep),
                                      'num']) + '.cn'
 
         else:
             target_fname = '_'.join([cell, sample, agent,
                                      str(int(target_binsize/1000.0)) + 'kb',
+                                     str(rep),
                                      target_ftype]) + '.cn'
 
         if target_ftype == 'anot':
@@ -474,7 +425,7 @@ for chr_choice in chr_choices:
             ID_pos, field_ID_value = read_bin_num(path + target_fname, chr_choices=[chr_choice])
 
         elif target_ftype == 'fract':
-            ID_pos, field_ID_value = read_bin_fract(path2 + target_fname, chr_choices=[chr_choice])      
+            ID_pos, field_ID_value = read_bin_fract(path + target_fname, chr_choices=[chr_choice])      
 
         elif target_ftype in ['Chalf', 'zChalf']:
             ID_pos, ID_value = read_bin_Chalf(path + target_fname, chr_choices=[chr_choice])

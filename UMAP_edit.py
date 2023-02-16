@@ -89,14 +89,14 @@ print("Data reading start", file=sys.stderr)
 
 path = "/home/spark159/../../storage/"
 
-#fname = 'H1_NCP_sp_10kb_chip-only_anot.txt'
+#fname = 'H1_NCP_sp_10kb_anot.txt'
 #field = "H1-NCP-sp-8"
 
-#fname = 'H1_NCP_HP1a_10kb_chip-only_anot.txt'
-#field = "H1-NCP-HP1a-3"
+fname = 'H1_NCP_HP1a_10kb_anot.txt'
+field = "H1-NCP-HP1a-3"
 
-fname = 'H1_NCP_Ki67_10kb_chip-only_anot.txt'
-field = "H1-NCP-Ki67-4"
+#fname = 'H1_NCP_Ki67_10kb_anot.txt'
+#field = "H1-NCP-Ki67-4"
 
 
 
@@ -142,10 +142,7 @@ for field in fields:
     std = np.std(values)
     for i in range(len(IDs)):
         value = values[i]
-        if std > 0:
-            re_value = float(value-mean)/std
-        else:
-            re_value = value
+        re_value = float(value-mean)/std
         X[i].append(re_value)
 
 
@@ -154,68 +151,6 @@ values = np.asarray([ID_score[ID] for ID in IDs])
 
 del field_ID_value
 print("Data reading is done", file=sys.stderr)
-
-
-# None-negative matrix factorization
-class_num = 10
-
-try:
-    with open("W_domain.pickle", "rb") as f:
-        W = pickle.load(f)
-    with open("H_domain.pickle", "rb") as f:
-        H = pickle.load(f)
-
-except:
-    print "NMF start"
-    model = NMF(n_components=class_num, init='random', random_state=0, verbose=True)
-    W = model.fit_transform(X)
-    H = model.components_
-    print "NMF is done"
-
-    with open("W_domain.pickle", "wb") as f:
-        pickle.dump(W, f)
-    with open("H_doamin.pickle", "wb") as f:
-        pickle.dump(H, f)
-
-# post-analysis of NMF
-cID_prog = []
-for i in range(class_num):
-    cID_prog.append(H[i])
-
-ID_cID = {}
-cID_IDs = [[] for i in range(class_num)]
-for i in range(len(IDs)):
-    ID = IDs[i]
-    cID = np.argmax(W[i])
-    ID_cID[ID] = cID
-    cID_IDs[cID].append(ID)
-
-cID_scores = [[] for i in range(class_num)]
-for i in range(len(cID_IDs)):
-    for ID in cID_IDs[i]:
-        score = ID_score[ID]
-        cID_scores[i].append(score)
-
-# sort according to condensability
-score_cID = sorted([(np.median(cID_scores[cID]), cID) for cID in range(len(cID_scores))])
-cID_list = [cID for score, cID in score_cID]
-cID_newcID = {cID_list[i]:i for i in range(len(cID_list))}
-ID_newcID = {}
-for ID in IDs:
-    cID = ID_cID[ID]
-    newcID = cID_newcID[cID]
-    ID_newcID[ID] = newcID
-    
-with open("NMF_sorted_cID_domain.pickle", "wb") as f:
-    pickle.dump(ID_newcID, f)
-
-
-newcIDs = []
-newX = []
-for i in range(len(IDs)):
-    ID = IDs[i]
-    newcID = ID_newcID[ID]
-    newX
 
 
 # UMAP embedding

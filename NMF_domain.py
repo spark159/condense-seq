@@ -39,7 +39,7 @@ print "Data reading start"
 
 path = "/home/spark159/../../storage/"
 
-fname = 'H1_NCP_sp_10kb_chip-only_anot.txt'
+fname = 'H1_NCP_sp_10kb_anot.txt'
 field = "H1-NCP-sp-8"
 
 #fname = 'H1_NCP_HP1a_10kb_chip-only_anot.txt'
@@ -92,15 +92,13 @@ for name in names:
 X = sparse.csr_matrix(X)
 #values = np.asarray([ID_score[ID] for ID in IDs])
 
-del ID_pos
-del ID_chr
 del name_ID_value
 
 print "Data reading is done"
 
 
 # None-negative matrix factorization
-class_num = 10
+class_num = len(domain_names)
 
 try:
     with open("W_domain.pickle", "rb") as f:

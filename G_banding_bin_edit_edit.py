@@ -315,11 +315,20 @@ chr_choices = ['chr1']
 
 # set target names and feature names
 #target_names = ["H1-NCP-sp-%s.bam" % (k) for k in range(1,10)]
-target_names = [k for k in range(1,10)]
+#target_names = [k for k in range(1,10)]
 #target_names = [6]
 #target_names = ['WT-Chalf', 'inht-Chalf', 'KO-Chalf']
 #target_names = ['WT-Chalf']
 #target_names = ["H1-NCP-HP1a-%s.bam" % (k) for k in range(1,6)]
+#target_names = ["H1-NCP-LKH-%s.bam" % (k) for k in range(1,6)]
+#target_names = ["H1-NCP-Ki67-%s.bam" % (k) for k in range(1,6)]
+#target_names = ["H1-DNA-HP1a-%s.bam" % (k) for k in [3]]
+#target_names = ["H1-DNA-LKH-%s.bam" % (k) for k in [4]]
+target_names = ["H1-DNA-Ki67-%s.bam" % (k) for k in [4]]
+#target_names = ["H1-NCP-spd-%s.bam" % (k) for k in [6]]
+#target_names = ["H1-NCP-CoH-%s.bam" % (k) for k in [5]]
+#target_names = ["H1-NCP-PEG-%s.bam" % (k) for k in [6]]
+#target_names = ["H1-NCP-Ca-%s.bam" % (k) for k in [5]]
 #target_names = ["H1-DNA-HP1a-%d.bam" % (k) for k in range(1,6)]
 #target_names = ["GM-NCP-sp-%d.bam" % (k) for k in range(1,10)]
 #target_names = ["GM-NCP-sp-4.bam", "GM-NCP-sp-8.bam"]
@@ -348,6 +357,7 @@ for chr_choice in chr_choices:
 
     #### read files
     path = ""
+    path2 = "/home/spark159/../../storage/replicates/"
     # read G-band information
     chr_gID_Gband = read_Gband(path+"Gband_information.txt", chr_choices=[chr_choice]) # human
     #chr_gID_Gband = read_Gband(path+"Gbanding_mouse.txt", chr_choices=[chr_choice]) # mouse
@@ -355,12 +365,22 @@ for chr_choice in chr_choices:
     # read annotation file
     #field_ID_value = load_file.read_tabular_file (path+"H1_NCP_sp_10kb_anot.cn", mode='col')
     #ID_pos = field_ID_value['PhysicalPosition']
-    #ID_pos, field_ID_value = read_bin("mCD8T_WT-NCP_sp_10kb_bin.cn", chr_choices=[chr_choice])
-    #ID_pos, field_ID_value = read_bin("mCD8T_inht-NCP_sp_10kb_bin.cn", chr_choices=[chr_choice])
-    #ID_pos, field_ID_value = read_bin("mCD8T_KO-NCP_sp_bin.cn", chr_choices=[chr_choice], tlen=True)
-    #ID_pos, field_ID_value = read_bin("GM_NCP_sp_10kb_bin.cn", chr_choices=[chr_choice])
-    #ID_pos, field_ID_value = read_bin("H1_NCP_HP1a_10kb_bin.cn", chr_choices=[chr_choice])
-    #ID_pos, field_ID_value = read_bin("H1_DNA_HP1a_10kb_bin.cn", chr_choices=[chr_choice])
+    #ID_pos, field_ID_value = read_bin(path2+"mCD8T_WT-NCP_sp_10kb_bin.cn", chr_choices=[chr_choice], tlen=True)
+    #ID_pos, field_ID_value = read_bin(path2+"mCD8T_inht-NCP_sp_10kb_bin.cn", chr_choices=[chr_choice], tlen=True)
+    #ID_pos, field_ID_value = read_bin(path2+"mCD8T_KO-NCP_sp_10kb_bin.cn", chr_choices=[chr_choice], tlen=True)
+    #ID_pos, field_ID_value = read_bin(path2 + "H1_NCP_sp_10kb_bin.cn", chr_choices=[chr_choice], tlen=True)
+    #ID_pos, field_ID_value = read_bin(path2 + "GM_NCP_sp_10kb_bin.cn", chr_choices=[chr_choice], tlen=True)
+    #ID_pos, field_ID_value = read_bin(path2 + "H1_NCP_HP1a_10kb_bin.cn", chr_choices=[chr_choice], tlen=True)
+    #ID_pos, field_ID_value = read_bin(path2 + "H1_NCP_LKH_10kb_bin.cn", chr_choices=[chr_choice], tlen=True)
+    #ID_pos, field_ID_value = read_bin(path2 + "H1_NCP_Ki67_10kb_bin.cn", chr_choices=[chr_choice], tlen=True)
+    #ID_pos, field_ID_value = read_bin(path2 + "H1_DNA_HP1a_10kb_bin.cn", chr_choices=[chr_choice], tlen=True)
+    #ID_pos, field_ID_value = read_bin(path2 + "H1_DNA_LKH_10kb_bin.cn", chr_choices=[chr_choice], tlen=True)
+    ID_pos, field_ID_value = read_bin(path2 + "H1_DNA_Ki67_10kb_bin.cn", chr_choices=[chr_choice], tlen=True)
+    #ID_pos, field_ID_value = read_bin(path2 + "H1_NCP_spd_10kb_bin.cn", chr_choices=[chr_choice], tlen=True)
+    #ID_pos, field_ID_value = read_bin(path2 + "H1_NCP_CoH_10kb_bin.cn", chr_choices=[chr_choice], tlen=True)
+    #ID_pos, field_ID_value = read_bin(path2 + "H1_NCP_PEG_10kb_bin.cn", chr_choices=[chr_choice], tlen=True)
+    #ID_pos, field_ID_value = read_bin(path2 + "H1_NCP_Ca_10kb_bin.cn", chr_choices=[chr_choice], tlen=True)
+    #ID_pos, field_ID_value = read_bin("H1_DNA_HP1a_10kb_bin.cn", chr_choices=[chr_choice], tlen=True)
     #ID_pos, field_ID_value = read_bin("HGPS_NCP_sp_bin.cn", chr_choices=[chr_choice], tlen=True)
     #ID_pos, field_ID_value = read_bin_Chalf("H1_NCP_sp_10kb_Chalf.cn", chr_choices=[chr_choice])
     #ID_pos, field_ID_value = read_bin_Chalf("GM_NCP_sp_10kb_Chalf.cn", chr_choices=[chr_choice])
@@ -390,23 +410,23 @@ for chr_choice in chr_choices:
     #                                      "mCD8T_KO-NCP_sp_10kb_num.cn", chr_choices=[chr_choice])
 
     # read score file
-    ID_chr_range, name_ID_score = load_file.read_bin_score_new("/home/spark159/../../media/spark159/sw/"
-                                                               + "H1_NCP_sp_10kb_score.cn",
-                                                               chr_choice=[chr_choice])
+    #ID_chr_range, name_ID_score = load_file.read_bin_score_new("/home/spark159/../../storage/replicates/"
+   #                                                            + "H1_NCP_sp_10kb_score.cn",
+   #                                                            chr_choice=[chr_choice])
 
-    ID_pos = {}
-    for ID in ID_chr_range:
-        assert ID_chr_range[ID][0] == chr_choice
-        st, ed = ID_chr_range[ID][1]
-        pos = (st + ed)/2
-        ID_pos[ID] = pos
-    del ID_chr_range
+    #ID_pos = {}
+    #for ID in ID_chr_range:
+    #    assert ID_chr_range[ID][0] == chr_choice
+    #    st, ed = ID_chr_range[ID][1]
+    #    pos = (st + ed)/2
+    #    ID_pos[ID] = pos
+    #del ID_chr_range
 
-    field_ID_value = {}
-    for name in name_ID_score:
-        new_name = int(name.rsplit('.', 1)[0].split('-')[-1])
-        field_ID_value[new_name] = copy.deepcopy(name_ID_score[name])
-    del name_ID_score
+    #field_ID_value = {}
+    #for name in name_ID_score:
+    #    new_name = int(name.rsplit('.', 1)[0].split('-')[-1])
+    #    field_ID_value[new_name] = copy.deepcopy(name_ID_score[name])
+    #del name_ID_score
     
     # read GTF file
     geneID_field_values, field_geneID_values = load_file.read_GTF (path+"ENCFF159KBI.gtf", mode="both", chr_list=[chr_choice]) # human
@@ -679,13 +699,13 @@ for chr_choice in chr_choices:
             ax1 = plt.subplot(211)
             ax2 = plt.subplot(212)
 
-            #cmap = mpl.cm.get_cmap("jet")
-            cmap = mpl.cm.get_cmap("pink_r")
+            cmap = mpl.cm.get_cmap("jet")
+            #cmap = mpl.cm.get_cmap("pink_r")
             color_list = np.linspace(0.01, 0.99, num=len(target_names))
             for j in range(len(target_names)):
                 target_name = target_names[j]
-                ax1.plot(name_sig[target_name], '#1f77b4', alpha=1)
-                #ax1.plot(name_sig[target_name], alpha=0.5, lw=2, label=str(j+1))
+                #ax1.plot(name_sig[target_name], '#1f77b4', alpha=1)
+                ax1.plot(name_sig[target_name], alpha=0.5, lw=2, label=str(j+1))
                 #ax1.plot(name_sig[target_name], alpha=1, lw=2, label=target_name)
                 #ax1.plot(name_sig[target_name], alpha=1, lw=2, color=cmap(color_list[j]),
                 #         label='[sp]=%.2fmM' % (tnum_conc[target_name]))
@@ -709,7 +729,7 @@ for chr_choice in chr_choices:
             #ax1.set_ylim([-0.5, 0.5])
             #ax1.set_ylim([-0.5, 1.5])
             #ax1.set_ylim([-0.5, 2.0])
-            #ax1.set_ylim([-0.5, 1.0])
+            ax1.set_ylim([-0.5, 1.0])
             #ax1.set_ylim([0.14, 0.22])
             #ax1.set_ylim([0.2, 3.5])
             #ax1.set_ylim([0, 1.0])
@@ -721,15 +741,15 @@ for chr_choice in chr_choices:
 
             ax1p = ax1.twinx()
             feature_name = feature_names[i]
-            ax1p.plot(name_sig[feature_name], '#d62728', alpha=0.8, lw=2)
-            #ax1p.plot(name_sig[feature_name], 'k', alpha=0.8, lw=2)
+            #ax1p.plot(name_sig[feature_name], '#d62728', alpha=0.8, lw=2)
+            ax1p.plot(name_sig[feature_name], 'k', alpha=0.8, lw=2)
             #ax1p.plot(name_sig[feature_name], 'k--', alpha=0.5, lw=1.5)
             #ax1p.plot(name_sig[feature_name], 'tab:orange', alpha=0.8)
             #ax1p.plot(np.log(-1*np.asarray(name_sig[feature_name])), '#d62728', alpha=0.5)
-            ax1p.set_ylabel(feature_name, color='r')
-            #ax1p.set_ylabel(feature_name, color='k')
+            #ax1p.set_ylabel(feature_name, color='r')
+            ax1p.set_ylabel(feature_name, color='k')
             #ax1p.set_ylabel('Eigenvector', color='orangered')
-            ax1p.tick_params('y', colors='#d62728')
+            #ax1p.tick_params('y', colors='#d62728')
             #ax1p.tick_params('y', colors='orangered')
             #ax1p.set_ylim([-0.1, 2.0])
             #ax1p.set_ylim([-0.2, 3.0])

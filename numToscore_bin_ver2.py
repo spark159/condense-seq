@@ -5,73 +5,34 @@ import math
 #path = "/home/spark159/../../storage/"
 path = "/home/spark159/../../storage/replicates/"
 
-# experiment list (cell, sample, agent)
-#exp_list = [('H1', 'NCP', 'sp'),
-#            ('H1', 'NCP', 'spd'),
-#            ('H1', 'NCP', 'CoH'),
-#            ('H1', 'NCP', 'PEG'),
-#            ('H1', 'NCP', 'Ca'),
-#            ('H1', 'NCP', 'Mg'),
-#            ('H1', 'NCP', 'HP1a'),
-#            ('H1', 'NCP', 'HP1bSUV'),
-#            ('H1', 'NCP', 'LKH'),
-#            ('H1', 'NCP', 'Ki67'),
-#            ('H1', 'NCP', 'FUS')]
+# experiment list (cell, sample, agent, rep)
+exp_list = [('H1', 'NCP', 'HP1bSUV', 2),
+            ('H1', 'NCP', 'HP1bSUV', 3),
+            ('H1', 'NCP', 'HP1bTRIM', 1),
+            ('H1', 'NCP', 'HP1bTRIM', 2),
+            ('H1', 'DNA', 'HP1bSUV', 2),
+            ('H1', 'DNA', 'HP1bTRIM', 1),
+            ('H1', 'DNA', 'HP1bTRIM', 2)]
 
-#exp_list = [('H1', 'NCP', 'LKH')]\
+exp_list = [('H1', 'DNA', 'HP1a', 2),
+            ('H1', 'DNA', 'HP1a', 3),
+            ('H1', 'NCP', 'PEG', 2),
+            ('H1', 'NCP', 'PEG', 3)]
 
-#exp_list = [('H1', 'NCP', 'sp'),
-#            ('H1', 'NCP', 'HP1a'),
-#            ('H1', 'NCP', 'LKH'),
-#            ('H1', 'NCP', 'Ki67')]
-
-exp_list = [('H1', 'NCP', 'sp'),
-            ('H1', 'NCP', 'spd'),
-            ('H1', 'NCP', 'CoH'),
-            ('H1', 'NCP', 'PEG'),
-            ('H1', 'NCP', 'Ca'),
-            ('H1', 'NCP', 'HP1a'),
-            ('H1', 'NCP', 'LKH'),
-            ('H1', 'NCP', 'Ki67'),
-            ('H1', 'DNA', 'HP1a'),
-            ('H1', 'DNA', 'LKH'),
-            ('H1', 'DNA', 'Ki67'),
-            ('mCD8T', 'WT-NCP', 'sp'),
-            ('mCD8T', 'inht-NCP', 'sp'),
-            ('mCD8T', 'KO-NCP', 'sp')]
-
-exp_list = [('GM', 'NCP', 'sp')]
-
-exp_list = [('H1', 'DNA', 'sp'),
-            ('H1', 'DNA', 'HP1a'),
-            ('H1', 'DNA', 'LKH'),
-            ('H1', 'DNA', 'Ki67')]
-
-exp_list = [('mCD8T', 'WT-NCP', 'sp'),
-            ('mCD8T', 'inht-NCP', 'sp'),
-            ('mCD8T', 'KO-NCP', 'sp')]
-
-exp_list = [('H1', 'NCP', 'HP1a'),
-            ('H1', 'NCP', 'LKH'),
-            ('H1', 'NCP', 'Ki67'),
-            ('H1', 'DNA', 'HP1a'),
-            ('H1', 'DNA', 'LKH'),
-            ('H1', 'DNA', 'Ki67')]
-
-exp_list = [('mCD8T', 'KO-NCP', 'sp')]
 
 
 # bin information
+bin_size = 10000
 #bin_size = 5000
 #bin_size = 1000
-bin_size = 10000
+#bin_size = 10000
 #bin_size = 25000
 
 # skip choice
 skip_zero = True
 skip_star = False
 
-for cell, sample, agent in exp_list:
+for cell, sample, agent, rep in exp_list:
 
     # set species and gender
     if cell in ['H1', 'GM']:
@@ -94,8 +55,8 @@ for cell, sample, agent in exp_list:
     if gender == 'male':
         chr_list += ['chrY']
 
-    num_fname = path + '_'.join([cell, sample, agent, str(int(bin_size/1000.0)) + 'kb']) + '_num.cn'
-    score_fname = path + '_'.join([cell, sample, agent, str(int(bin_size/1000.0)) + 'kb']) + '_score.cn'
+    num_fname = path + '_'.join([cell, sample, agent, str(int(bin_size/1000.0)) + 'kb', str(rep)]) + '_num.cn'
+    score_fname = path + '_'.join([cell, sample, agent, str(int(bin_size/1000.0)) + 'kb', str(rep)]) + '_score.cn'
 
     print "working on %s" % (num_fname)
     print "reading bin_num file"

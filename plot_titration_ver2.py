@@ -31,6 +31,7 @@ agent_unit = {'sp':'mM',
               'Mg':'mM',
               'Ca':'mM',
               'HP1a':'$\\mu$M',
+              'HP1bSUV':'$\\mu$M',
               'LKH':'$\\mu$M',
               'Ki67':'$\\mu$M'}
 
@@ -41,6 +42,7 @@ agent_logbase = {'sp':10,
                  'Mg':None,
                  'Ca':None,
                  'HP1a':2,
+                 'HP1bSUV':2,
                  'LKH':2,
                  'Ki67':2}
 
@@ -50,7 +52,8 @@ agent_fullname = {'sp':'Spermine(4+)',
                   'PEG':'PEG 8000',
                   'Mg':'Magnesium',
                   'Ca':'Calcium',
-                  'HP1a':'HP1 $\\alpha$',
+                  'HP1a':'HP1$\\alpha$',
+                  'HP1bSUV':'HP1$\\beta$/SUV39H1',
                   'LKH':'Linker histone1',
                   'Ki67':'Ki67'}
 
@@ -67,7 +70,7 @@ colors = ['tab:blue', 'tab:orange', 'tab:green']
 title = "Mouse CD8 T cell Nucleosome condensation"
 
 # proteins
-agent = 'Ki67'
+agent = 'HP1bSUV'
 exp_list = [('H1', 'NCP'),
             ('H1', 'DNA')]
 labels = ['NCP', 'DNA']

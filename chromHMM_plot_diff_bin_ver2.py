@@ -327,6 +327,94 @@ def multi_boxplot (key_values_list,
     #plt.show()
     plt.close('all')
 
+def multi_boxplot2 (key_values_list,
+                    figsize=None,
+                    axhline=None,
+                    ylabel='Condensability (A.U.)',
+                    ylims=[None, None],
+                    title=None,
+                    keys=None,
+                    labels=[],
+                    colors=[],
+                    rotation=None,
+                    legend_loc='best',
+                    note=""):
+
+    common_keys = set([])
+    for i in range(len(key_values_list)):
+        key_values = key_values_list[i]
+        if i == 0:
+            common_keys |= set(key_values.keys())
+            continue
+        common_keys &= set(key_values.keys())
+    common_keys = list(common_keys)
+
+    if keys:
+        new_keys = []
+        for key in keys:
+            if key in common_keys:
+                new_keys.append(key)
+        keys = new_keys
+    else:
+        keys = common_keys
+
+    if not labels:
+        labels = [None]*len(key_values_list)
+
+    if not colors:
+        colors = ['white']*len(key_values_list)
+
+    bp_list = []
+    #width = 0.2*len(keys)
+    #height = 0.2*len(key_values_list)
+
+    if figsize !=None:
+        figsize = tuple(figsize)
+    
+    fig, axes = plt.subplots(figsize=figsize, nrows=len(key_values_list), ncols=1)
+    for i in range(len(key_values_list)):
+        if axhline != None:
+            axes[i].axhline(y=axhline, linestyle='--', color='k', alpha=0.5)
+
+        key_values = key_values_list[i]
+        bp = axes[i].boxplot([key_values[key] for key in keys],
+                             positions=range(len(keys)),
+                             showfliers=False,
+                             notch=True,
+                             widths=0.3,
+                             patch_artist=True,
+                             boxprops=dict(facecolor=colors[i]))
+        bp_list.append(bp)
+
+        axes[i].set_xlim([-0.5, len(keys)-0.5])
+        axes[i].set_ylim(ylims)
+        axes[i].set_ylabel(ylabel)
+
+        axes[i].spines['top'].set_visible(False)
+        axes[i].spines['bottom'].set_visible(False)
+        axes[i].spines['left'].set_visible(True)
+        axes[i].spines['right'].set_visible(False)
+
+        if i < len(key_values_list) - 1:        
+            axes[i].set_xticks([])
+            axes[i].set_xticklabels([])
+                            
+        else:
+            assert i == len(key_values_list) - 1
+            axes[i].spines['bottom'].set_visible(True)
+            axes[i].set_xticks(range(len(keys)))
+            axes[i].set_xticklabels(keys, rotation=rotation, ha="right", va='center', rotation_mode='anchor')
+    
+    for bp in bp_list:
+        for median in bp['medians']:
+            median.set_color('red')
+            
+    plt.legend([bp["boxes"][0] for bp in bp_list], labels, loc=legend_loc)
+    if title:
+        plt.title(title)
+    plt.tight_layout()
+    plt.savefig("multibox2_" + note + ".svg", format='svg', bbox_inches='tight')
+    plt.close('all')
 
 def standardization (ID_value):
     ID_newvalue = {}
@@ -516,16 +604,24 @@ cell = 'H1'
 #            (cell, 'NCP', 'Ki67', 4),
 #            (cell, 'NCP', 'FUS', 5)]
 
+#exp_list = [(cell, 'NCP', 'sp', 8),
+#            (cell, 'NCP', 'HP1a', 3),
+#            (cell, 'NCP', 'LKH', 3),
+#            (cell, 'NCP', 'Ki67', 4)]
+
 exp_list = [(cell, 'NCP', 'sp', 8),
+            (cell, 'NCP', 'spd', 6),
+            (cell, 'NCP', 'CoH', 5),
+            (cell, 'NCP', 'PEG', 6),
+            (cell, 'NCP', 'Ca', 5),
             (cell, 'NCP', 'HP1a', 3),
-            (cell, 'NCP', 'LKH', 3),
-            (cell, 'NCP', 'Ki67', 4)]
+            (cell, 'NCP', 'HP1bSUV', 4)]
 
 
 # binsize of input data
 #bin_size = 10000
-#bin_size = 5000
-bin_size = 1000
+bin_size = 5000
+#bin_size = 1000
 
 # set species and gender
 if cell in ['H1', 'GM']:
@@ -550,7 +646,6 @@ if gender == 'male':
 
 #chr_list = ['chr1']
 
-
 # other parameters
 dtype = 'zscore'
 note = 'HMM_diff_%skb' % (int(bin_size/1000.0))
@@ -558,6 +653,7 @@ ylabel = 'zscore'
 labels = [agent_fullname[agent] for cell, sample, agent, tnum in exp_list]
 #colors = [None for i in range(len(exp_list))]
 colors = ['tab:blue', 'tab:red']
+colors = ['tab:blue', 'tab:red', 'tab:green', 'tab:purple'] * 10
 
 
 # load chromHMM genome segmentation file
@@ -591,6 +687,18 @@ for cell, sample, agent, tnum in exp_list:
 
     
 # plot box plot
+multi_boxplot2 (state_scores_list,
+                figsize=(3.5, 6),
+                axhline=0,
+                ylabel=ylabel,
+                ylims=[-4, 4],
+                title=None,
+                keys=states,
+                labels = None, 
+                colors = colors, 
+                rotation=75,
+                note=note + '_' + ylabel)
+
 #multi_boxplot (state_scores_list,
 #               ylabel=ylabel,
 #               title=None,
@@ -599,3 +707,42 @@ for cell, sample, agent, tnum in exp_list:
 #               colors = colors, 
 #               rotation=75,
 #               note=note + '_' + ylabel)
+
+
+# plot mean score heatmap
+states.remove('Insulator')
+img = []
+for state_scores in state_scores_list:
+    row = []
+    for state in states:
+        scores = state_scores[state]
+        mean = np.mean(scores)
+        row.append(mean)
+    img.append(row)
+
+
+vmin = -2.5
+vmax = 2.5
+cmap = 'jet_r'
+#cmap = 'bwr_r'
+#cmap = 'Spectral'
+#cmap = 'seismic_r'
+width = 0.4*len(states)
+height = 0.4*len(exp_list)
+fig = plt.figure(figsize=(width, height))
+im = plt.imshow(img, cmap=cmap, vmin=vmin, vmax=vmax)
+plt.xticks(range(len(states)), states, ha='right', va='center', rotation_mode='anchor', rotation=45)
+plt.yticks(range(len(exp_list)), [exp[2]  for exp in exp_list])
+plt.savefig("chrom_meanscore.svg", format='svg', bbox_inches='tight')
+plt.close()
+
+# plot colorbar only
+fig = plt.figure(figsize=(1.2,1))
+plt.subplot(1,2,1)
+cbar = plt.colorbar(im, cax=plt.gca(), ticks=[vmin, vmax])
+cbar.ax.set_yticklabels([vmin, vmax], fontsize=8)
+cbar.ax.set_ylabel('Mean zscore', rotation=-90, va="bottom", fontsize=8)
+plt.tight_layout()
+plt.savefig('chrom_mean_cbar.svg', format='svg', bbox_inches='tight')
+plt.close()
+

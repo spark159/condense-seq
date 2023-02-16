@@ -288,6 +288,97 @@ def pair_boxplot (key_values1, key_values2, ylabel1='', ylabel2='Condensability 
     #plt.show()
     plt.close('all')
 
+def multi_boxplot2 (key_values_list,
+                    figsize=None,
+                    axhline=None,
+                    ylabel='Condensability (A.U.)',
+                    ylims=[None, None],
+                    title=None,
+                    keys=None,
+                    labels=[],
+                    colors=[],
+                    rotation=None,
+                    legend_loc='best',
+                    note=""):
+
+    common_keys = set([])
+    for i in range(len(key_values_list)):
+        key_values = key_values_list[i]
+        if i == 0:
+            common_keys |= set(key_values.keys())
+            continue
+        common_keys &= set(key_values.keys())
+    common_keys = list(common_keys)
+
+    if keys:
+        new_keys = []
+        for key in keys:
+            if key in common_keys:
+                new_keys.append(key)
+        keys = new_keys
+    else:
+        keys = common_keys
+
+    if not labels:
+        labels = [None]*len(key_values_list)
+
+    if not colors:
+        colors = ['white']*len(key_values_list)
+
+    bp_list = []
+    #width = 0.2*len(keys)
+    #height = 0.2*len(key_values_list)
+
+    if figsize !=None:
+        figsize = tuple(figsize)
+    
+    fig, axes = plt.subplots(figsize=figsize, nrows=len(key_values_list), ncols=1)
+    for i in range(len(key_values_list)):
+        if axhline != None:
+            axes[i].axhline(y=axhline, linestyle='--', color='k', alpha=0.5)
+
+        key_values = key_values_list[i]
+        bp = axes[i].boxplot([key_values[key] for key in keys],
+                             positions=range(len(keys)),
+                             showfliers=False,
+                             notch=True,
+                             widths=0.3,
+                             patch_artist=True,
+                             boxprops=dict(facecolor=colors[i]))
+        bp_list.append(bp)
+
+        axes[i].set_xlim([-0.5, len(keys)-0.5])
+        axes[i].set_ylim(ylims)
+        axes[i].set_ylabel(ylabel)
+
+        axes[i].spines['top'].set_visible(False)
+        axes[i].spines['bottom'].set_visible(False)
+        axes[i].spines['left'].set_visible(True)
+        axes[i].spines['right'].set_visible(False)
+
+        if i < len(key_values_list) - 1:        
+            axes[i].set_xticks([])
+            axes[i].set_xticklabels([])
+                            
+        else:
+            assert i == len(key_values_list) - 1
+            axes[i].spines['bottom'].set_visible(True)
+            axes[i].set_xticks(range(len(keys)))
+            axes[i].set_xticklabels(keys, rotation=rotation, ha="right", va='center', rotation_mode='anchor')
+    
+    for bp in bp_list:
+        for median in bp['medians']:
+            median.set_color('red')
+            
+    plt.legend([bp["boxes"][0] for bp in bp_list], labels, loc=legend_loc)
+    if title:
+        plt.title(title)
+    plt.tight_layout()
+    plt.savefig("multibox2_" + note + ".svg", format='svg', bbox_inches='tight')
+    plt.close('all')
+
+
+    
 def multi_boxplot (key_values_list,
                    axhline=None,
                    ylabel='Condensability (A.U.)',
@@ -591,3 +682,16 @@ multi_boxplot (state_scores_list,
                colors = colors, 
                rotation=75,
                note=note + '_' + ylabel)
+
+multi_boxplot2 (state_scores_list,
+                figsize=(3.5, 6),
+                axhline=0,
+                ylabel=ylabel,
+                ylims=[-3.5, 3.5],
+                title=None,
+                keys=states,
+                labels = None, 
+                colors = colors, 
+                rotation=75,
+                note=note + '_' + ylabel)
+

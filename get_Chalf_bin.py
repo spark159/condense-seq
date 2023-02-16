@@ -71,7 +71,10 @@ def read_bin_num (fname, skip_star=False, chr_choice=None):
 
 
 # parameters
-path = "/home/spark159/../../media/spark159/sw/"
+#path = "/home/spark159/../../media/spark159/sw/"
+#path = "/home/spark159/../../storage/"
+path = "/home/spark159/../../storage/replicates/"
+
 
 # sample information
 #cell = 'H1'
@@ -95,6 +98,10 @@ exp_list = [('H1', 'NCP', 'sp'),
             ('H1', 'NCP', 'LKH'),
             ('H1', 'NCP', 'Ki67'),
             ('H1', 'NCP', 'FUS')]
+
+exp_list = [('mCD8T', 'WT-NCP', 'sp'),
+            ('mCD8T', 'inht-NCP', 'sp'),
+            ('mCD8T', 'KO-NCP', 'sp')]
 
 bin_size = 10000
 draw_graph = False
