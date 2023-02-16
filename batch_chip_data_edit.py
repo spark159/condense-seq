@@ -32,27 +32,46 @@ def make_download_file (fname, data_list, extension='bam'):
     return
 
 # load ENCODE information
-cell_chipname_info = read_data_info("ENCODE_data_information.csv")
+#cell_chipname_info = read_data_info("ENCODE_histone_chip_information.csv")
+#cell_chipname_info = read_data_info("ENCODE_BS_information.csv")
+cell_chipname_info = read_data_info("ENCODE_TF_chip_information.csv")
 
-# add CTCF information
-cell_chipname_info['GM12878']['CTCF'] = {}
-cell_chipname_info['GM12878']['CTCF']['data'] = ["ENCFF162QXM","ENCFF033WII"]
-cell_chipname_info['GM12878']['CTCF']['control'] = ["ENCFF157YWH"]
+## add CTCF information
+#cell_chipname_info['GM12878']['CTCF'] = {}
+#cell_chipname_info['GM12878']['CTCF']['data'] = ["ENCFF162QXM","ENCFF033WII"]
+#cell_chipname_info['GM12878']['CTCF']['control'] = ["ENCFF157YWH"]
+#cell_chipname_info['GM12878']['CTCF']['peak'] = ["ENCFF796WRU"]
 
-# make batch submit file
-cell_name = "GM12878"
-submit_fname = cell_name + "_chip_bam_files.txt"
-extension = 'bam'
+## make batch submit file (load bam files)
+#cell_name = "GM12878"
+#submit_fname = cell_name + "_chip_bam_files.txt"
+#extension = 'bam'
+#data_list = set([])
+#for chipname in cell_chipname_info[cell_name]:
+#    data_list |= set(cell_chipname_info[cell_name][chipname]['data'])
+#    data_list |= set(cell_chipname_info[cell_name][chipname]['control'])
+#data_list = list(data_list)
+#make_download_file (submit_fname, data_list, extension=extension)
+
+# make batch submit file (load bed files)
+#cell_name = "GM12878"
+cell_name = 'H1-hESC'
+#submit_fname = cell_name + "_chip_bed_files.txt"
+submit_fname = cell_name + "_TF_chip_bed_files.txt"
+extension = 'bed.gz'
+#extension = 'bed'
 data_list = set([])
 for chipname in cell_chipname_info[cell_name]:
-    data_list |= set(cell_chipname_info[cell_name][chipname]['data'])
-    data_list |= set(cell_chipname_info[cell_name][chipname]['control'])
+    data_list |= set(cell_chipname_info[cell_name][chipname]['peak'])
 data_list = list(data_list)
-make_download_file (cell_name + "_chip_bam_files.txt", data_list, extension=extension)
+make_download_file (submit_fname, data_list, extension=extension)
+
 
 # download ENCODE data
-#subprocess.call("xargs -n 1 curl -O -L < submit_fname")
+subprocess.call("xargs -n 1 curl -O -L < " + submit_fname, shell=True)
 
+
+"""
 # make ChromHMM input table
 cell_name = "GM12878"
 chipnames = ["CTCF",
@@ -91,7 +110,7 @@ for chipname in chipnames:
     print >> f, "%s\t%s\t%s\t%s" % (cell_name, chipname, data_list[0] + '.bam', control_list[0] + '.bam')
 
 f.close()
-
+"""
     
 
 """
