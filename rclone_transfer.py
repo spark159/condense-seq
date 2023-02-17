@@ -85,8 +85,10 @@ dir_names = ['spark205_172495',
              'spark205_188810',
              'spark205_H1spqc']
 
+#dir_names = ['pancancer_data']
 #dir_names = ['spark205_172495']
 #dir_names = ['rclone_test']
+dir_names = ['old_analysis']
 
 #from_path = 'rockfish_jhu:/home/spark159/'
 #to_path = 'onedrive_jhu:/Ha-SPark/Condense-seq_project/scripts/SLRUM_submit/'
