@@ -1,0 +1,27 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=bowtie
+#SBATCH --time=12:0:0
+#SBATCH --partition=defq
+#SBATCH --nodes=5
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=5
+# number of cpus (threads) per task (process)
+#SBATCH --mail-type=end
+#SBATCH --mail-user=spark159@jhu.edu
+
+#### load and unload modules you may need
+# module unload openmpi/intel
+# module load mvapich2/gcc/64/2.0b
+# module list
+module load bowtie2
+module load samtools
+#module list
+
+path='/home/spark159/data/2024_01_05_GEO/ref_files/'
+
+#bowtie2-build "${path}hg38.fa" "${path}hg38"
+bowtie2-build "${path}mm10.fa" "${path}mm10"
+
+echo "Finished with job $SLURM_JOBID"

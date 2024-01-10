@@ -1,0 +1,49 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=cutadpat
+#SBATCH --time=24:0:0
+#SBATCH --partition=shared
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=5
+# number of cpus (threads) per task (process)
+#SBATCH --mail-type=end
+#SBATCH --mail-user=spark159@jhu.edu
+
+#### load and unload modules you may need
+# module unload openmpi/intel
+# module load mvapich2/gcc/64/2.0b
+# module list
+#module load bowtie2
+#module load samtools
+#module list
+module load cutadapt
+
+#### parsing arguments
+OPTIND=1
+while getopts f:g:o:p:a: option  
+do                                                                                                                           
+  case "${option}"                                                                                                         
+  in
+
+      f) infname1=$OPTARG ;;
+
+      g) infname2=$OPTARG ;;
+
+      o) outfname1=$OPTARG ;;
+
+      p) outfname2=$OPTARG ;;
+
+      a) adapt_seq=$OPTARG ;;
+
+  esac                                                                                                                       
+done
+
+echo $infname1
+echo $infname2
+echo $adapt_seq
+
+cutadapt -a ${adapt_seq} -A ${adapt_seq} -o ${outfname1} -p ${outfname2} ${infname1} ${infname2}
+
+echo "Finished with job $SLURM_JOBID"

@@ -1,0 +1,53 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=samtools
+#SBATCH --time=24:00:00
+#SBATCH --partition=defq
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=3
+# number of cpus (threads) per task (process)
+
+#### load and unload modules you may need
+# module unload openmpi/intel
+# module load mvapich2/gcc/64/2.0b
+# module list
+#module load bowtie2
+module load samtools
+#module list
+
+#### parsing arguments
+OPTIND=1
+while getopts f:c: option  
+do                                                                                                                           
+  case "${option}"                                                                                                         
+  in
+
+      f) fname=$OPTARG ;;
+
+      c)  set -f
+          IFS=','
+          chr_list=($OPTARG) ;;
+  esac                                                                                                                       
+done
+set +o noglob
+
+echo Sort and Split ${fname}
+
+## sort and index input bamfile
+#echo sort and index the input
+#samtools sort ${fname}.bam -o ${fname}.sorted.bam
+#samtools index ${fname}.sorted.bam
+
+## split and sort
+for chr in ${chr_list[*]}
+do
+    echo making ${chr} file
+    #samtools view -b -h ${fname}.sorted.bam ${chr} > ${fname}.${chr}.bam
+    #samtools view ${fname}.${chr}.bam
+    samtools view ${fname}.${chr}.bam | head
+done
+
+echo "Finished with job $SLURM_JOBID"
+echo

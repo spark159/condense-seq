@@ -1,0 +1,27 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=file_unzip
+#SBATCH --time=5:0:0
+#SBATCH --partition=defq
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=10
+# number of cpus (threads) per task (process)
+#SBATCH --cpus-per-task=1
+
+#### execute code and write output file to OUT-24log.
+#gunzip data/condense_seq/Sp1_S1_L004_R1_001.fastq.gz data/condense_seq/Sp1_S1_L004_R1_001.fastq
+#gunzip work/3909/Sp1_S1_L004_R2_001.fastq.gz work/3909/Sp1_S1_L004_R2_001.fastq
+#zip work/condense_seq/
+#gunzip data/condense_seq/Sp10_S7_L006_R1_001.fastq.gz
+#tar -czvf Ascan_fastq.tar.gz data/slide_seq/Ascan*.fastq
+#tar -czvf work/condense_seq/hg19cndata.tar.gz work/condense_seq/*.cn
+#rm work/condense_seq/*cn
+
+#unzip /home/spark159/scratch/ProgeriaData/HGADFN167_hg38_ATAC/ena_files.zip
+unzip /home/spark159/scratch/ProgeriaData/HGADFN168_hg38_ATAC/ena_files_2.zip
+
+echo "Finished with job $SLURM_JOBID"
+
+#### mpiexec by default launches number of tasks requested

@@ -1,0 +1,51 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=samtools
+#SBATCH --time=12:00:00
+#SBATCH --partition=defq
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=3
+# number of cpus (threads) per task (process)
+
+#### parsing arguments
+OPTIND=1
+while getopts f:o: option  
+do                                                                                                                           
+  case "${option}"                                                                                                         
+  in
+
+      f)  set -f
+          IFS=','
+          files=($OPTARG) ;;
+
+      o) outfname=$OPTARG ;;
+
+  esac                                                                                                                       
+done
+set +o noglob
+
+echo Submitted $outfname
+echo ${files[@]}
+echo
+
+
+
+#### load and unload modules you may need
+# module unload openmpi/intel
+# module load mvapich2/gcc/64/2.0b
+# module list
+module load samtools
+module list
+
+#### execute code and write output file to OUT-24log.
+#samtools view -S -b work/condense_seq/sp9_hg19.sam > work/condense_seq/sp9_hg19.bam
+#samtools sort work/condense_seq/sp9_hg19.bam -o work/condense_seq/sp9_hg19.sorted.bam
+#samtools index work/condense_seq/sp1_hg19.sorted.bam
+#samtools view -b work/condense_seq/sp1_hg19.sorted.bam "chr1" > work/condense_seq/sp1_hg19_chr1.bam
+
+samtools merge ${outfname} ${files[*]}
+echo "Finished with job $SLURM_JOBID"
+
+#### mpiexec by default launches number of tasks requested

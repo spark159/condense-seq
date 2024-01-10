@@ -1,0 +1,1582 @@
+import sys
+import re
+import numpy as np
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import seaborn as sns
+from matplotlib.colors import LinearSegmentedColormap
+import copy
+import scipy
+
+def rescale (value, old_st, old_ed, new_st, new_ed):
+    assert value >= old_st and value <= old_ed
+    new_value = new_st + (new_ed - new_st)*float(value-old_st)/(old_ed-old_st)
+    return new_value
+
+# two independent sample t-test
+# equal sample size and variance
+def get_two_sample_t (data1, data2):
+    assert len(data1) == len(data2)
+    assert len(data1) > 1
+    mean1 = np.mean(data1)
+    mean2 = np.mean(data2)
+    std1 = np.std(data1)
+    std2 = np.std(data2)
+    t = float(mean1 - mean2)/np.sqrt((std1**2 + std2**2)/len(data1))
+    return t
+
+# two independent sample t-test
+# unequal sample size and similar variance
+def get_two_sample_t2 (data1, data2):
+    size1 = len(data1)
+    size2 = len(data2)
+    assert size1 > 1
+    assert size2 > 1
+    mean1 = np.mean(data1)
+    mean2 = np.mean(data2)
+    std1 = np.std(data1)
+    std2 = np.std(data2)
+    std = np.sqrt(float((size1-1)*(std1**2) + (size2-1)*(std2**2)) / (size1+size2 - 2))
+    t = float(mean1 - mean2)/std
+    return t
+
+# get pvalue (t-distribution and null hypothesis mean = 0)
+def get_pvalue (t, deg):
+    pval = scipy.stats.t.sf(np.abs(t), deg)
+    return pval
+
+def tuple_cmp (a, b):
+    if a[0] < b[0]:
+        return -1
+    elif a[0] > b[0]:
+        return 1
+    else:
+        if a[1] < b[1]:
+            return -1
+        elif a[1] > b[1]:
+            return 1
+        else:
+            return 0
+
+
+def sort_dict (dic, reverse=False):
+    value_key = sorted([(value, key) for key, value in dic.items()], cmp=tuple_cmp, reverse=reverse)
+    sorted_key = [key for value, key in value_key]
+    return sorted_key
+
+def read_MS (fname):
+    sample_peptide_ptm_ratio = {}
+    First = True
+    for line in open(fname):
+        line = line.strip()
+        if not line:
+            continue
+        if First:
+            fields = line.split('\t')
+            fields = [field.strip('"') for field in fields]
+            First = False
+            continue
+        if line.startswith('Peptide'):
+            col_choices = []
+            cols = line.split('\t')
+            assert len(cols) == len(fields) + 1
+            for i in range(len(cols)):
+                if cols[i].strip() == 'Ratio':
+                    col_choices.append(i)
+            continue
+        cols = line.split('\t')
+        if not cols[0].startswith('H'):
+            peptide = cols[0]
+            continue
+        else:
+            try:
+                float(cols[1])
+            except:
+                peptide = cols[0]
+                continue
+
+        ptm = cols[0]
+        for idx in col_choices:
+            ratio = cols[idx]
+            #print peptide, ptm, ratio
+            ratio = float(ratio)
+            sample = fields[idx-1]
+            if sample not in sample_peptide_ptm_ratio:
+                sample_peptide_ptm_ratio[sample] = {}
+            if peptide not in sample_peptide_ptm_ratio[sample]:
+                sample_peptide_ptm_ratio[sample][peptide] = {}
+            #print ptm
+            assert ptm not in sample_peptide_ptm_ratio[sample][peptide]
+            sample_peptide_ptm_ratio[sample][peptide][ptm] = ratio
+
+    return sample_peptide_ptm_ratio
+
+def parse_peptide (peptide):
+    seq, histone_info = peptide[:-1].split('(')
+    histone, st, ed = histone_info.split('_')
+    st, ed = int(st), int(ed)
+    return histone, st, ed, seq
+
+def parse_ptm (ptm_string):
+    pattern = '([A-Z][0-9]+(?:ac|me|ph|ub)[1-3]?)'
+    ptm_list = re.findall(pattern, ptm_string)
+    return ptm_list
+
+# reorganize the data by replicates and get average value
+def reorganize_data (sample_peptide_ptm_ratio):
+    # organize the data by replicate
+    sample_peptide_ptm_rep_ratio = {}
+    for sample in sample_peptide_ptm_ratio:
+        peptide_ptm_ratio = sample_peptide_ptm_ratio[sample]
+        cols = sample.strip().split('_')
+        new_sample, rep = cols[-2], cols[-1]
+        rep = int(rep)
+        for peptide in peptide_ptm_ratio:
+            for ptm  in peptide_ptm_ratio[peptide]:
+                ratio = peptide_ptm_ratio[peptide][ptm]
+                if new_sample not in sample_peptide_ptm_rep_ratio:
+                    sample_peptide_ptm_rep_ratio[new_sample] = {}
+                if peptide not in sample_peptide_ptm_rep_ratio[new_sample]:
+                    sample_peptide_ptm_rep_ratio[new_sample][peptide] = {}
+                if ptm not in sample_peptide_ptm_rep_ratio[new_sample][peptide]:
+                    sample_peptide_ptm_rep_ratio[new_sample][peptide][ptm] = {}
+                assert rep not in sample_peptide_ptm_rep_ratio[new_sample][peptide][ptm]
+                sample_peptide_ptm_rep_ratio[new_sample][peptide][ptm][rep] = ratio
+
+    # average the replicates
+    sample_peptide_ptm_mratio = {}
+    for sample in sample_peptide_ptm_rep_ratio:
+        for peptide in sample_peptide_ptm_rep_ratio[sample]:
+            for ptm in sample_peptide_ptm_rep_ratio[sample][peptide]:
+                ratios = sample_peptide_ptm_rep_ratio[sample][peptide][ptm].values()
+                if sample not in sample_peptide_ptm_mratio:
+                    sample_peptide_ptm_mratio[sample] = {}
+                if peptide not in sample_peptide_ptm_mratio[sample]:
+                    sample_peptide_ptm_mratio[sample][peptide] = {}
+                sample_peptide_ptm_mratio[sample][peptide][ptm] = np.mean(ratios)
+
+    return sample_peptide_ptm_rep_ratio, sample_peptide_ptm_mratio
+
+
+def get_fold_change_raw (sample_peptide_ptm_ratio,
+                         histones = ['H3', 'H4'],
+                         small = 10**(-10)):
+    rep_list = set([])
+    for sample in sample_peptide_ptm_ratio:
+        condition, rep = sample.split('-')
+        rep = int(rep)
+        rep_list.add(rep)
+    rep_list = sorted(list(rep_list))
+
+    sample_peptide_ptm_fold = {}
+    for rep in rep_list:
+        sup_name = 'sup-' + str(rep)
+        pel_name = 'pellet-' + str(rep)
+
+        for peptide in sample_peptide_ptm_ratio['input-' + str(rep)].keys():
+            histone, st, ed, seq = parse_peptide(peptide)
+
+            if histone not in histones:
+                continue
+
+            for ptm in sample_peptide_ptm_ratio['input-' + str(rep)][peptide]:
+                _, only_ptm = ptm.split(' ')
+
+                input_ratio = sample_peptide_ptm_ratio['input-' + str(rep)][peptide][ptm]
+                sup_ratio = sample_peptide_ptm_ratio['sup-' + str(rep)][peptide][ptm]
+                pel_ratio = sample_peptide_ptm_ratio['pellet-' + str(rep)][peptide][ptm]
+
+
+                #if input_ratio * sup_ratio * pel_ratio <= 0:
+                #    continue
+
+                if sum([input_ratio, sup_ratio, pel_ratio]) <= 0:
+                    continue
+
+                input_ratio +=small
+                sup_ratio +=small
+                pel_ratio +=small
+
+                sup_score = np.log2(sup_ratio/input_ratio)
+                pel_score = np.log2(pel_ratio/input_ratio)
+
+                if sup_name not in sample_peptide_ptm_fold:
+                    sample_peptide_ptm_fold[sup_name] = {}
+                if pel_name not in sample_peptide_ptm_fold:
+                    sample_peptide_ptm_fold[pel_name] = {}
+
+                if peptide not in sample_peptide_ptm_fold[sup_name]:
+                    sample_peptide_ptm_fold[sup_name][peptide] = {}
+                if peptide not in sample_peptide_ptm_fold[pel_name]:
+                    sample_peptide_ptm_fold[pel_name][peptide] = {}
+
+                sample_peptide_ptm_fold[sup_name][peptide][ptm] = sup_score
+                sample_peptide_ptm_fold[pel_name][peptide][ptm] = pel_score
+
+    return sample_peptide_ptm_fold
+
+
+def draw_foldchange (cdt_peptide_ptm_fold, histones=['H3', 'H4']):
+    for peptide in cdt_peptide_ptm_fold['sup']:
+        histone, st, ed, seq = parse_peptide(peptide)
+
+        if histone not in histones:
+            continue
+
+        scores_label = []
+        for ptm in cdt_peptide_ptm_fold['sup'][peptide]:
+            _, only_ptm = ptm.split(' ')
+            label = '%s %s' % (histone, only_ptm)
+
+            sup = cdt_peptide_ptm_fold['sup'][peptide][ptm]
+            pell = cdt_peptide_ptm_fold['pellet'][peptide][ptm]
+            scores_label.append((sup, pell, label))
+
+        scores_label = sorted(scores_label, reverse=True)
+
+        labels = []
+        img = []
+        for sup, pell, label in scores_label:
+            labels.append(label)
+            img.append([sup, pell])
+
+        row_count = len(img)
+        col_count = len(img[0])
+
+        cell_width, cell_height = 0.3, 0.2 #inch
+        marg_top = 0.5
+        marg_bott = 0.5
+        marg_left = 2
+
+        marg_right = 0.2
+
+        fig_width = cell_width*col_count + marg_left + marg_right
+        fig_height = cell_height*row_count + marg_top + marg_bott
+
+        fig = plt.figure(figsize=(fig_width, fig_height))
+
+        # adjust margins (relative numbers) according to absolute values
+        fig.subplots_adjust(bottom =marg_bott/fig_height ,top=1.-marg_top/fig_height,
+                            left=marg_left/fig_width, right=1.-marg_right/fig_width)
+
+        im = plt.imshow(img, cmap='seismic', aspect='auto', vmin=-4, vmax=4)
+        plt.yticks(range(len(labels)), labels)
+        plt.xticks([0,1], ['sup', 'pel'])
+        title = '%s %d-%d' % (histone, st, ed)
+        plt.title(title)
+        #plt.colorbar()
+        #plt.tight_layout()
+        plt.savefig(title + '.svg', format='svg', bbox_inches='tight')
+        #plt.show()
+        plt.close()
+
+    # save colorbar
+    fig = plt.figure(figsize=(1.1,1.2))
+    plt.subplot(1,2,1)
+    cbar = plt.colorbar(im, cax=plt.gca(), ticks=[-4, 4])
+    cbar.ax.set_yticklabels(['-4', '4'], fontsize=8)
+    cbar.ax.set_ylabel('log2 Fold change', rotation=-90, va="bottom", fontsize=8)
+    plt.tight_layout()
+    plt.savefig('MS_cbar.svg', format='svg', bbox_inches='tight')
+    plt.close()
+
+
+
+# read data
+#sample_peptide_ptm_ratio0 = read_MS("Sangwoo_histone_ratios_092122.csv")
+#sample_peptide_ptm_ratio1 = read_MS("Sangwoo_histone_ratios_old_full.csv")
+sample_peptide_ptm_ratio0 = read_MS("Sangwoo_histone_ratios_092122.txt")
+sample_peptide_ptm_ratio1 = read_MS("Sangwoo_histone_ratios_112222.txt")
+
+data_list = [sample_peptide_ptm_ratio0,
+             sample_peptide_ptm_ratio1]
+
+# combine data
+sample_peptide_ptm_ratio = {}
+for i in range(len(data_list)):
+    temp_sample_peptide_ptm_ratio = data_list[i]
+    for sample in temp_sample_peptide_ptm_ratio:
+        cols = sample.strip().split('_')
+        if len(cols) <= 1:
+            condition  = cols[0]
+            if condition == 'supernatant':
+                condition = 'sup'
+            rep = 0
+        else:
+            condition, rep = cols[-2], cols[-1]
+            rep = int(rep)
+
+        newsample = '%s-%d' % (condition, rep)
+        peptide_ptm_ratio = temp_sample_peptide_ptm_ratio[sample]
+        sample_peptide_ptm_ratio[newsample] = peptide_ptm_ratio
+
+
+# get fold change
+sample_peptide_ptm_fold = get_fold_change_raw(sample_peptide_ptm_ratio)
+
+# QC1: compare replicates
+samples = ['sup-%d' % (i) for i in range(4)]
+histones = ['H3', 'H4']
+
+for i in range(len(samples)-1):
+    for j in range(i+1, len(samples)):
+        sample1, sample2 = samples[i], samples[j]
+        peptide_ptm_fold1 = sample_peptide_ptm_fold[sample1]
+        peptide_ptm_fold2 = sample_peptide_ptm_fold[sample2]
+        X, Y = [], []
+        for peptide in peptide_ptm_fold1:
+            for ptm in peptide_ptm_fold1[peptide]:
+                histone_range, modification = ptm.split(' ')
+                histone, start, end = histone_range.split('_')
+                #print (histone)
+                if histone not in histones:
+                    continue
+                try:
+                    fold1 = peptide_ptm_fold1[peptide][ptm]
+                    fold2 = peptide_ptm_fold2[peptide][ptm]
+                    X.append(fold1)
+                    Y.append(fold2)
+                except:
+                    continue
+
+        p_corr = scipy.stats.pearsonr(X, Y)[0]
+        s_corr = scipy.stats.spearmanr(X, Y)[0]
+        #print ('Pearce:', p_corr)
+        print ('Spearman (%d VS %d):' % (i, j), s_corr)
+
+        fig = plt.figure()
+        plt.plot(X, Y, '.')
+        plt.text(0, 0, round(s_corr, 2))
+        plt.title("replicate %d VS %d" % (i, j))
+        #plt.show()
+        plt.close()
+
+
+# get delta fold-change and p-values of replicates
+# delta is the difference of fold chcange compared to unmodified control
+# p-values for significance compared to unmodifed control
+cdts = ['sup']
+reps = range(4)
+histone_choice = ['H3', 'H4']
+
+cdt_peptide_ptm_delta = {}
+cdt_peptide_ptm_sig = {}
+
+for cdt in cdts:
+    peptide_ptm_delta = {}
+    peptide_ptm_sig = {}
+    
+    peptide_ptm_fold0 = sample_peptide_ptm_fold['%s-%d' % (cdt, reps[0])]
+    for peptide in peptide_ptm_fold0:
+        histone_range = peptide[:-1].split('(')[-1]
+        histone = histone_range.split('_')[0]
+        
+        if histone not in histone_choice:
+            continue
+
+        ref_inputs = []
+        ref_values = []
+        ref_ptm = histone_range + ' unmod'
+        for rep in reps:
+            sample = '%s-%d' % (cdt, rep)
+            try:
+                ref_input = sample_peptide_ptm_ratio[sample][peptide][ref_ptm]
+                ref_inputs.append(ref_input)
+                ref_fold = sample_peptide_ptm_fold[sample][peptide][ref_ptm]
+                ref_values.append(ref_fold)
+            except:
+                continue
+        #if len(ref_values) < len(reps):
+        #    continue
+        #assert len(ref_values) == len(reps)
+
+        if len(ref_values) <= 1:
+            continue
+
+        ptms = set(peptide_ptm_fold0[peptide].keys()) - set([ref_ptm])
+        ptms = list(ptms)
+        for ptm in ptms:
+            target_inputs = []
+            target_values = []
+            for rep in reps:
+                sample = '%s-%d' % (cdt, rep)
+                try:
+                    target_input = sample_peptide_ptm_ratio[sample][peptide][ptm]
+                    target_inputs.append(target_input)
+                    target_fold = sample_peptide_ptm_fold[sample][peptide][ptm]
+                    target_values.append(target_fold)
+                except:
+                    continue
+            #if len(target_values) < len(reps):
+            #    continue
+            #assert len(target_values) == len(reps)
+
+            if len(target_values) <= 1:
+                continue
+
+            # simple average
+            delta = np.mean(target_values) - np.mean(ref_values)
+
+            """
+            # weighted average
+            assert len(ref_inputs) == len(ref_values)
+            assert len(target_inputs) == len(target_values)
+
+            ref_mean = 0.0
+            for k in range(len(ref_values)):
+                ref_mean += ref_values[k] * ref_inputs[k]
+            ref_mean = float(ref_mean) / sum(ref_inputs)
+
+            target_mean = 0.0
+            for k in range(len(target_values)):
+                target_mean += target_values[k] * target_inputs[k]
+            target_mean = float(target_mean) / sum(target_inputs)
+            delta = target_mean - ref_mean
+            """
+            
+            # equal size case
+            #t = get_two_sample_t (target_values, ref_values)
+            #pvalue = get_pvalue(t, 2*(len(target_values)-1))
+
+            # unequal size case
+            t = get_two_sample_t2 (target_values, ref_values)
+            pvalue = get_pvalue(t, len(target_values) + len(ref_values) - 2)
+
+            if peptide not in peptide_ptm_delta:
+                peptide_ptm_delta[peptide] = {}
+            if ptm not in peptide_ptm_delta[peptide]:
+                peptide_ptm_delta[peptide][ptm] = delta
+
+            if peptide not in peptide_ptm_sig:
+                peptide_ptm_sig[peptide] = {}
+            if ptm not in peptide_ptm_sig[peptide]:
+                peptide_ptm_sig[peptide][ptm] = -np.log10(pvalue)
+
+    cdt_peptide_ptm_delta[cdt] = peptide_ptm_delta
+    cdt_peptide_ptm_sig[cdt] = peptide_ptm_sig
+
+
+# draw delta and p-value in circle plot
+# color: up (red) or down (blue) fold change compared to control
+# size: significance proportional to -log10(p-value)
+for cdt in cdt_peptide_ptm_delta:
+    mark_delta = {}
+    mark_sig = {}
+
+    peptide_ptm_delta = cdt_peptide_ptm_delta[cdt]
+    peptide_ptm_sig = cdt_peptide_ptm_sig[cdt]
+
+    # find max and min values
+    deltas, sigs = [], []
+    for peptide in peptide_ptm_delta:
+        for ptm in peptide_ptm_delta[peptide]:
+            delta = peptide_ptm_delta[peptide][ptm]
+            sig = peptide_ptm_sig[peptide][ptm]
+            deltas.append(delta)
+            sigs.append(sig)
+
+    min_delta, max_delta = min(deltas), max(deltas)
+    min_sig, max_sig = min(sigs), max(sigs)
+
+    up_cmap = mpl.cm.get_cmap("Reds")
+    down_cmap = mpl.cm.get_cmap("Blues_r")
+    
+    for peptide in cdt_peptide_ptm_delta[cdt]:
+        ptm_delta = cdt_peptide_ptm_delta[cdt][peptide]
+        
+        # order by delta
+        delta_ptm = sorted([(delta, ptm) for ptm, delta in ptm_delta.items()])
+        ptms = [ptm for _, ptm in delta_ptm]
+        colors, sizes = [], []
+        labels = []
+        for ptm in ptms:
+            delta = cdt_peptide_ptm_delta[cdt][peptide][ptm]
+            sig = cdt_peptide_ptm_sig[cdt][peptide][ptm]
+            if delta >=0:
+                color = up_cmap(rescale(delta, 0.0, max_delta, 0.0, 1.0))
+            else:
+                color = down_cmap(rescale(delta, min_delta, 0.0, 0.0, 1.0))
+            size = rescale(sig, min_sig, max_sig, 5, 30)
+            colors.append(color)
+            sizes.append(size)
+
+            his_range, marks = ptm.split(' ')
+            histone = his_range.split('_')[0]
+            label = ' '.join([histone, marks])
+            labels.append(label)
+
+
+        row_count = len(ptms)
+        col_count = 1
+        cell_width, cell_height = 1, 1 #inch
+        marg_top = 0.1
+        marg_bott = 0.1
+        marg_left = 2
+        marg_right = 0.1
+        
+        fig_width = cell_width*col_count + marg_left + marg_right
+        fig_height = cell_height*row_count + marg_top + marg_bott
+
+        fig = plt.figure(figsize=(fig_width, fig_height))
+        fig.subplots_adjust(bottom=marg_bott/fig_height,
+                            top=1.-marg_top/fig_height,
+                            left=marg_left/fig_width,
+                            right=1.-marg_right/fig_width)
+
+        #fig = plt.figure()
+        
+        for i in range(len(ptms)):
+            ptm = ptms[i]
+            color = colors[i]
+            size = sizes[i]
+
+            plt.plot([0],[i],
+                     marker='o',
+                     markersize=size,
+                     mfc=color,
+                     markeredgewidth=0.5,
+                     mec='k',
+                     clip_on=False)
+
+        #plt.xlim([-1, 1])
+        #plt.ylim([-50, 50*len(ptms)])
+        plt.gca().spines['top'].set_visible(False)
+        plt.gca().spines['bottom'].set_visible(False)
+        plt.gca().spines['left'].set_visible(True)
+        plt.gca().spines['right'].set_visible(False)
+        plt.gca().tick_params(left=False)
+        plt.xticks([], [])
+        plt.yticks(range(len(labels)), labels)
+        plt.savefig('%s_delta.png' % (peptide),
+                    bbox_inches='tight')
+        plt.close()
+
+sys.exit(1)
+
+            
+            
+
+        
+
+            
+
+
+for cdt in cdt_mark_delta:
+    mark_delta = cdt_mark_delta[cdt]
+    mark_sig = cdt_mark_sig[cdt]
+
+    deltas = mark_delta.values()
+    
+    for mark in mark_delta:
+        delta = mark_delta[mark]
+        sig = mark_sig[mark]
+
+
+        fig = plt.figure()
+        plt.plot([0,0],[0,0],
+                 marker='o',
+                 markersize=size,
+                 mfc=color,
+                 markeredgewidth=1.5,
+                 mec='k')
+        plt.gca().axis('off')
+        plt.savefig('%s_%s.png' % mark, bbox_inches='tight')
+        plt.close()
+
+        
+        
+
+
+
+            
+                
+
+
+
+
+
+        
+
+
+
+
+sys.exit(1)
+
+# weighted average by input
+cdt_peptide_ptm_mfold = {}
+for peptide in sample_peptide_ptm_ratio['input-0']:
+    for ptm in sample_peptide_ptm_ratio['input-0'][peptide]:
+        total = 0.0
+        mean_pel = 0.0
+        mean_sup = 0.0
+        for rep in range(4):
+            try:
+                weight = sample_peptide_ptm_ratio['input-' + str(rep)][peptide][ptm]
+                if weight != 0:
+                    weight = 1
+                pel_score = sample_peptide_ptm_fold['pellet-' + str(rep)][peptide][ptm]
+                sup_score = sample_peptide_ptm_fold['sup-' + str(rep)][peptide][ptm]
+            except:
+                weight = 0.0
+                pel_score = 0.0
+                sup_score = 0.0
+            mean_pel += weight*pel_score
+            mean_sup += weight*sup_score
+            total += weight
+        if total <=0:
+            continue
+        mean_pel = float(mean_pel)/total
+        mean_sup = float(mean_sup)/total
+
+        if 'sup' not in cdt_peptide_ptm_mfold:
+            cdt_peptide_ptm_mfold['sup'] = {}
+        if 'pellet' not in cdt_peptide_ptm_mfold:
+            cdt_peptide_ptm_mfold['pellet'] = {}
+
+        if peptide not in cdt_peptide_ptm_mfold['sup']:
+            cdt_peptide_ptm_mfold['sup'][peptide] = {}
+        if peptide not in cdt_peptide_ptm_mfold['pellet']:
+            cdt_peptide_ptm_mfold['pellet'][peptide] = {}
+
+        cdt_peptide_ptm_mfold['sup'][peptide][ptm] = mean_sup
+        cdt_peptide_ptm_mfold['pellet'][peptide][ptm] = mean_pel
+
+# fold change heatmap
+draw_foldchange (cdt_peptide_ptm_mfold)
+
+
+# reorganizing data
+sample_ptm_value = {}
+for sample in sample_peptide_ptm_ratio:
+    peptide_ptm_ratio = sample_peptide_ptm_ratio[sample]
+    for peptide in peptide_ptm_ratio:
+        for ptm in peptide_ptm_ratio[peptide]:
+            if sample not in sample_ptm_value:
+                sample_ptm_value[sample] = {}
+            assert ptm not in sample_ptm_value[sample]
+            ratio = peptide_ptm_ratio[peptide][ptm]
+            sample_ptm_value[sample][ptm] = ratio
+
+# get fold change
+def get_fold_change(sample_ptm_value, small=10**(-10)):
+    rep_list = set([])
+    for sample in sample_ptm_value:
+        condition, rep = sample.split('-')
+        rep = int(rep)
+        rep_list.add(rep)
+
+    rep_list = sorted(list(rep_list))
+
+    sample_ptm_fold = {}
+    for rep in rep_list:
+        control_sample = '%s-%d' % ('input', rep)
+        pellet_sample = '%s-%d' % ('pellet', rep)
+        sup_sample = '%s-%d' % ('sup', rep)
+        for ptm in sample_ptm_value[control_sample]:
+            control_value = sample_ptm_value[control_sample][ptm]
+            pellet_value = sample_ptm_value[pellet_sample][ptm]
+            sup_value = sample_ptm_value[sup_sample][ptm]
+
+            if control_value*pellet_value*sup_value <=0:
+                continue
+
+            #if control_value + pellet_value + sup_value <= 0:
+            #    continue
+            #control_value += small
+            #pellet_value += small
+            #sup_value += small
+
+            pellet_fold = np.log2(float(pellet_value)/control_value)
+            sup_fold = np.log2(float(sup_value)/control_value)
+
+            if pellet_sample not in sample_ptm_fold:
+                sample_ptm_fold[pellet_sample] = {}
+            sample_ptm_fold[pellet_sample][ptm] = pellet_fold
+
+            if sup_sample not in sample_ptm_fold:
+                sample_ptm_fold[sup_sample] = {}
+            sample_ptm_fold[sup_sample][ptm] = sup_fold
+
+    return sample_ptm_fold
+sample_ptm_fold = get_fold_change(sample_ptm_value)
+
+#sys.exit(1)                
+            
+# QC check correlation between replicates
+def plot_corr (sample_ptm_value, sample_list=None, note=''):
+    if sample_list == None:
+        sample_list = sorted(sample_ptm_value.keys())
+    
+    pair_corr = {}
+    fig, axes = plt.subplots(figsize=(7,6), nrows=len(sample_list), ncols=len(sample_list))
+    for i in range(len(sample_list)):
+        for j in range(len(sample_list)):
+            sample1, sample2 = sample_list[i], sample_list[j]
+            ptm_value1, ptm_value2 = sample_ptm_value[sample1], sample_ptm_value[sample2]
+            ptm_list = list(set(ptm_value1.keys()) & set(ptm_value2.keys()))
+            X = [ptm_value1[ptm] for ptm in ptm_list]
+            Y = [ptm_value2[ptm] for ptm in ptm_list]
+            if i > j:
+                axes[i,j].plot(X, Y, 'k.', markersize=0.5)
+                wspace = 0.1*(max(X) - min(X))
+                hspace = 0.1*(max(Y) - min(Y))
+                axes[i,j].set_xticks([min(X), max(X)])
+                axes[i,j].set_xticklabels([str(round(min(X),1)), str(round(max(X),1))], rotation=45)
+                axes[i,j].set_yticks([min(Y), max(Y)])
+                axes[i,j].set_yticklabels([str(round(min(Y),1)), str(round(max(Y),1))])
+                axes[i,j].set_xlim(min(X)-wspace, max(X)+wspace)
+                axes[i,j].set_ylim(min(Y)-hspace, max(Y)+hspace)
+                axes[i,j].tick_params(axis='both', which='major', labelsize=5)
+                axes[i,j].tick_params(axis='both', which='minor', labelsize=5)
+
+                if j > 0 and i < len(sample_list) -1:
+                    axes[i,j].tick_params(axis='both', which='both', labelbottom=False, labelleft=False)
+                if j == 0 and i < len(sample_list) -1:
+                    axes[i,j].tick_params(axis='x', which='both', labelbottom=False)
+                if j > 0 and i == len(sample_list) - 1:
+                    axes[i,j].tick_params(axis='y', which='both', labelleft=False)
+
+            elif i == j:
+                matrix = np.zeros((len(sample_list), len(sample_list)))
+                matrix[:] = np.nan
+                axes[i,j].imshow(matrix, origin='lower')
+                s = sample1
+                axes[i,j].text(len(sample_list)/2, len(sample_list)/2, s, ha="center", va="center", fontsize=5, weight='bold')
+                axes[i,j].set_xlim([0, len(sample_list)-1])
+                axes[i,j].set_ylim([0, len(sample_list)-1])
+                axes[i,j].set_axis_off()
+            else:
+                assert i < j
+                corr = scipy.stats.spearmanr(X, Y)[0]
+                #corr = scipy.stats.pearsonr(X, Y)[0]
+                assert (sample1, sample2) not in pair_corr
+                pair_corr[(sample1, sample2)] = corr
+                matrix = np.zeros((len(sample_list), len(sample_list)))
+                matrix[:] = corr
+                img = axes[i,j].imshow(matrix, cmap="jet", vmin=0.0, vmax=1.0, origin='lower')
+                if corr < 0.3 or corr > 0.7:
+                    color = "white"
+                else:
+                    color = "black"
+                axes[i,j].text(len(sample_list)/2, len(sample_list)/2, str(round(corr,2)), ha="center", va="center", fontsize=6, color=color, weight='bold')
+                axes[i,j].set_xlim([0, len(sample_list)-1])
+                axes[i,j].set_ylim([0, len(sample_list)-1])
+                axes[i,j].tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labeltop=False, labelleft=False, labelright=False)
+
+    plt.subplots_adjust(wspace=0.2, hspace=0.2)
+    cbar=fig.colorbar(img, ax=axes, location='right', shrink=0.6, aspect=30, ticks=[0, 1.0])
+    cbar.ax.set_yticklabels([str(0), str(1)], fontsize=5)
+    cbar.ax.set_ylabel('Spearman correlation', rotation=-90, va="bottom", fontsize=5, labelpad=-5)
+    #plt.suptitle("Corrrelation betwen condensing samples")
+    #plt.show()
+    #plt.savefig("MS_corr_btw_sample.svg", format='svg', bbox_inches='tight')
+    #plt.savefig("MS_corr_btw_sample.png", dpi=300, bbox_inches='tight')
+    plt.savefig("MS_corr_btw_sample_" + note + ".png", dpi=300, bbox_inches='tight')
+    plt.close()
+    return pair_corr
+
+plot_corr(sample_ptm_fold, note='old')
+#sys.exit(1)
+
+
+
+# aggregate data into single ptms
+def aggregate_data(sample_ptm_value, histone_list = ['H3', 'H4']):
+    sample_sptm_value = {}
+    for sample in sample_ptm_value:
+        for ptm in sample_ptm_value[sample]:
+            peptide_string, ptm_string = ptm.split(' ')
+            histone = peptide_string.split('_')[0]
+            if histone not in histone_list:
+                continue
+            value = sample_ptm_value[sample][ptm]
+            for sptm in parse_ptm (ptm_string):
+                label = ' '.join([histone, sptm])
+                if sample not in sample_sptm_value:
+                    sample_sptm_value[sample] = {}
+                if label not in sample_sptm_value[sample]:
+                    sample_sptm_value[sample][label] = 0.0
+                sample_sptm_value[sample][label] += value
+    return sample_sptm_value
+sample_sptm_value = aggregate_data(sample_ptm_value)
+sample_sptm_fold = get_fold_change(sample_sptm_value)
+plot_corr(sample_ptm_fold, note='old_single')
+
+
+#hierarchical clustering heatmap
+def plot_hcluster (name_state,
+                  figsize = (3,10),
+                  xticklabels=None,
+                  cmap='Spectral_r',
+                  note=""):
+
+    name_list = name_state.keys()
+    data = []
+    for name in name_list:
+        state = name_state[name]
+        data.append(state)
+
+    if xticklabels:
+        assert len(data[0]) == len(xticklabels)
+    else:
+        xticklabels = [str(i) for i in range(len(data[0]))]
+
+    hmap = sns.clustermap(data,
+                          method='average',
+                          metric='euclidean',
+                          figsize=figsize,
+                          cbar_kws=None,
+                          row_cluster=True,
+                          col_cluster=False,
+                          dendrogram_ratio=0.2,
+                          colors_ratio=0.03,
+                          tree_kws=None,
+                          cmap=cmap,
+                          center=0,
+                          vmin=-0.5,
+                          vmax=0.5,
+                          xticklabels=xticklabels,
+                          yticklabels=1,
+                          annot=True,
+                          annot_kws={"size": 8},
+                          cbar_pos=None)
+
+    new_labels = []
+    for tick_label in hmap.ax_heatmap.axes.get_yticklabels():
+        idx = int(tick_label.get_text())
+        name = name_list[idx]
+        tick_label.set_text(name)
+        new_labels.append(tick_label)
+        #tick_label.set_color(lut[species_name])
+
+    hmap.ax_heatmap.axes.set_yticklabels(new_labels)
+
+    plt.gca().xaxis.tick_top()
+    plt.xticks(rotation=70)
+    plt.yticks(rotation=0)
+    plt.savefig("hmap_" + note + ".svg", format='svg', bbox_inches='tight')
+    #plt.show()
+    plt.close()
+
+sample_list = sorted(sample_sptm_fold.keys())
+sptm_state = {}
+for sptm in sample_sptm_fold['pellet-0']:
+    state = []
+    for sample in sample_list:
+        try:
+            fold = sample_sptm_fold[sample][sptm]
+            state.append(fold)
+        except:
+            break
+    #if sum(state) <= 0:
+    #x    continue
+    if len(state) == len(sample_list):
+        #mean = np.mean(state)
+        #std = np.std(state)
+        #state = [float(value-mean)/std for value in state]
+        sptm_state[sptm] = state
+
+plot_hcluster(sptm_state, figsize = (5,10), xticklabels=sample_list, cmap='bwr')
+        
+
+# taking weighted average over replicates
+def taking_average (sample_ptm_value, rep_weight=None):
+    condition_ptm_values = {}
+    for sample in sample_ptm_value:
+        for ptm in sample_ptm_value[sample]:
+            condition, rep = sample.split('-')
+            rep = int(rep)
+            if rep_weight and rep not in rep_weight:
+                continue
+            if condition not in condition_ptm_values:
+                condition_ptm_values[condition] = {}
+            if ptm not in condition_ptm_values:
+                condition_ptm_values[condition][ptm] = []
+            value = sample_ptm_value[sample][ptm]
+            condition_ptm_values[condition][ptm].append(rep_weight[rep]*value)
+    condition_ptm_mvalue = {}
+    for condition in condition_ptm_values:
+        for ptm in condition_ptm_values[condition]:
+            if condition not in condition_ptm_mvalue:
+                condition_ptm_mvalue[condition] = {}
+            condition_ptm_mvalue[condition][ptm] = np.mean(condition_ptm_values[condition][ptm])
+    return condition_ptm_mvalue
+cdt_ptm_value0 = taking_average (sample_ptm_value, {0:1})
+cdt_ptm_value1 = taking_average (sample_ptm_value, {1:1, 2:1, 3:1})
+cdt_ptm_value2 = taking_average (sample_ptm_value, {0:1, 1:1, 2:1, 3:1})
+
+cdt_sptm_value0 = aggregate_data (cdt_ptm_value0)
+cdt_sptm_value1 = aggregate_data (cdt_ptm_value1)
+cdt_sptm_value2 = aggregate_data (cdt_ptm_value1)
+
+
+conditions = ['input', 'pellet', 'sup']
+sptm_state0 = {}
+for sptm in cdt_sptm_value0['input']:
+    state = []
+    for cdt in conditions:
+        state.append(cdt_sptm_value0[cdt][sptm])
+    if sum(state) <= 0:
+        continue
+    mean = np.mean(state)
+    std = np.std(state)
+    state = [float(value-mean)/std for value in state]
+    sptm_state0[sptm] = state
+
+sptm_state1 = {}
+for sptm in cdt_sptm_value1['input']:
+    state = []
+    for cdt in conditions:
+        state.append(cdt_sptm_value1[cdt][sptm])
+    if sum(state) <= 0:
+        continue
+    mean = np.mean(state)
+    std = np.std(state)
+    state = [float(value-mean)/std for value in state]    
+    sptm_state1[sptm] = state
+
+sptm_state2 = {}
+for sptm in cdt_sptm_value2['input']:
+    state = []
+    for cdt in conditions:
+        state.append(cdt_sptm_value2[cdt][sptm])
+    if sum(state) <= 0:
+        continue
+    mean = np.mean(state)
+    std = np.std(state)
+    state = [float(value-mean)/std for value in state]    
+    sptm_state2[sptm] = state
+
+plot_hcluster(sptm_state0, xticklabels = conditions, cmap='bwr', note='first')
+plot_hcluster(sptm_state1, xticklabels = conditions, cmap='bwr', note='old_average')
+plot_hcluster(sptm_state2, xticklabels = conditions, cmap='bwr', note='total_average')
+
+
+# get fold change and p-value for 3 replica old data
+
+
+
+
+
+
+
+
+
+
+sys.exit(1)
+
+
+
+
+#plot_hcluster(cdt_sptm_value0)
+#plot_hcluster(cdt_sptm_value1)
+
+
+
+
+
+
+
+
+# reorganizing data by replicates
+def reorganize (sample_peptide_ptm_ratio):
+    rep_data = {}
+    for sample in sample_peptide_ptm_ratio:
+        cols = sample.strip().split('_')
+        newsample, rep = cols[-2], cols[-1]
+        rep = int(rep)
+        if rep not in rep_data:
+            rep_data[rep] = {}
+        assert newsample not in rep_data[rep]
+        peptide_ptm_ratio = sample_peptide_ptm_ratio[sample]
+        rep_data[rep][newsample] = copy.deepcopy(peptide_ptm_ratio)
+    return rep_data
+rep_data1 = reorganize(sample_peptide_ptm_ratio1)
+rep_data1[0] = sample_peptide_ptm_ratio0
+rep_data2 = reorganize(sample_peptide_ptm_ratio2)
+
+
+# QC:correlation between replicates
+def check_replicates (rep_data, title=None):
+    rep_list = sorted(rep_data.keys())
+    for i in range(len(rep_list)-1):
+        for j in range(i+1, len(rep_list)):
+            rep1 = rep_list[i]
+            rep2 = rep_list[j]
+            sample_peptide_ptm_ratio1 = rep_data[rep1]
+            sample_peptide_ptm_ratio2 = rep_data[rep2]
+
+            X, Y = [], []
+            for sample in sample_peptide_ptm_ratio1:
+                for peptide in sample_peptide_ptm_ratio1[sample]:
+                    for ptm in sample_peptide_ptm_ratio1[sample][peptide]:
+                        ratio1 = sample_peptide_ptm_ratio1[sample][peptide][ptm]
+                        ratio2 = sample_peptide_ptm_ratio2[sample][peptide][ptm]
+                        X.append(ratio1)
+                        Y.append(ratio2)
+
+            fig = plt.figure()
+            plt.plot(X, Y, '.')
+            plt.title(title)
+            plt.xlabel("replicate %d" % (rep1))
+            plt.ylabel("replicate %d" % (rep2))
+            plt.show()
+            plt.close()
+
+check_replicates (rep_data1, title='Old sample')
+check_replicates (rep_data2, title='New sample')
+
+# get average value across the replicates
+
+            
+
+sys.exit(1)
+
+
+    
+    
+# read data
+sample_peptide_ptm_mratio1 = read_MS("Sangwoo_histone_ratios_092122.csv")
+sample_peptide_ptm_ratio2 = read_MS("Sangwoo_histone_ratios_old_full.csv")
+#sample_peptide_ptm_ratio2 = read_MS("Sangwoo_histone_ratios_old.csv")
+#sample_peptide_ptm_ratio2 = read_MS("Sangwoo_histone_ratios_new.csv")
+sample_peptide_ptm_mratio1['sup'] = copy.deepcopy(sample_peptide_ptm_mratio1['supernatant'])
+del sample_peptide_ptm_mratio1['supernatant']
+
+# reorganize data by replicates and get the average value
+#sample_peptide_ptm_rep_ratio1, sample_peptide_ptm_mratio1 = reorganize_data(sample_peptide_ptm_ratio1)
+sample_peptide_ptm_rep_ratio2, sample_peptide_ptm_mratio2 = reorganize_data(sample_peptide_ptm_ratio2)
+
+
+# draw data
+#draw_data (sample_peptide_ptm_mratio2)
+
+#sys.exit(1)
+
+# compare two data set
+X, Y = [], []
+for sample in sample_peptide_ptm_mratio1:
+    for peptide in sample_peptide_ptm_mratio1[sample]:
+        for ptm in sample_peptide_ptm_mratio1[sample][peptide]:
+            try:
+                mratio1 = sample_peptide_ptm_mratio1[sample][peptide][ptm]
+                mratio2 = sample_peptide_ptm_mratio2[sample][peptide][ptm]
+                X.append(mratio1)
+                Y.append(mratio2)
+            except:
+                pass
+
+
+fig =plt.figure()
+plt.plot(X, Y, '.')
+#plt.show()
+plt.close()
+
+
+
+histone_singleptm_ratios1 = aggregate_data(sample_peptide_ptm_mratio1)
+histone_singleptm_ratios2 = aggregate_data(sample_peptide_ptm_mratio2)
+
+X, Y = [], []
+for histone in histone_singleptm_ratios1:
+    for singleptm in histone_singleptm_ratios1[histone]:
+        try:
+            X += histone_singleptm_ratios1[histone][singleptm]
+            Y += histone_singleptm_ratios2[histone][singleptm]
+        except:
+            continue
+
+fig = plt.figure()
+plt.plot(X, Y, '.')
+#plt.show()
+plt.close()
+
+plot_hmap(histone_singleptm_ratios2)
+
+sys.exit(1)            
+
+label_sup1, label_pellet1 = get_score(sample_peptide_ptm_mratio1)
+label_sup2, label_pellet2 = get_score(sample_peptide_ptm_mratio2)
+
+X, Y = [], []
+for label in label_sup1:
+    try:
+        sup1 = label_sup1[label]
+        sup2 = label_sup2[label]
+        X.append(sup1)
+        Y.append(sup2)
+    except:
+        continue
+
+fig = plt.figure()
+plt.plot(X, Y, '.')
+#plt.show()
+plt.close()
+
+                                                         
+
+
+
+
+sys.exit(1)
+            
+
+ptmname_folds = {}
+ptmname_state = {}
+for histone in histone_singleptm_ratios:
+    for singleptm in histone_singleptm_ratios[histone]:
+        ptmname = histone + singleptm
+        ratios = histone_singleptm_ratios[histone][singleptm]
+
+        if sum(ratios) <= 0:
+            continue
+
+        mean = np.mean(ratios)
+        std = np.std(ratios)
+        state = [float(ratio-mean)/std for ratio in ratios]
+        assert ptmname not in ptmname_state
+        ptmname_state[ptmname] = state
+
+        if ratios[0] <= 0:
+            continue
+        if ratios[1] <= 0:
+            continue
+        if ratios[2] <= 0:
+            continue
+
+        pel_fold = np.log2(float(ratios[1])/ratios[0])
+        sup_fold = np.log2(float(ratios[2])/ratios[0])
+        assert ptmname not in ptmname_folds
+        ptmname_folds[ptmname] = [pel_fold, sup_fold]
+
+
+# plot fold change heatamp
+
+fold_ptmname = sorted([(folds[1], ptmname) for ptmname, folds in ptmname_folds.items()], reverse=True)
+ptmname_list = [ptmname for fold, ptmname in fold_ptmname]
+data = []
+for ptmname in ptmname_list:
+    folds = ptmname_folds[ptmname]
+    data.append(folds)
+
+fig = plt.figure()
+plt.imshow(data, cmap='coolwarm', vmin=-1.5, vmax=1.5)
+plt.yticks(range(len(ptmname_list)), ptmname_list)
+plt.colorbar()
+#plt.show()
+plt.close()
+
+
+        
+#hierarchical clustering heatmap
+
+ptmname_list = ptmname_state.keys()
+data = []
+for ptmname in ptmname_list:
+    state = ptmname_state[ptmname]
+    data.append(state)
+
+pastel_jet = LinearSegmentedColormap.from_list('white_viridis',
+                                             [(0, 'tab:blue'),
+                                              (0.2, 'tab:cyan'),
+                                              (0.5, 'white'),
+                                              (0.8, 'tomato'),
+                                              (1, 'tab:red'),
+                                             ], N=256)
+
+
+hmap = sns.clustermap(data,
+                      method='average',
+                      metric='euclidean',
+                      figsize=(3,10),
+                      cbar_kws=None,
+                      row_cluster=True,
+                      col_cluster=False,
+                      dendrogram_ratio=0.2,
+                      colors_ratio=0.03,
+                      tree_kws=None,
+                      cmap='Spectral_r',
+                      center=0,
+                      xticklabels=['Input', 'Pellet', 'Supnt'],
+                      yticklabels=1,
+                      annot=True,
+                      annot_kws={"size": 8},
+                      cbar_pos=None)
+
+new_labels = []
+for tick_label in hmap.ax_heatmap.axes.get_yticklabels():
+    idx = int(tick_label.get_text())
+    ptmname = ptmname_list[idx]
+    tick_label.set_text(ptmname)
+    new_labels.append(tick_label)
+    #tick_label.set_color(lut[species_name])
+
+hmap.ax_heatmap.axes.set_yticklabels(new_labels)
+
+plt.gca().xaxis.tick_top()
+plt.xticks(rotation=70)
+plt.yticks(rotation=0)
+plt.savefig("hmap.svg", format='svg', bbox_inches='tight')
+#plt.show()
+plt.close()
+
+
+sys.exit(1)
+
+sns.clustermap(data,
+               method='average',
+               metric='euclidean',
+               figsize=(10, 10),
+               cbar_kws=None,
+               row_cluster=True,
+               col_cluster=False,
+               row_linkage=None,
+               col_linkage=False,
+               row_colors=None,
+               col_colors=False,
+               dendrogram_ratio=0.2,
+               colors_ratio=0.03,
+               cbar_pos=(0.02, 0.8, 0.05, 0.18),
+               tree_kws=None)
+            
+
+
+
+histones = ['H2A', 'H2B', 'H1']
+
+small = 10**(-10)
+for peptide in sample_peptide_ptm_ratio['input'].keys():
+    histone, st, ed, seq = parse_peptide(peptide)
+
+    if histone not in histones:
+        continue
+
+    label_score1, label_score2 = {}, {}
+    for ptm in sample_peptide_ptm_ratio['input'][peptide]:
+        _, only_ptm = ptm.split(' ')
+
+        input_ratio = sample_peptide_ptm_ratio['input'][peptide][ptm]
+        sup_ratio = sample_peptide_ptm_ratio['supernatant'][peptide][ptm]
+        pel_ratio = sample_peptide_ptm_ratio['pellet'][peptide][ptm]
+
+        if input_ratio + sup_ratio + pel_ratio <= 0:
+            continue
+
+        input_ratio +=small
+        sup_ratio +=small
+        pel_ratio +=small
+
+        sup_score = np.log2(sup_ratio/input_ratio)
+        pel_score = np.log2(pel_ratio/input_ratio)
+
+        label = '%s %s' % (histone, only_ptm)
+
+        label_score1[label] = sup_score
+        label_score2[label] = pel_score
+
+    if len(label_score1) <= 0:
+        continue
+
+    sorted_labels = sort_dict(label_score1, reverse=True)
+
+    img = []
+    for label in sorted_labels:
+        img.append([label_score1[label], label_score2[label]])
+
+
+    row_count = len(img)
+    col_count = len(img[0])
+
+    cell_width, cell_height = 0.3, 0.2 #inch
+    marg_top = 0.5
+    marg_bott = 0.5
+    marg_left = 2
+    
+    marg_right = 0.2
+
+    fig_width = cell_width*col_count + marg_left + marg_right
+    fig_height = cell_height*row_count + marg_top + marg_bott
+
+    fig = plt.figure(figsize=(fig_width, fig_height))
+    
+    # adjust margins (relative numbers) according to absolute values
+    fig.subplots_adjust(bottom =marg_bott/fig_height ,top=1.-marg_top/fig_height,
+                        left=marg_left/fig_width, right=1.-marg_right/fig_width)
+
+    im = plt.imshow(img, cmap='seismic', aspect='auto', vmin=-4, vmax=4)
+    plt.yticks(range(len(sorted_labels)), sorted_labels)
+    plt.xticks([0,1], ['sup', 'pel'])
+    title = '%s %d-%d' % (histone, st, ed)
+    plt.title(title)
+    #plt.colorbar()
+    #plt.tight_layout()
+    plt.savefig(title + '.svg', format='svg', bbox_inches='tight')
+    #plt.show()
+    plt.close()
+
+# save colorbar
+fig = plt.figure(figsize=(1.1,1.2))
+plt.subplot(1,2,1)
+cbar = plt.colorbar(im, cax=plt.gca(), ticks=[-4, 4])
+cbar.ax.set_yticklabels(['-4', '4'], fontsize=8)
+cbar.ax.set_ylabel('log2 Fold change', rotation=-90, va="bottom", fontsize=8)
+plt.tight_layout()
+plt.savefig('MS_cbar.svg', format='svg', bbox_inches='tight')
+plt.close()
+
+
+
+"""
+for peptide in sample_peptide_ptm_ratio['input'].keys():
+    histone, st, ed, seq = parse_peptide(peptide)
+
+    fig = plt.figure()
+
+    input_bott, sup_bott, pel_bott = 0.0, 0.0, 0.0    
+    for ptm in sample_peptide_ptm_ratio['input'][peptide]:
+        _, only_ptm = ptm.split(' ')
+
+        input_ratio = sample_peptide_ptm_ratio['input'][peptide][ptm]        
+        sup_ratio = sample_peptide_ptm_ratio['supernatant'][peptide][ptm]
+        pel_ratio = sample_peptide_ptm_ratio['pellet'][peptide][ptm]
+
+        plt.bar(['Input', 'Supernatant', 'Pellet'],
+                [input_ratio, sup_ratio, pel_ratio],
+                bottom=[input_bott, sup_bott, pel_bott],
+                label='%s %s' % (histone, only_ptm), width=0.4)
+
+        input_bott +=input_ratio
+        sup_bott +=sup_ratio
+        pel_bott +=pel_ratio
+
+    plt.title('%s %d-%d' % (histone, st, ed))
+    plt.ylim([0.0, 1.1])
+    plt.show()
+    plt.close()
+
+histone_ptm_sample_score = {}
+histone_frag_ptm = {}
+
+histones = ['H3', 'H4']
+addon = 10**(-10)
+
+for peptide in sample_peptide_ptm_ratio['input'].keys():
+    histone, st, ed, seq = parse_peptide(peptide)
+    if histone not in histones:
+        continue
+    frag = (st, ed)
+    for ptm in sample_peptide_ptm_ratio['input'][peptide]:
+        _, only_ptm = ptm.split(' ')
+
+        if only_ptm == 'unmod':
+            continue
+
+        input_ratio = sample_peptide_ptm_ratio['input'][peptide][ptm]
+
+        if input_ratio <=0:
+            continue
+        
+        sup_ratio = sample_peptide_ptm_ratio['supernatant'][peptide][ptm]
+        pel_ratio = sample_peptide_ptm_ratio['pellet'][peptide][ptm]
+
+        sup_score = np.log2((addon+sup_ratio) / (addon+input_ratio))
+        pel_score = np.log2((addon+pel_ratio) / (addon+input_ratio))
+
+        #sup_score = np.log2(1.0 + float(sup_ratio)/input_ratio)
+        #pel_score = np.log2(1.0 + float(pel_ratio)/input_ratio)
+
+        #sup_score = float(sup_ratio) / input_ratio
+        #pel_score = float(pel_ratio) / input_ratio
+
+        if histone not in histone_ptm_sample_score:
+            histone_ptm_sample_score[histone] = {}
+
+        assert only_ptm not in histone_ptm_sample_score[histone]
+        histone_ptm_sample_score[histone][only_ptm] = {}
+        histone_ptm_sample_score[histone][only_ptm]['sup'] = sup_score
+        histone_ptm_sample_score[histone][only_ptm]['pel'] = pel_score
+
+        if histone not in histone_frag_ptm:
+            histone_frag_ptm[histone] = {}
+        if frag not in histone_frag_ptm[histone]:
+            histone_frag_ptm[histone][frag] = []
+        histone_frag_ptm[histone][frag].append(only_ptm)
+
+
+labels = []
+img = []
+for histone in histones:
+    for frag in sorted(histone_frag_ptm[histone]):
+        for ptm in histone_frag_ptm[histone][frag]:
+           labels.append(' '.join([histone, ptm]))
+           sup_score = histone_ptm_sample_score[histone][ptm]['sup']
+           pel_score = histone_ptm_sample_score[histone][ptm]['pel']
+           img.append([sup_score, pel_score])
+
+fig = plt.figure()
+plt.imshow(img, cmap='seismic', aspect='auto', vmin=-5, vmax=5)
+plt.yticks(range(len(labels)), labels)
+plt.colorbar()
+plt.tight_layout()
+plt.show()
+
+
+
+#GM_peptide_ptm_ratio = read_MS("Sangwoo_human_062222.csv")
+#HeLa_peptide_ptm_ratio = read_MS("HeLa_histone_ratios_Jan2021.csv")
+
+for HeLa in HeLa_peptide_ptm_ratio:
+    for peptide in sorted(HeLa_peptide_ptm_ratio[HeLa]):
+        fig = plt.figure()
+        ptms = sorted(HeLa_peptide_ptm_ratio[HeLa][peptide].keys())
+        HeLa_bottom, GM_AE_bottom, GM_Heat_bottom = 0, 0, 0
+        for ptm in ptms:
+            HeLa_ratio = HeLa_peptide_ptm_ratio[HeLa][peptide][ptm]
+            GM_AE_ratio = GM_peptide_ptm_ratio['1,20220622_Bhanu_HaSangwoo_GM_AE'][peptide][ptm]
+            GM_Heat_ratio = GM_peptide_ptm_ratio['2,20220622_Bhanu_HaSangwoo_GM_Heat'][peptide][ptm]
+            plt.bar(range(3),
+                    [HeLa_ratio, GM_AE_ratio, GM_Heat_ratio],
+                    bottom=[HeLa_bottom, GM_AE_bottom, GM_Heat_bottom],
+                    label=ptm)
+            #print HeLa_ratio
+            HeLa_bottom += HeLa_ratio
+            GM_AE_bottom += GM_AE_ratio
+            GM_Heat_bottom += GM_Heat_ratio
+        plt.xticks(range(3), ['HeLa', 'GM AE', 'GM Heat'], rotation=45)
+        #plt.xlabel("Sample")
+        plt.ylabel("Ratios")
+        plt.legend(bbox_to_anchor=(1.04,1), loc="upper left")
+        #plt.legend(loc='upper right')
+        plt.title(peptide)
+        plt.savefig("%s.png" % (peptide), bbox_inches='tight')
+        #plt.show()
+        plt.close()
+
+
+
+# profile plot
+for HeLa in HeLa_peptide_ptm_ratio:
+    for peptide in sorted(HeLa_peptide_ptm_ratio[HeLa]):
+        fig = plt.figure()
+        ptms = sorted(HeLa_peptide_ptm_ratio[HeLa][peptide].keys())
+        HeLa_profile, GM_AE_profile, GM_Heat_profile = [], [], []
+        for ptm in ptms:
+            HeLa_ratio = HeLa_peptide_ptm_ratio[HeLa][peptide][ptm]
+            GM_AE_ratio = GM_peptide_ptm_ratio['1,20220622_Bhanu_HaSangwoo_GM_AE'][peptide][ptm]
+            GM_Heat_ratio = GM_peptide_ptm_ratio['2,20220622_Bhanu_HaSangwoo_GM_Heat'][peptide][ptm]
+            HeLa_profile.append(HeLa_ratio)
+            GM_AE_profile.append(GM_AE_ratio)
+            GM_Heat_profile.append(GM_Heat_ratio)
+        plt.plot(range(len(ptms)), HeLa_profile, 'ko--', alpha=0.25, label='HeLa')
+        plt.plot(range(len(ptms)), GM_AE_profile, 'bo--', alpha=0.5, label='GM AE')
+        plt.plot(range(len(ptms)), GM_Heat_profile, 'ro--', alpha=0.5, label='GM Heat')
+        plt.xticks(range(len(ptms)), ptms, rotation=45)
+        plt.xlabel("PTMs")
+        plt.ylabel("Ratios")
+        plt.legend()
+        plt.title(peptide)
+        plt.show()
+        plt.close()
+
+
+# organize the data by replicate
+sample_peptide_ptm_ratios = {}
+rep_sample_peptide_ptm_ratio = {}
+for sample in sample_peptide_ptm_ratio:
+    peptide_ptm_ratio = sample_peptide_ptm_ratio[sample]
+    cols = sample.strip().split('_')
+    new_sample, rep = cols[-2], cols[-1]
+    rep = int(rep)
+
+    if rep not in rep_sample_peptide_ptm_ratio:
+        rep_sample_peptide_ptm_ratio[rep] = {}
+    rep_sample_peptide_ptm_ratio[rep][new_sample] = peptide_ptm_ratio
+
+    if new_sample not in sample_peptide_ptm_ratios:
+        sample_peptide_ptm_ratios[new_sample] = {}
+
+"""
+# compare replicates (old)
+data_list1 = [[] for i in range(3)]
+for sample in sample_peptide_ptm_rep_ratio1:
+    for peptide in sample_peptide_ptm_rep_ratio1[sample]:
+        for ptm in sample_peptide_ptm_rep_ratio1[sample][peptide]:
+            ratio1 = sample_peptide_ptm_rep_ratio1[sample][peptide][ptm][1]
+            ratio2 = sample_peptide_ptm_rep_ratio1[sample][peptide][ptm][2]
+            ratio3 = sample_peptide_ptm_rep_ratio1[sample][peptide][ptm][3]
+            data_list1[0].append(ratio1)
+            data_list1[1].append(ratio2)
+            data_list1[2].append(ratio3)
+
+            
+for i in range(len(data_list1)-1):
+    for j in range(i+1, len(data_list1)):
+        fig = plt.figure()
+        plt.plot(data_list1[i], data_list1[j], '.')
+        plt.xlabel("replicate %d" % (i+1))
+        plt.ylabel("replicate %d" % (j+1))
+        plt.title("Old data")
+        #plt.show()
+        plt.close()
+
+# compare replicates
+data_list2 = [[] for i in range(3)]
+for sample in sample_peptide_ptm_rep_ratio2:
+    for peptide in sample_peptide_ptm_rep_ratio2[sample]:
+        for ptm in sample_peptide_ptm_rep_ratio2[sample][peptide]:
+            ratio1 = sample_peptide_ptm_rep_ratio2[sample][peptide][ptm][1]
+            ratio2 = sample_peptide_ptm_rep_ratio2[sample][peptide][ptm][2]
+            ratio3 = sample_peptide_ptm_rep_ratio2[sample][peptide][ptm][3]
+            data_list2[0].append(ratio1)
+            data_list2[1].append(ratio2)
+            data_list2[2].append(ratio3)
+
+            
+for i in range(len(data_list2)-1):
+    for j in range(i+1, len(data_list2)):
+        fig = plt.figure()
+        plt.plot(data_list2[i], data_list2[j], '.')
+        plt.xlabel("replicate %d" % (i+1))
+        plt.ylabel("replicate %d" % (j+1))
+        plt.title("New data")
+        #plt.show()
+        plt.close()
+
+# input number comparison
+ptms = sample_ptm_value['input-0'].keys()
+histone_list = ['H3', 'H4']
+ylabels = []
+img = []
+for ptm in ptms:
+    peptide_string, ptm_string = ptm.split(' ')
+    histone = peptide_string.split('_')[0]
+    if histone not in histone_list:
+        continue
+    ylabels.append(ptm_string)
+    row = []
+    for i in range(4):
+        #sample = 'input-%d' % (i)
+        row.append(sample_ptm_value['input-' + str(i)][ptm]
+                   + sample_ptm_value['pellet-' + str(i)][ptm]
+                   + sample_ptm_value['sup-' + str(i)][ptm])
+
+    mean = np.mean(row)
+    std = np.std(row)
+    row = [float(value-mean)/std for value in row] 
+    img.append(row)
+    
+fig = plt.figure(figsize=(5, 10))
+plt.imshow(img, aspect='auto')
+plt.yticks(range(len(ylabels)), ylabels, fontsize=5)
+plt.savefig("input_cmp.png", bbox_inches='tight')
+#plt.show()
+plt.close()
+
+sys.exit(1)
+X = [sample_ptm_value['input-0'][ptm] for ptm in sample_ptm_value['input-0']]
+for i in range(3):
+    Y = [sample_ptm_value['input-' + str(i+1)][ptm] for ptm in sample_ptm_value['input-' + str(i+1)]]
+    fig = plt.figure()
+    plt.plot(X, Y, '.')
+    plt.show()
+    plt.close()

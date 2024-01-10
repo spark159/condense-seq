@@ -1,0 +1,384 @@
+#!/bin/bash -l
+#SBATCH
+#SBATCH --job-name=4dn-hic
+#SBATCH --time=3-0:0:0
+#SBATCH --partition=defq
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=10
+#SBATCH --mem-per-cpu=4GB
+
+#### load and unload modules you may need
+#module load bowtie2
+#module load samtools
+#module load python
+#module list
+
+### juicer data set (mm10 CD8T cell WT)
+script_path='/home/spark159/singularity/4dn-hic/'
+data_path='/home/spark159/scratch/MouseCD8TcellData/hic_data/'
+
+sigul_fname='4dn-hic_latest.sif'
+
+fastq_fname1='SRR12693619_1.fastq.gz'
+fastq_fname2='SRR12693619_2.fastq.gz'
+
+index_fname='4DNFI823LSI8.bwaIndex.tgz'
+chromsize_fname='4DNFI3UBJ3HZ.chrom.sizes'
+enzyme_fname='mm10_MboI.txt'
+cutternum=4
+
+out_prefix='output'
+
+
+#### juicer data set (HGADFN167 hg38 HiC DpnII)
+#script_path='/home/spark159/singularity/4dn-hic/'
+#data_path='/home/spark159/scratch/ProgeriaData/HGADFN167_hg38_HiC_DpnII/'
+
+#sigul_fname='4dn-hic_latest.sif'
+
+#fastq_fname1='SRR19786481_1.fastq'
+#fastq_fname2='SRR19786481_2.fastq'
+
+#index_fname='4DNFIZQZ39L9.bwaIndex.tgz'
+#chromsize_fname='4DNFI823LSII.chrom.sizes'
+#enzyme_fname='hg38_DpnII.txt'
+#cutternum=4
+
+#out_prefix='output'
+
+
+#### juicer data set (HGADFN168 hg38 HiC DpnII)
+#script_path='/home/spark159/singularity/4dn-hic/'
+#data_path='/home/spark159/scratch/ProgeriaData/HGADFN168_hg38_HiC_DpnII/'
+
+#sigul_fname='4dn-hic_latest.sif'
+
+#fastq_fname1='SRR19786480_1.fastq'
+#fastq_fname2='SRR19786480_2.fastq'
+
+#index_fname='4DNFIZQZ39L9.bwaIndex.tgz'
+#chromsize_fname='4DNFI823LSII.chrom.sizes'
+#enzyme_fname='hg38_DpnII.txt'
+#cutternum=4
+
+#out_prefix='output'
+
+
+
+
+
+### run-bwa-mem.sh
+#Alignment module for Hi-C data, based on bwa-mem.
+#* Input : a pair of Hi-C fastq files
+#* Output : a bam file (Lossless, not sorted by coordinate)
+
+#### Usage
+#Run the following in the container.
+#run-bwa-mem.sh <fastq1> <fastq2> <bwaIndex> <output_prefix> <nThreads>
+# fastq1, fastq2 : input fastq files, either gzipped or not
+# bwaIndex : tarball for bwa index, .tgz.
+# outdir : output directory
+# output_prefix : prefix of the output bam file.
+# nThreads : number of threads
+
+echo "-------------run BWA alignment"
+
+#singularity exec ${script_path}${sigul_fname} run-bwa-mem.sh \
+#	    ${data_path}${fastq_fname1} \
+#	    ${data_path}${fastq_fname2} \
+#	    ${data_path}${index_fname} \
+#	    ${data_path} \
+#	    ${out_prefix} \
+#	    16
+
+# delete unzipped files
+#rm ${data_path}fastq1
+#rm ${data_path}fastq2
+#rm ${data_path}*.fasta.bwt
+#rm ${data_path}*.fasta.pac
+#rm ${data_path}*.fasta.ann
+#rm ${data_path}*.fasta.amb
+#rm ${data_path}*.fasta.sa
+
+echo ""
+
+
+### run-pairsam-parse-sort.sh
+#Runs pairsam parse and sort on a bwa-produced bam file and produces a sorted pairsam file
+#* Input: a bam file
+#* Output: a pairsam file
+
+#### Usage
+#Run the following in the container
+#run-pairsam-parse-sort.sh <input_bam> <chromsizes> <outdir> <outprefix> <nthread> <compress_program>
+# input_bam : an input bam file.
+# chromsizes : a chromsize file
+# outdir : output directory
+# outprefix : prefix of output files
+# nthread : number of threads to use
+
+echo "-------------make pairsam files from bam files"
+
+singularity exec ${script_path}${sigul_fname} run-pairsam-parse-sort.sh \
+	    ${data_path}${out_prefix}.bam \
+	    ${data_path}${chromsize_fname} \
+	    ${data_path} \
+	    ${out_prefix} \
+	    16 \
+	    lz4c
+
+echo ""
+
+
+### run-pairsam-merge.sh
+#Merges a list of pairsam files
+#* Input: a list of pairsam files
+#* Output: a merged pairsam file
+
+#### Usage
+#Run the following in the container
+#run-pairsam-merge.sh <outprefix> <nthreads> <input_pairsam1> [<input_pairsam2> [<input_pairsam3> [...]]]
+# outprefix : prefix of output files
+# nthreads : number of threads to use
+# input_pairsam : an input pairsam file.
+
+echo "-------------merge pairsam files"
+
+singularity exec ${script_path}${sigul_fname} run-pairsam-merge.sh \
+	    ${out_prefix} \
+	    16 \
+	    ${data_path}${out_prefix}.sam.pairs.gz
+
+echo ""
+
+
+### run-pairsam-markasdup.sh
+#Takes a pairsam file in and creates a pairsam file with duplicate reads marked
+#* Input: a pairsam file
+#* Output: a duplicate-marked pairsam file
+
+#### Usage
+#Run the following in the container
+#run-pairsam-markasdup.sh <input_pairsam> <outprefix>
+# input_pairsam : an input pairsam file.
+# outprefix : prefix of output files
+
+echo "-------------mark duplicate reads"
+
+singularity exec ${script_path}${sigul_fname} run-pairsam-markasdup.sh \
+	    ${data_path}${out_prefix}.merged.sam.pairs.gz \
+	    ${out_prefix}
+
+echo ""
+
+
+### run-pairsam-filter.sh
+#Takes in a pairsam file and creates a lossless, annotated bam file and a filtered pairs file.
+#* Input: a pairsam file
+#* Output: an annotatd bam file and a filtered pairs file
+
+#### Usage
+#Run the following in the container
+#run-pairsam-filter.sh <input_pairsam> <outprefix> <chromsizes>
+# input_pairsam : an input pairsam file.
+# outprefix : prefix of output files
+# chromsizes : a chromsize file
+
+echo "-------------filter out valid pairs files"
+
+singularity exec ${script_path}${sigul_fname} run-pairsam-filter.sh \
+	    ${data_path}${out_prefix}.marked.sam.pairs.gz \
+	    ${out_prefix} \
+	    ${data_path}${chromsize_fname}
+
+echo ""
+
+
+### run-pairsqc-single.sh
+#Runs pairsqc on a single pairs file and generates a report zip file.
+#* Input: a pairs file, chromsize file
+#* Output: a zipped QC report file 
+
+#### Usage
+#Run the following in the container.
+#run-pairsqc-single.sh <input_pairs> <chromsize> <sample_name> <enzyme> <outdir>
+# input_pairs : a gzipped pairs file (.pairs.gz) with its pairix index (.px2)
+# chromsize : a chromsize file
+# sample_name : sample name - to be used as both the prefix of the report and the title of the sample in the report.
+# enzyme : either 4 (4-cutter) or 6 (6-cutter)
+# outdir : output directory
+
+echo "-------------qc pairs files"
+
+#singularity exec ${script_path}${sigul_fname} run-pairsqc-single.sh \
+#	    ${data_path}${out_prefix}.dedup.pairs.gz \
+#	    ${data_path}${chromsize_fname} \
+#	    ${out_prefix} \
+#	    ${cutternum} \
+#	    ${data_path}
+
+echo ""
+
+
+### run-merge-pairs.sh
+#Alignment module for Hi-C data, based on merge-pairs.
+#* Input : a set of pairs files, with their associated indices
+#* Output : a merged pairs file and its index
+
+#### Usage
+#Run the following in the container.
+#run-merge-pairs.sh <output_prefix> <pairs1> <pairs2> [<pairs3> [...]]  
+# output_prefix : prefix of the output pairs file.
+# pairs1, pairs2, ... : input pairs files
+
+echo "-------------merge pairs files"
+
+singularity exec ${script_path}${sigul_fname} run-merge-pairs.sh \
+	    ${out_prefix} \
+	    ${data_path}${out_prefix}.dedup.pairs.gz
+
+echo ""
+
+
+### run-addfrag2pairs.sh
+#Adds juicer frag information to pairs file and creates an updated pairs file.
+#* Input: a pairs file, a (juicer-style) restriction_site_file
+#* Output: a pairs file
+
+#### Usage
+#Run the following in the container
+#run-addfrag2pairs.sh <input_pairs> <restriction_site_file> <output_prefix>
+# input_pairs : a gzipped pairs file (.pairs.gz) with its pairix index (.px2)
+# restriction_site_file : a text file containing positions of restriction enzyme sites, separated by space, one chromosome per line (Juicer style).
+# output prefix: prefix of the output pairs file
+
+echo "-------------add juicer fragement information"
+
+singularity exec ${script_path}${sigul_fname} run-addfrag2pairs.sh \
+	    ${data_path}${out_prefix}.pairs.gz \
+	    ${data_path}${enzyme_fname} \
+	    ${out_prefix}
+
+echo ""
+
+
+### run-cooler.sh
+#Runs cooler to create an unnormalized matrix .cool file, taking in a (4dn-style) pairs file
+#* Input : a pairs file (.gz, along with .px2), chrom.size file
+#* Output : a contact matrix file (.cool)
+
+#### Usage
+#Run the following in the container.
+#run-cooler.sh <input_pairs> <chromsize> <binsize> <ncores> <output_prefix> <max_split>
+# input_pairs : a pairs file
+# chromsize : a chromsize file
+# binsize : binsize in bp
+# ncores : number of cores to use
+# output_prefix : prefix of the output cool file
+# max_split : max_split argument for cooler (e.g. 2 which is default for cooler) 
+
+echo "-------------run cooler to create unnormalized matrix"
+
+singularity exec ${script_path}${sigul_fname} run-cooler.sh \
+	    ${data_path}${out_prefix}.pairs.gz \
+	    ${data_path}${chromsize_fname} \
+	    1000 \
+	    1 \
+	    ${out_prefix} \
+	    2
+
+echo ""
+
+### run-juicebox-pre.sh
+#Runs juicebox pre and addNorm on a pairs file and creates a hic file.
+#* Input: a pairs file, a chromsize file
+#* Output: a hic file
+
+#### Usage
+#Run the following in the container
+#run-juicebox-pre.sh -i <input_pairs> -c <chromsize_file> [-o <output_prefix>] [-r <min_res>] [-g] [-u custom_res] [-m <maxmem>] [-q mapqfilter] [-B]
+# -i input_pairs : a gzipped pairs file (.pairs.gz) with its pairix index (.px2), preferably containing frag information.
+# -c chromsize_file : a chromsize file
+# -o output prefix: prefix of the output hic file
+# -r min_res : minimum resolution for whole-genome normalization (e.g. 5000)
+# -g : higlass-compatible : if this flag is used, zoom levels are set in a Hi-Glass compatible way, if not, default juicebox zoom levels.
+# -u custom_res : custom resolutions separated by commas (e.g. 100000,200000,500000). The minimun of this set must match min_res (-r).
+# -m maxmem : java max mem (e.g. 14g)
+# -q mapqfilter : mapq filter (e.g. 30, default 0)
+# -n : normalization only : if this flag is used, binning is skipped.
+# -B : no balancing/normalization
+
+echo "-------------create a hic file"
+
+singularity exec ${script_path}${sigul_fname} run-juicebox-pre.sh \
+	    -i ${data_path}${out_prefix}.ff.pairs.gz \
+	    -c ${data_path}${chromsize_fname} \
+	    -o ${out_prefix} \
+	    -r 1000 \
+	    -m 32g \
+	    -q 0 \
+	    -u 1000,2000,5000,10000,25000,50000,100000,250000,500000,1000000,2500000,5000000,10000000
+
+echo ""
+
+### run-cool2multirescool.sh
+#Runs cooler coarsegrain to create multi-res cool file from a .cool file.
+#* Input : a cool file (.cool)
+#* Output : a multires.cool file (.multires.cool)
+
+#### Usage
+#Run the following in the container.
+#run-cool2multirescool.sh -i <input_cool> [-p <ncores>] [-o <output_prefix>] [-c <chunksize>] [-j] [-u custom_res] [-B]
+# input_cool : a (singe-res) cool file with the highest resolution you want in the multi-res cool file
+# -p ncores: number of cores to use (default: 1)
+# -o output_prefix: prefix of the output multires.cool file (default: out)
+# -c chunksize : chunksize argument of cooler (e.g. default: 10000000)
+# -j : juicer resolutions (default: use HiGlass resolutions)
+# -u custom_res : custom resolutions separated by commas (e.g. 100000,200000,500000). The minimun of this set must match min_res (-r).
+# -B : no balancing/normalization
+
+echo "-------------create a multi-res cool file"
+
+singularity exec ${script_path}${sigul_fname} run-cool2multirescool.sh \
+	    -i ${data_path}${out_prefix}.cool \
+	    -p 1 \
+	    -o ${out_prefix} \
+	    -c 10000000 \
+	    -u 1000,2000,5000,10000,25000,50000,100000,250000,500000,1000000,2500000,5000000,10000000
+
+echo ""
+
+### run-add-hicnormvector-to-mcool.sh
+#Adds a normalization vector from a hic file to an mcool file.
+#* Input: a .hic file and an .mcool file
+#* Output: an .mcool file that contains an additional normalization vector.
+
+#### Usage
+#Run the following in the container
+#run-add-hicnormvector-to-mcool.sh <input_hic> <input_mcool> <outdir>
+# input_hic : a hic file
+# input_mcool : an mcool file
+# outdir : output directory
+
+echo "-------------add a juicer normalization vector to mcool file"
+
+singularity exec ${script_path}${sigul_fname} run-add-hicnormvector-to-mcool.sh \
+	    ${data_path}${out_prefix}.hic \
+	    ${data_path}${out_prefix}.multires.cool \
+	    ${data_path}
+
+echo ""
+
+
+### delete temporal files
+rm ${data_path}temp*
+rm ${data_path}tmp*
+
+echo "Finished with job $SLURM_JOBID"
+
+#### mpiexec by default launches number of tasks requested
+
+
+
+

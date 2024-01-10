@@ -1,0 +1,32 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=chromHMM
+#SBATCH --time=12:00:00
+#SBATCH --partition=defq
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=3
+# number of cpus (threads) per task (process)
+
+#### load and unload modules you may need
+#module load java
+module list
+
+#java -mx4000M -jar ChromHMM/ChromHMM.jar BinarizeBam ChromHMM/CHROMSIZES/hg38.txt ChromHMM/bamfiles/ ChromHMM/marktable.txt ChromHMM/15state/
+
+#java -Xmx100G -jar ChromHMM/ChromHMM.jar BinarizeBam ChromHMM/CHROMSIZES/hg38.txt work/ENCODE_chip_seq_data/ work/ENCODE_chip_seq_data/H1_ENCODE_Histone_input.txt work/ENCODE_chip_seq_data/
+
+#java -Xmx100G -jar /home/spark159/ChromHMM/ChromHMM.jar BinarizeBam /home/spark159/ChromHMM/CHROMSIZES/mm10.txt /home/spark159/scratch4-tha4/sangwoo/MouseCD8TcellData/. /home/spark159/scratch4-tha4/sangwoo/MouseCD8TcellData/MouseCD8Tcell_input_table.txt /home/spark159/scratch4-tha4/sangwoo/MouseCD8TcellData/.
+
+java -Xmx100G -jar /home/spark159/ChromHMM/ChromHMM.jar LearnModel /home/spark159/scratch4-tha4/sangwoo/MouseCD8TcellData/. /home/spark159/scratch4-tha4/sangwoo/MouseCD8TcellData/. 15 mm10 
+
+
+
+
+#java -mx4000M -jar ChromHMM/ChromHMM.jar LearnModel ChromHMM/binaryfiles/ ChromHMM/12state/ 12 hg38
+
+
+echo "Finished with job $SLURM_JOBID"
+
+#### mpiexec by default launches number of tasks requested

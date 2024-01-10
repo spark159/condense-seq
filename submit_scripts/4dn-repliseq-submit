@@ -1,0 +1,150 @@
+#!/bin/bash -l
+#SBATCH
+#SBATCH --job-name=4dn-repliseq
+#SBATCH --time=3-0:0:0
+#SBATCH --partition=defq
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=10
+#SBATCH --mem-per-cpu=4GB
+
+#### load and unload modules you may need
+#module load bowtie2
+#module load samtools
+#module load python
+#module list
+
+
+#### repliseq data set (HGADFN167_hg38_repliseq, early)
+#script_path='/home/spark159/singularity/4dn-repliseq/'
+#data_path='/home/spark159/scratch/ProgeriaData/HGADFN167_hg38_repliseq/early'
+
+#sigul_fname='4dn-repliseq_v16.sif'
+
+#fastq_fname1='SRR5496899.fastq'
+
+#index_fname='4DNFIZQZ39L9.bwaIndex.tgz'
+#chromsize_fname='4DNFI823LSII.chrom.sizes'
+
+#win_size=5000
+
+#out_prefix='output'
+
+
+### repliseq data set (HGADFN167_hg38_repliseq, late)
+script_path='/home/spark159/singularity/4dn-repliseq/'
+data_path='/home/spark159/scratch/ProgeriaData/HGADFN167_hg38_repliseq/late'
+
+sigul_fname='4dn-repliseq_v16.sif'
+
+fastq_fname1='SRR5496900.fastq'
+
+index_fname='4DNFIZQZ39L9.bwaIndex.tgz'
+chromsize_fname='4DNFI823LSII.chrom.sizes'
+
+win_size=5000
+
+out_prefix='output'
+
+
+
+### run-clip.sh
+#Usage: ${0##*/} [-O outdir] [-o out_prefix] -1 fastq1 [-2 fastq2]
+#-1 fastq1 : input file (R1) in fastq format
+#-2 fastq2 : input file (R2) in fastq format
+#-O outdir : default .
+#-o out_prefix : default out
+
+echo "-------------Read Clipping"
+
+singularity exec ${script_path}${sigul_fname} run-clip.sh \
+	    -O ${data_path} \
+	    -o ${out_prefix} \
+	    -1 ${data_path}/${fastq_fname1} \
+	    #-2 ${data_path}/${fastq_fname2} \
+
+
+echo ""
+
+
+
+### run-align.sh
+#Usage: ${0##*/} [-p ncores] [-O outdir] [-o out_prefix] -1 fastq1 -2 fastq2 -I index
+#-1 fastq1 : input file (R1) in fastq format
+#-2 fastq2 : input file (R2) in fastq format
+#-I index : bwa index in tgz
+#-O outdir : default .
+#-o out_prefix : default out
+#-p ncores : default 1
+
+echo "-------------Read Alignment"
+
+singularity exec ${script_path}${sigul_fname} run-align.sh \
+	    -O ${data_path} \
+	    -o ${out_prefix} \
+	    -p 8 \
+	    -1 ${data_path}/${out_prefix}.R1.clip.fastq \
+	    -I ${data_path}/${index_fname} \
+	    #-2 ${data_path}/${out_prefix}.R2.clip.fastq \
+	    
+
+
+echo ""
+
+
+
+### filtersort
+#$1 input
+#$2 memperthread
+#$3 nthreads
+#$4 outdir
+#$5 outprefix
+
+echo "-------------Filter&Sort Alignment"
+
+singularity exec ${script_path}${sigul_fname} filtersort \
+	    ${data_path}/${out_prefix}.bam \
+	    5G \
+	    1 \
+	    ${data_path} \
+	    ${out_prefix} \
+
+echo ""
+
+
+
+### run-dedup.sh
+#INPUT=$1
+#OUTDIR=$2
+#OUTPREFIX=$3
+
+echo "-------------Remove Duplicates"
+
+singularity exec ${script_path}${sigul_fname} run-dedup.sh \
+	    ${data_path}/${out_prefix}.q20_sort.bam \
+	    ${data_path} \
+	    ${out_prefix} \
+
+echo ""
+
+
+
+### run-count.sh
+#INPUT=$1
+#CHROMSIZE=$2
+#OUTDIR=$3
+#OUTPREFIX=$4
+#WINSIZE=$5
+
+echo "-------------Read Counting"
+
+singularity exec ${script_path}${sigul_fname} run-count.sh \
+	    ${data_path}/${out_prefix}.rmdup.bam \
+	    ${data_path}/${chromsize_fname} \
+	    ${data_path} \
+	    ${out_prefix} \
+	    ${win_size}
+
+echo ""
+
+echo "Done"

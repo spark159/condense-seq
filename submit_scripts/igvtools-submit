@@ -1,0 +1,28 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=python_code
+#SBATCH --time=100:0:0
+#SBATCH --partition=parallel
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=24
+# number of cpus (threads) per task (process)
+#SBATCH --cpus-per-task=1
+#SBATCH --mail-type=end
+#SBATCH --mail-user=spark159@jhu.edu
+
+#### load and unload modules you may need
+module load bowtie2
+module load samtools
+module load python
+module list
+
+#### execute code and write output file to OUT-24log.
+#IGVTools/igvtools sort data/condense_seq/chr1_cov.cn data/condense_seq/chr1_cov.sort.cn
+#IGVTools/igvtools toTDF data/condense_seq/chr1_cov.sort.cn data/condense_seq/chr1_cov.sort.tdf data/condense_seq/hg38.fa
+IGVTools/igvtools toTDF output_cov.cn output_cov.tdf data/condense_seq/hg38.fa
+
+echo "Finished with job $SLURM_JOBID"
+
+#### mpiexec by default launches number of tasks requested

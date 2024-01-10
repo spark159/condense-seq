@@ -323,21 +323,27 @@ def read_titration_data_new (fname):
             rep_fracts[i].append(float(fract_cols[i]))
 
     return conc_list, rep_fracts, mean_list, std_list
+
 agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
-rep_agent_titration = [{} for i in range(3)]
+agent_tifname = {'sp':"PTMlib_sp_titration_corrected.csv", #nano-drop bg corrected
+                 'spd':"PTMlib_spd_titration_corrected.csv", #nano-drop bg corrected
+                 'CoH':"PTMlib_CoH_titration_corrected.csv", #nano-drop bg corrected
+                 'PEG':"PTMlib_PEG_titration.csv",
+                 'HP1a':"PTMlib_HP1a_titration.csv"}
+repnum = 3
+rep_agent_titration = [{} for i in range(repnum)]
 for agent in agent_list:
-    tdata_fname = "PTMlib_%s_titration.csv" % (agent)
-    conc_list, rep_fracts, mean_list, std_list = read_titration_data_new (tdata_fname)
-    for rep in range(len(rep_fracts)):
+    tifname = agent_tifname[agent]
+    conc_list, rep_fracts, mean_list, std_list = read_titration_data_new(tifname)
+    for rep in range(repnum):
         agent_titration = rep_agent_titration[rep]
         if agent not in agent_titration:
             agent_titration[agent] = {}
         agent_titration[agent]['conc'] = conc_list
-        agent_titration[agent]['survival'] = rep_fracts[rep]
-        #agent_titration[agent]['survival'] = mean_list
+        #agent_titration[agent]['survival'] = rep_fracts[rep]
+        agent_titration[agent]['survival'] = mean_list
 
 
-        
 #sys.exit(1)
 # read sort file
 def read_sort (fname):
@@ -376,34 +382,20 @@ def read_sort (fname):
                 agent_num_ID_count[agent][num][ID] = 0
             agent_num_ID_count[agent][num][ID] +=1
     return validity_type_count, name_count, agent_num_ID_count
-#sort_fname1 = "Sp-Spd-CoHex-PEG-HP1a-PTMlib_S1_L001_R1_001.sort"
-#sort_fname2 = "Sp-Spd-PTMlib-100kdfilter_S1_L001_R1_001.sort"
-#sort_fname1 = "../PTMlib_1rep/PTMlib_1rep.sort"
-#sort_fname2 = "../PTMlib_2rep/PTMlib_2rep.sort"
-#sort_fname2 = "../PTMlib_3rep/PTMlib_3rep.sort"
-
-#validity_type_count, name_count, agent_num_ID_count = read_sort(sort_fname2)
-
-#validity_type_count1, name_count1, agent_num_ID_count1 = read_sort(sort_fname1)
-#validity_type_count2, name_count2, agent_num_ID_count2 = read_sort(sort_fname2)
-
-#agent_num_ID_count = {}
-#agent_num_ID_count.update(agent_num_ID_count1)
-#agent_num_ID_count['sp_filter'] = agent_num_ID_count2['sp']
-#agent_num_ID_count['spd_filter'] = agent_num_ID_count2['spd']
 
 rep_agent_ID_score = []
 rep_agent_ID_dscore = []
 
 repnum = 3
 for rep in range(repnum):
-    sort_fname = "../PTMlib_%drep/PTMlib_%drep.sort" % (rep+1, rep+1)
+    #sort_fname = "../PTMlib_%drep/PTMlib_%drep.sort" % (rep+1, rep+1)
+    sort_fname = "./PTMlib_%drep.sort" % (rep+1)
     print "reading %s" % (sort_fname)
     
     validity_type_count, name_count, agent_num_ID_count = read_sort(sort_fname)
 
     # sequencing QC
-    if True:
+    if False:
         # check data type
         types, counts = [], []
         for validity in validity_type_count:
@@ -466,7 +458,7 @@ for rep in range(repnum):
     #sys.exit(1)
 
     # get fold change over titrations
-    #agent_list = ['sp']
+    #agent_list = ['sp', 'HP1a']
     agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
     #agent_list = ['sp_filter', 'spd_filter']
     #agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a', 'sp_filter', 'spd_filter']
@@ -518,7 +510,7 @@ for rep in range(repnum):
     agent_titration = rep_agent_titration[rep]
     agent_ID_titration = {}
     agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
-    #agent_list = ['sp']
+    #agent_list = ['sp', 'HP1a']
 
     for agent in agent_list:
         for num in sorted(agent_num_ID_fraction[agent]):
@@ -568,43 +560,53 @@ for rep in range(repnum):
     #sys.exit(1)
 
     #save survival probabilty data
-    #save actual number data
-    if False:
-        total_WT_count = 1.6*(10**12)
-        total_lib_count = total_WT_count / 100.0 #1% spike-in
-        agent_list = ['sp']
+    if True:
+        #total_WT_count = 1.6*(10**12)
+        #total_lib_count = total_WT_count / 100.0 #1% spike-in
         ID_list = sorted(list(set(all_good_IDs) - set([116])))
+
+        #agent_list = ['sp', 'HP1a']
+        agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
+        agent_unit = {'sp':'mM',
+                      'spd':'mM',
+                      'CoH':'mM',
+                      'PEG':'%',
+                      'HP1a':'$\\mu$M'}
+    
         for agent in agent_list:
             #f = open("PTMlib_%s_score.txt" % (agent), 'w')
-            f = open("PTMlib_%s_count.txt" % (agent), 'w')
+            #f = open("PTMlib_%s_rep-%d_count.txt" % (agent, rep+1), 'w')
+            f = open("PTMlib_%s_rep-%d_survival.txt" % (agent, rep+1), 'w')
 
             # write down the header
             s = ""
             s += "ID" + '\t'
-            s += '\t'.join(['count (%s %f mM)' % (agent, value) for value in agent_titration[agent]['conc']])
+            s += '\t'.join(['[%s] %f %s' % (agent, value, agent_unit[agent]) for value in agent_ID_titration[agent][1]['conc']])
+            #s += '\t'.join(['%s %f mM' % (agent, value) for value in agent_titration[agent]['conc']])
+            #s += '\t'.join(['%s %f mM' % (agent, value) for value in agent_titration[agent]['conc']])
+            #s += '\t'.join(['count (%s %f mM)' % (agent, value) for value in agent_titration[agent]['conc']])
             #s += '\t'.join(['score (%s %f mM)' % (agent, x) for x in X[1:]])
             #s += '\t' + "mean score"
             print >> f, s
 
-            # record WT background nucleosome data
-            s = ""
-            s += str(0) + '\t' 
-            s += '\t'.join([str(int(round(total_WT_count*value))) for value in agent_titration[agent]['survival']])
-            print >> f, s
+            ## record WT background nucleosome data
+            #s = ""
+            #s += str(0) + '\t' 
+            #s += '\t'.join([str(int(round(total_WT_count*value))) for value in agent_titration[agent]['survival']])
+            #print >> f, s
 
             # record library data
             for ID in ID_list:
                 s = ""
                 s += str(ID) + '\t'
-                fraction = agent_num_ID_fraction[agent][0][ID]
-                s += '\t'.join([str(int(round(total_lib_count*fraction*value))) for value in agent_ID_titration[agent][ID]['survival']])
+                #fraction = agent_num_ID_fraction[agent][0][ID]
+                #s += '\t'.join([str(int(round(total_lib_count*fraction*value))) for value in agent_ID_titration[agent][ID]['survival']])
                 #s += '\t'.join([str(-np.log2(y)) for y in Y[1:]])
                 #s += '\t' + str(np.mean([-np.log2(y) for y in Y[1:]]))
+                s += '\t'.join([str(value) for value in agent_ID_titration[agent][ID]['survival']])
                 print >> f, s
 
             f.close()
-
-        #sys.exit(1)
 
 
     # define the condensabiltiy metrics
@@ -618,7 +620,8 @@ for rep in range(repnum):
             fig = plt.figure()
             plt.plot(X, Y, 'o-')
             plt.title(ID_shortname[ID])
-            plt.show()
+            #plt.show()
+            plt.savefig('%s_%s_%drep.png' % (agent, str(ID), rep+1))
             plt.close()
 
             X, Y = X[1:], Y[1:]
@@ -643,9 +646,38 @@ for rep in range(repnum):
     rep_agent_ID_score.append(agent_ID_score)
 
 
+    #save log fold chagne of survival probabilty data
+    if True:
+        ID_list = sorted(list(set(all_good_IDs) - set([116])))
+        agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
+        agent_unit = {'sp':'mM',
+                      'spd':'mM',
+                      'CoH':'mM',
+                      'PEG':'%',
+                      'HP1a':'$\\mu$M'}
+    
+        for agent in agent_list:
+            f = open("PTMlib_%s_rep-%d_foldchange.txt" % (agent, rep+1), 'w')
+            
+            # write down the header
+            s = ""
+            s += "ID" + '\t'
+            s += '\t'.join(['[%s] %f %s' % (agent, value, agent_unit[agent]) for value in agent_ID_titration[agent][1]['conc']])
+            #s += '\t' + 'Score'
+            print >> f, s
+
+            # record library data
+            for ID in ID_list:
+                s = ""
+                s += str(ID) + '\t'
+                Y = agent_ID_titration[agent][ID]['survival']
+                s += '\t'.join([str(-np.log2(y)) for y in Y])
+                #s += '\t' + str(np.mean([-np.log2(y) for y in Y[1:]]))
+                print >> f, s
+            f.close()
+
     # all good IDs except WT controls
     all_good_IDs_exceptWT = list(set(all_good_IDs) - set(cate_IDs['WT']))
-
 
     # get difference w.r.t. wild type
     #agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a', 'sp_filter', 'spd_filter']
@@ -725,8 +757,38 @@ for agent in agent_list:
         assert ID not in agent_ID_edscore[agent]
         agent_ID_edscore[agent][ID] = edscore
 
+#save condensability scores
+if True:
+    ID_list = sorted(list(set(all_good_IDs) - set([116])))
+    agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']
+    repnum = 3
+
+    for agent in agent_list:
+        f = open("PTMlib_%s_score.txt" % (agent), 'w')
+
+        # write down the header
+        s = ""
+        s += "ID" + '\t'
+        s += '\t'.join(['score (rep-%d)' % (rep+1) for rep in range(repnum)])
+        s += '\t' + 'Mean'
+        s += '\t' + 'Std'
+        print >> f, s
+
+        # record library data
+        for ID in ID_list:
+            s = ""
+            s += str(ID) + '\t'
+            scores = []
+            for rep in range(repnum):
+                score = rep_agent_ID_score[rep][agent][ID]
+                scores.append(score)
+            s += '\t'.join([str(score) for score in scores])
+            s += '\t' + str(np.mean(scores))
+            s += '\t' + str(np.std(scores))
+            print >> f, s
+        f.close()
         
-#sys.exit(1)
+sys.exit(1)
 
 # QC6: Check the reproducibilty
 agent_list = ['sp', 'spd', 'CoH', 'PEG', 'HP1a']

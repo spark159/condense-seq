@@ -1,0 +1,51 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=profile
+#SBATCH --time=12:0:0
+#SBATCH --partition=defq
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=3
+# number of cpus (threads) per task (process)
+
+#### load and unload modules you may need
+# module unload openmpi/intel
+# module load mvapich2/gcc/64/2.0b
+# module list
+#module load bowtie2
+#module load python/2.7
+module load samtools
+#module list
+
+
+#### parsing arguments
+OPTIND=1
+while getopts f:g:x:c:o: option  
+do                                                                                                                           
+  case "${option}"                                                                                                         
+  in
+      f) fname=$OPTARG ;;
+      g) gtfname=$OPTARG ;;
+      x) refname=$OPTARG ;;
+      c) chr_name=$OPTARG ;;
+      o) outfname=$OPTARG ;;
+            
+  esac                                                                                                                       
+done
+set +o noglob
+#set +f
+
+echo
+echo Submitted
+echo "fname $fname"
+
+python2 /home/spark159/scratch/scripts/profileM_ver2.py ${fname} ${gtfname} ${refname} -o ${outfname}_TSS-TTS --skip --chr ${chr_name} --feature TSS-TTS --up 5000 --down 2500 --domain-frac 0.5
+
+python2 /home/spark159/scratch/scripts/profileM_ver2.py ${fname} ${gtfname} ${refname} -o ${outfname}_TSS --skip --chr ${chr_name} --feature TSS --up 2500 --down 5000 
+
+#python2 /home/spark159/scratch/scripts/profileM_edit_edit.py ${fname} ${gtfname} ${refname} -o ${outfname}_TTS --skip --chr ${chr_name} --feature TTS --up 2000 --down 1000
+
+
+echo "Finished with job $SLURM_JOBID"
+echo

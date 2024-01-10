@@ -1,0 +1,48 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=condense
+#SBATCH --time=24:00:00
+#SBATCH --partition=defq
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=10
+# number of cpus (threads) per task (process)
+
+#### load and unload modules you may need
+#module load bowtie2
+module load samtools
+#module load python
+#module load python/2.7
+#module load samtools/1.15.1
+#module load samtools/1.15.1-multiple_instances
+module list
+
+
+#### parsing arguments
+OPTIND=1
+while getopts f:x:c:o: option  
+do                                                                                                                           
+  case "${option}"                                                                                                         
+  in
+      f)  set -f
+          IFS=','
+          files=($OPTARG) ;;
+
+      x) refname=$OPTARG ;;
+      c) chr_name=$OPTARG ;;
+      o) outfname=$OPTARG ;;
+      
+  esac                                                                                                                       
+done
+set +o noglob
+
+echo Submitted $outfname
+echo ${files[@]}
+echo
+
+#echo "chr name $chr_name window $win_size"
+echo "Producing $outfname files"
+
+#NCP peak calling
+python2 /home/spark159/scratch/scripts/NCPpeak_ver2.py ${files[*]} ${refname} --chr ${chr_name} --skip -o ${outfname}

@@ -1,0 +1,76 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=condense
+#SBATCH --time=24:00:00
+#SBATCH --partition=defq
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=10
+#SBATCH --mem-per-cpu=4GB
+# number of cpus (threads) per task (process)
+
+#### load and unload modules you may need
+#module load bowtie2
+#module load samtools
+#module load python
+#module load python/2.7
+module load samtools/1.15.1
+#module load samtools/1.15.1-multiple_instances
+module list
+
+
+#### parsing arguments
+OPTIND=1
+while getopts f:x:b:s:c:o: option  
+do                                                                                                                           
+  case "${option}"                                                                                                         
+  in
+      f)  set -f
+          IFS=','
+          files=($OPTARG) ;;
+
+      x) refname=$OPTARG ;;
+      b) binsize=$OPTARG ;;
+      s) binstep=$OPTARG ;;
+      c) chr_name=$OPTARG ;;
+      o) outfname=$OPTARG ;;
+      
+  esac                                                                                                                       
+done
+set +o noglob
+
+echo Submitted $outfname
+echo ${files[@]}
+echo
+
+
+#echo "chr name $chr_name window $win_size"
+echo "Producing $outfname files"
+
+
+### get condensability scores
+
+#get coverage along the genome
+python2 /home/spark159/scratch/scripts/coverage.py ${files[*]} ${refname} --chr ${chr_name} --skip -o ${outfname}
+
+#NCP peak calling
+python2 /home/spark159/scratch/scripts/NCPpeak.py ${files[*]} ${refname} --chr ${chr_name} --skip -o ${outfname}
+
+#get coverage for each NCP
+python2 /home/spark159/scratch/scripts/NCPcov.py ${outfname}_peak.cn ${outfname}_cov.cn --Nlen 171 --peak-choice input --chr ${chr_name} -o ${outfname}
+
+#167bp 25 step binning of the coverage
+python2 /home/spark159/scratch/scripts/Binsig.py ${outfname}_cov.cn ${refname} --chr ${chr_name} -o ${outfname}_167win25step_cov
+
+#1001bp 501 step binning of the coverage
+python2 /home/spark159/scratch/scripts/Binsig.py ${outfname}_cov.cn ${refname} --chr ${chr_name} -o ${outfname}_1001win501step_cov --Bsize 1001 --Bstep 501
+
+#10001bp 5001 step binning of the coverage
+python2 /home/spark159/scratch/scripts/Binsig.py ${outfname}_cov.cn ${refname} --chr ${chr_name} -o ${outfname}_10001win5001step_cov --Bsize 10001 --Bstep 5001
+
+
+echo "Finished with job $SLURM_JOBID"
+
+#### mpiexec by default launches number of tasks requested
+

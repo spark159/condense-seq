@@ -1,0 +1,54 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=bincount
+#SBATCH --time=12:0:0
+#SBATCH --partition=defq
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=1
+# number of cpus (threads) per task (process)
+
+#### load and unload modules you may need
+# module unload openmpi/intel
+# module load mvapich2/gcc/64/2.0b
+# module list
+#module load bowtie2
+#module load python/2.7
+module load samtools
+#module list
+
+
+#### parsing arguments
+OPTIND=1
+while getopts f:x:o:w: option  
+do                                                                                                                           
+  case "${option}"                                                                                                         
+  in
+      f)  set -f
+          IFS=','
+          files=($OPTARG) ;;
+
+      x) refname=$OPTARG ;;
+      o) outfname=$OPTARG ;;
+      w) binsize=$OPTARG;;
+      
+  esac                                                                                                                       
+done
+set +o noglob
+
+echo Submitted $outfname
+echo ${files[@]}
+echo
+
+#python data/scripts/bincount.py ${files[1]} ${files[2]} ${files[3]} ${files[4]} ${files[5]} ${files[6]} ${files[7]} ${files[0]} work/condense_seq/hg19.fa -o $outfname -w 1000 --gc
+
+#python data/scripts/bincount.py ${files[1]} ${files[2]} ${files[3]} ${files[4]} ${files[5]} ${files[6]} ${files[7]} ${files[0]} $refname -o $outfname -w 1000 --gc
+
+#python work/scripts/bincount.py ${files[1]} ${files[2]} ${files[3]} ${files[4]} ${files[5]} ${files[0]} ${refname} -o ${outfname} -w ${binsize} --gc
+
+#python work/scripts/bincount.py ${files[*]} ${refname} -o ${outfname} -w ${binsize} --gc
+
+python2 /home/spark159/scratch/scripts/bincount_edit.py ${files[*]} ${refname} -o ${outfname} -w ${binsize} --gc --tlen
+
+echo "Finished with job $SLURM_JOBID"

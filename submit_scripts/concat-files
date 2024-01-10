@@ -1,0 +1,57 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=concat-files
+#SBATCH --time=12:0:0
+#SBATCH --partition=defq
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=5
+# number of cpus (threads) per task (process)
+
+#### load and unload modules you may need
+# module unload openmpi/intel
+# module load mvapich2/gcc/64/2.0b
+# module list
+#module load bowtie2
+#module load python/2.7
+#module load samtools
+#module list
+
+
+#### parsing arguments
+OPTIND=1
+while getopts f:c:o: option  
+do                                                                                                                           
+  case "${option}"                                                                                                         
+  in
+      f)  set -f
+          IFS=','
+          fnames=($OPTARG) ;;
+
+      c)  set -f
+          IFS=','
+          colnums=($OPTARG) ;;
+
+      o) outfname=$OPTARG ;;
+
+  esac                                                                                                                       
+done
+set +o noglob
+echo 'concat' ${fnames[@]} 'to' ${outfname}
+
+# do a loop over all your files
+colfnames=()
+for i in ${!fnames[@]}; do 
+    # use awk to extract column of files and save output
+    awk -F'\t' '{print $'${colnums[i]}'}' ${fnames[i]} > ${fnames[i]}_col${i}
+    colfnames+=(${fnames[i]}_col${i})
+done
+
+# now paste your columns together.
+paste -d'\t' ${colfnames[@]} > ${outfname}
+
+# cleanup
+rm ${colfnames[@]}
+
+echo "Finished with job $SLURM_JOBID"

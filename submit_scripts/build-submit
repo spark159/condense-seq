@@ -1,0 +1,26 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=bowtie_build
+#SBATCH --time=30:0:0
+#SBATCH --partition=parallel
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=24
+# number of cpus (threads) per task (process)
+#SBATCH --cpus-per-task=1
+#SBATCH --mail-type=end
+#SBATCH --mail-user=spark159@jhu.edu
+
+#### load and unload modules you may need
+# module unload openmpi/intel
+# module load mvapich2/gcc/64/2.0b
+# module list
+module load bowtie2
+module list
+
+#### execute code and write output file to OUT-24log.
+bowtie2-build work/condense_seq/hg19.fa work/condense_seq/hg19
+echo "Finished with job $SLURM_JOBID"
+
+#### mpiexec by default launches number of tasks requested

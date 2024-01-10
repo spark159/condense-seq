@@ -1,0 +1,29 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=file_unzip
+#SBATCH --time=5:0:0
+#SBATCH --partition=parallel
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=24
+# number of cpus (threads) per task (process)
+#SBATCH --cpus-per-task=1
+
+#### execute code and write output file to OUT-24log.
+#gunzip work/3909/Sp1_S1_L004_R1_001.fastq.gz work/3909/Sp1_S1_L004_R1_001.fastq
+#gunzip work/3909/Sp1_S1_L004_R2_001.fastq.gz work/3909/Sp1_S1_L004_R2_001.fastq
+#gunzip work/condense_seq/3909/Sp1_S1_L004_R1_001.fastq.gz
+#gunzip work/condense_seq/3909/Sp1_S1_L004_R2_001.fastq.gz
+#gunzip work/condense_seq/3911/Sp10_S7_L006_R1_001.fastq.gz
+#gunzip work/condense_seq/3911/Sp10_S7_L006_R2_001.fastq.gz
+#gunzip work/slide_seq/*.gz
+
+#tar -czvf condense_seq_data_20180209.tar.gz work/condense_seq/*_Ncov.cn work/condense_seq/*_NCP.cn work/condense_seq/*_noselect.txt
+#tar -czvf condense_seq_coverage_20180209.tar.gz work/condense_seq/*_cov.cn
+tar -czvf condense_seq_annot_20180209.tar.gz work/condense_seq/*_anot.cn
+
+
+echo "Finished with job $SLURM_JOBID"
+
+#### mpiexec by default launches number of tasks requested

@@ -1,0 +1,75 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=binannot
+#SBATCH --time=12:0:0
+#SBATCH --partition=express
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=3
+# number of cpus (threads) per task (process)
+
+#### load and unload modules you may need
+# module unload openmpi/intel
+# module load mvapich2/gcc/64/2.0b
+# module list
+#module load bowtie2
+#module load python/2.7
+#module load samtools
+#module list
+
+
+#### parsing arguments
+OPTIND=1
+while getopts f:x:c:w:s::o:b:h: option  
+do                                                                                                                           
+  case "${option}"                                                                                                         
+  in
+      f) fname=$OPTARG ;;
+      x) refname=$OPTARG ;;
+      c) chr_name=$OPTARG ;;
+      w) binsize=$OPTARG ;;
+      s) binstep=$OPTARG ;;
+      o) outfname=$OPTARG ;;
+
+      b)  set -f
+	  IFS=','
+	  bsfiles=($OPTARG) ;;
+      
+      h)  set -f
+	  IFS=','
+	  chipfiles=($OPTARG) ;;
+            
+  esac                                                                                                                       
+done
+set +o noglob
+#set +f
+
+echo
+echo Submitted
+echo "fname $fname"
+echo "chr $chr_name"
+echo "bsfiles ${bsfiles[@]}"
+echo "chipfiles ${chipfiles[@]}"
+echo "refname $refname"
+echo "binsize $binsize"
+echo "binstep $binstep"
+echo "outfname $outfname"
+
+
+#python data/scripts/bincount.py ${files[1]} ${files[2]} ${files[3]} ${files[4]} ${files[5]} ${files[6]} ${files[7]} ${files[0]} work/condense_seq/hg19.fa -o $outfname -w 1000 --gc
+
+#python data/scripts/bincount.py ${files[1]} ${files[2]} ${files[3]} ${files[4]} ${files[5]} ${files[6]} ${files[7]} ${files[0]} $refname -o $outfname -w 1000 --gc
+
+#python work/scripts/bincount.py ${files[1]} ${files[2]} ${files[3]} ${files[4]} ${files[5]} ${files[0]} ${refname} -o ${outfname} -w ${winsize} --gc
+
+#python work/scripts/combine_annot_edit.py ${fname} ${refname} --chip ${chipnames[1]} ${chipfiles[1]} ${chipnames[2]} ${chipfiles[2]} ${chipnames[3]} ${chipfiles[3]} ${chipnames[4]} ${chipfiles[4]} ${chipnames[5]} ${chipfiles[5]} ${chipnames[6]} ${chipfiles[6]} ${chipnames[7]} ${chipfiles[7]} ${chipnames[8]} ${chipfiles[8]} --Bin ${binsize} ${binstep}
+
+#python work/scripts/combine_annot_edit.py ${fname} ${refname} --chip ${chipfiles[*]} --Bin ${binsize} ${binstep} --chr chr1 -o ${outfname}
+
+python work/scripts/combine_annot_edit.py ${fname} ${refname} --bs ${bsfiles[*]} --chip ${chipfiles[*]} --chr ${chr_name} --Nlen 171 --full-seq -o ${outfname}
+
+
+
+echo "Finished with job $SLURM_JOBID"
+echo

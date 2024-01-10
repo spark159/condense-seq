@@ -1,0 +1,64 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=binannot
+#SBATCH --time=12:0:0
+#SBATCH --partition=defq
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=1
+# number of cpus (threads) per task (process)
+
+#### load and unload modules you may need
+# module unload openmpi/intel
+# module load mvapich2/gcc/64/2.0b
+# module list
+#module load bowtie2
+#module load python/2.7
+module load samtools
+#module list
+
+
+#### parsing arguments
+OPTIND=1
+while getopts f:x:w:s:o:n:b:c: option  
+do                                                                                                                           
+  case "${option}"                                                                                                         
+  in
+      f) fname=$OPTARG ;;
+      x) refname=$OPTARG ;;
+      w) binsize=$OPTARG ;;
+      s) binstep=$OPTARG ;;
+      o) outfname=$OPTARG ;;
+      n) chr_name=$OPTARG ;;
+
+      b)  set -f
+	  IFS=','
+	  bsfiles=($OPTARG) ;;
+
+      c)  set -f
+	  IFS=','
+	  chipfiles=($OPTARG) ;;
+            
+  esac                                                                                                                       
+done
+set +o noglob
+#set +f
+
+echo
+echo Submitted
+#echo "fname $fname"
+#echo "bsfiles ${bsfiles[@]}"
+#echo "chipfiles ${chipfiles[@]}"
+#echo "refname $refname"
+#echo "binsize $binsize"
+#echo "binstep $binstep"
+#echo "outfname $outfname"
+echo "Processing $outfname files"
+
+# for each bins
+python2 /home/spark159/scratch4-tha4/sangwoo/scripts/combine_annot_edit.py ${fname} ${refname} --bs ${bsfiles[*]} --chip ${chipfiles[*]} --Bin ${binsize} ${binstep} --chr ${chr_name} -o ${outfname}
+
+
+echo "Finished with job $SLURM_JOBID"
+echo

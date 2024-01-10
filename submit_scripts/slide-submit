@@ -1,0 +1,48 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=python_code
+#SBATCH --time=50:0:0
+#SBATCH --partition=parallel
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=20
+# number of cpus (threads) per task (process)
+#SBATCH --cpus-per-task=1
+#SBATCH --mail-type=end
+#SBATCH --mail-user=spark159@jhu.edu
+
+#### load and unload modules you may need
+module load bowtie2
+module load samtools
+module load python
+module load trim_galore
+module list
+
+#### execute code and write output file to OUT-24log.
+#cutadapt -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCA -o data/slide_seq/H5TYLBCX2_2_ACAGTG_1_trimmed.fq data/slide_seq/H5TYLBCX2_2_ACAGTG_1.fastq
+#cutadapt -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCA -o data/slide_seq/H5TYLBCX2_2_ACTTGA_1_trimmed.fq data/slide_seq/H5TYLBCX2_2_ACTTGA_1.fastq
+#cutadapt -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCA -o data/slide_seq/H5TYLBCX2_2_GCCAAT_1_trimmed.fq data/slide_seq/H5TYLBCX2_2_GCCAAT_1.fastq
+#cutadapt -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCA -o data/slide_seq/H5TYLBCX2_2_GGCTAC_1_trimmed.fq data/slide_seq/H5TYLBCX2_2_GGCTAC_1.fastq
+#cutadapt -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCA -o data/slide_seq/H5TYLBCX2_2_TTAGGC_1_trimmed.fq data/slide_seq/H5TYLBCX2_2_TTAGGC_1.fastq
+#cutadapt -a AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT -o data/slide_seq/H5TYLBCX2_2_ACAGTG_2_trimmed.fq data/slide_seq/H5TYLBCX2_2_ACAGTG_2.fastq
+#cutadapt -a AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT -o data/slide_seq/H5TYLBCX2_2_ACTTGA_2_trimmed.fq data/slide_seq/H5TYLBCX2_2_ACTTGA_2.fastq
+#cutadapt -a AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT -o data/slide_seq/H5TYLBCX2_2_GCCAAT_2_trimmed.fq data/slide_seq/H5TYLBCX2_2_GCCAAT_2.fastq
+#cutadapt -a AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT -o data/slide_seq/H5TYLBCX2_2_GGCTAC_2_trimmed.fq data/slide_seq/H5TYLBCX2_2_GGCTAC_2.fastq
+#cutadapt -a AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT -o data/slide_seq/H5TYLBCX2_2_TTAGGC_2_trimmed.fq data/slide_seq/H5TYLBCX2_2_TTAGGC_2.fastq
+
+#python sort.py data/slide_seq/H5TYLBCX2_2_ACAGTG_1_trimmed.fq data/slide_seq/H5TYLBCX2_2_ACAGTG_2_trimmed.fq data/slide_seq/polyAscanlib -s
+python sort.py data/slide_seq/H5TYLBCX2_2_ACTTGA_1_trimmed.fq data/slide_seq/H5TYLBCX2_2_ACTTGA_2_trimmed.fq data/slide_seq/polyAscanlib -s
+#python sort.py data/slide_seq/H5TYLBCX2_2_GCCAAT_1_trimmed.fq data/slide_seq/H5TYLBCX2_2_GCCAAT_2_trimmed.fq data/slide_seq/polyAscanlib -s
+#python sort.py data/slide_seq/H5TYLBCX2_2_GGCTAC_1_trimmed.fq data/slide_seq/H5TYLBCX2_2_GGCTAC_2_trimmed.fq data/slide_seq/polyAscanlib -s
+#python sort.py data/slide_seq/H5TYLBCX2_2_TTAGGC_1_trimmed.fq data/slide_seq/H5TYLBCX2_2_TTAGGC_2_trimmed.fq data/slide_seq/polyAscanlib -s
+
+#python sort.py data/slide_seq/Ascan0_S1_L001_R1_001.fastq data/slide_seq/Ascan0_S1_L001_R2_001.fastq data/slide_seq/polyAscanlib
+#python sort.py data/slide_seq/Ascan5_S1_L001_R1_001.fastq data/slide_seq/Ascan5_S1_L001_R2_001.fastq data/slide_seq/polyAscanlib
+
+#python sort.py data/slide_seq/Ascan5_S1_L001_R1_001.fastq data/slide_seq/Ascan5_S1_L001_R2_001.fastq data/slide_seq/polyAscanlib -s
+
+
+echo "Finished with job $SLURM_JOBID"
+
+#### mpiexec by default launches number of tasks requested

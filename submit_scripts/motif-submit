@@ -1,0 +1,47 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=motif
+#SBATCH --time=12:00:00
+#SBATCH --partition=defq
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=3
+# number of cpus (threads) per task (process)
+
+#### load and unload modules you may need
+#module load bowtie2
+module load samtools
+#module load python
+#module load python/2.7
+module list
+
+
+#### parsing arguments
+OPTIND=1
+while getopts f:x:c:o: option  
+do                                                                                                                           
+  case "${option}"                                                                                                         
+  in
+      f) fname=$OPTARG ;;
+      x) refname=$OPTARG ;;
+      c) chr_name=$OPTARG ;;
+      o) outfname=$OPTARG ;;
+      
+  esac                                                                                                                       
+done
+set +o noglob
+
+echo Submitted $outfname
+echo
+
+
+#echo "chr name $chr_name window $win_size"
+echo "Producing $outfname motif files"
+
+#find NCP motif
+python2 /home/spark159/scratch/scripts/motif.py ${fname} ${refname} -o ${outfname} --chr ${chr_name} --Mlen 151
+
+echo "Finished with job $SLURM_JOBID"
+
+#### mpiexec by default launches number of tasks requested

@@ -1,0 +1,53 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=bincount
+#SBATCH --time=12:0:0
+#SBATCH --partition=defq
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=1
+# number of cpus (threads) per task (process)
+
+#### load and unload modules you may need
+#module load python
+module list
+
+#### parsing arguments
+while getopts c:w option  
+do                                                                                                                           
+  case "${option}"                                                                                                           
+  in                                                                                                                         
+  c) chr_name=${OPTARG};;                                                                                                    
+  w) win_size=${OPTARG};;                                                                                                    
+  esac                                                                                                                       
+done 
+
+#### variables
+win_size=171
+
+echo "combine all annotations"
+echo "chr name $chr_name window $win_size"
+
+#### execute code and write output file to OUT-24log.
+#python scratch/combine_annot.py work/condense_seq/hg19_${chr_name}_${win_size}_Ncov.cn work/condense_seq/hg19.fa --bs work/condense_seq/GSM1541790_38-Per_rep1.cg.txt --chip k9ac work/condense_seq/GSM1541804_38-Per_1_K9ac_macs2_peaks.bed k27ac work/condense_seq/GSM1541800_38-Per_1_K27ac_macs2_peaks.bed k4me3 work/condense_seq/GSM1541808_38-Per_1_K4me3_macs2_peaks.bed k36me3 work/condense_seq/GSM1541812_38-Per_1_K36me3_solid_rseg.bed k27me3 work/condense_seq/GSM1541816_38-Per_1_K27me3_rseg.bed k9me2 work/condense_seq/GSM1541820_38-Per_1_K9me2_rseg.bed k9me3 work/condense_seq/GSM1541824_38-Per_1_K9me3_rseg.bed --chr $chr_name -o work/condense_seq/hg19_${chr_name}_${win_size}_new
+
+#python scratch/combine_annot.py work/condense_seq/hg19_chr1_1001win_cov_Bsig.cn work/condense_seq/hg19.fa --bs work/condense_seq/GSM1541790_38-Per_rep1.cg.txt --chip k9ac work/condense_seq/GSM1541804_38-Per_1_K9ac_macs2_peaks.bed k27ac work/condense_seq/GSM1541800_38-Per_1_K27ac_macs2_peaks.bed k4me3 work/condense_seq/GSM1541808_38-Per_1_K4me3_macs2_peaks.bed k36me3 work/condense_seq/GSM1541812_38-Per_1_K36me3_solid_rseg.bed k27me3 work/condense_seq/GSM1541816_38-Per_1_K27me3_rseg.bed k9me2 work/condense_seq/GSM1541820_38-Per_1_K9me2_rseg.bed k9me3 work/condense_seq/GSM1541824_38-Per_1_K9me3_rseg.bed -o hg19_chr1_1001win --Nlen 1001 --chr chr1
+
+#python scratch/combine_annot.py work/condense_seq/hg19_chr1_167win25step_cov_Bsig.cn work/condense_seq/hg19.fa --bs work/condense_seq/GSM1541790_38-Per_rep1.cg.txt --chip k9ac work/condense_seq/GSM1541804_38-Per_1_K9ac_macs2_peaks.bed k27ac work/condense_seq/GSM1541800_38-Per_1_K27ac_macs2_peaks.bed k4me3 work/condense_seq/GSM1541808_38-Per_1_K4me3_macs2_peaks.bed k36me3 work/condense_seq/GSM1541812_38-Per_1_K36me3_solid_rseg.bed k27me3 work/condense_seq/GSM1541816_38-Per_1_K27me3_rseg.bed k9me2 work/condense_seq/GSM1541820_38-Per_1_K9me2_rseg.bed k9me3 work/condense_seq/GSM1541824_38-Per_1_K9me3_rseg.bed -o hg19_chr1_167win25step --Nlen 167 --chr chr1
+
+#python scratch/combine_annot.py work/condense_seq/hg19_chr1_167win25step_cov_Bsig.cn work/condense_seq/hg19.fa --bs work/condense_seq/GSM1541790_38-Per_rep1.cg.txt --chip k9ac work/condense_seq/GSM1541804_38-Per_1_K9ac_macs2_peaks.bed k27ac work/condense_seq/GSM1541800_38-Per_1_K27ac_macs2_peaks.bed k4me3 work/condense_seq/GSM1541808_38-Per_1_K4me3_macs2_peaks.bed k36me3 work/condense_seq/GSM1541812_38-Per_1_K36me3_solid_rseg.bed k27me3 work/condense_seq/GSM1541816_38-Per_1_K27me3_rseg.bed k9me2 work/condense_seq/GSM1541820_38-Per_1_K9me2_rseg.bed k9me3 work/condense_seq/GSM1541824_38-Per_1_K9me3_rseg.bed -o hg19_chr1_167win25step --Bin 167 25 --chr chr1
+
+
+#python scratch/combine_annot2.py work/condense_seq/hg19_chr1_171_Ncov.cn work/condense_seq/hg19.fa --bs work/condense_seq/GSM1541790_38-Per_rep1.cg.txt --chip k9ac work/condense_seq/GSM1541804_38-Per_1_K9ac_macs2_peaks.bed k27ac work/condense_seq/GSM1541800_38-Per_1_K27ac_macs2_peaks.bed k4me3 work/condense_seq/GSM1541808_38-Per_1_K4me3_macs2_peaks.bed k36me3 work/condense_seq/GSM1541812_38-Per_1_K36me3_solid_rseg.bed k36me3_2 work/condense_seq/GSM1541812_38-Per_1_K36me3_solid_rseg.bed2 k27me3a work/condense_seq/GSM1541816_38-Per_1_K27me3_rseg.bed k27me3a_2 work/condense_seq/GSM1541816_38-Per_1_K27me3_rseg.bed2 k27me3b work/condense_seq/GSM1541817_38-Per_1_K27me3_solid_rseg.bed k27me3b_2 work/condense_seq/GSM1541817_38-Per_1_K27me3_solid_rseg.bed2 k9me2 work/condense_seq/GSM1541820_38-Per_1_K9me2_rseg.bed k9me2_2 work/condense_seq/GSM1541820_38-Per_1_K9me2_rseg.bed2 k9me3 work/condense_seq/GSM1541824_38-Per_1_K9me3_rseg.bed k9me3_2 work/condense_seq/GSM1541824_38-Per_1_K9me3_rseg.bed2 -o test_mp --Nlen 171 --chr chr1 --core 10
+
+#python scratch/combine_annot.py work/condense_seq/hg19_chr1_167win25step_cov_Bsig.cn work/condense_seq/hg19.fa --bs work/condense_seq/GSM1541790_38-Per_rep1.cg.txt --chip k9ac work/condense_seq/GSM1541804_38-Per_1_K9ac_macs2_peaks.bed k27ac work/condense_seq/GSM1541800_38-Per_1_K27ac_macs2_peaks.bed k4me3 work/condense_seq/GSM1541808_38-Per_1_K4me3_macs2_peaks.bed k36me3 work/condense_seq/GSM1541812_38-Per_1_K36me3_solid_rseg.bed2 k27me3 work/condense_seq/GSM1541816_38-Per_1_K27me3_rseg.bed2 k9me2 work/condense_seq/GSM1541820_38-Per_1_K9me2_rseg.bed2 k9me3 work/condense_seq/GSM1541824_38-Per_1_K9me3_rseg.bed2 -o hg19_chr1_167win25step_new --Bin 167 25 --chr chr1
+
+#python scratch/combine_annot_edit.py work/condense_seq/hg19_chr1_171_Ncov.cn work/condense_seq/hg19.fa --bs work/condense_seq/GSM1541790_38-Per_rep1.cg.txt --chip k9ac work/condense_seq/GSM1541804_38-Per_1_K9ac_macs2_peaks.bed k27ac work/condense_seq/GSM1541800_38-Per_1_K27ac_macs2_peaks.bed k4me3 work/condense_seq/GSM1541808_38-Per_1_K4me3_macs2_peaks.bed k36me3 work/condense_seq/GSM1541812_38-Per_1_K36me3_solid_rseg.bed k36me3_2 work/condense_seq/GSM1541812_38-Per_1_K36me3_solid_rseg.bed2 k27me3a work/condense_seq/GSM1541816_38-Per_1_K27me3_rseg.bed k27me3a_2 work/condense_seq/GSM1541816_38-Per_1_K27me3_rseg.bed2 k27me3b work/condense_seq/GSM1541817_38-Per_1_K27me3_solid_rseg.bed k27me3b_2 work/condense_seq/GSM1541817_38-Per_1_K27me3_solid_rseg.bed2 k9me2 work/condense_seq/GSM1541820_38-Per_1_K9me2_rseg.bed k9me2_2 work/condense_seq/GSM1541820_38-Per_1_K9me2_rseg.bed2 k9me3 work/condense_seq/GSM1541824_38-Per_1_K9me3_rseg.bed k9me3_2 work/condense_seq/GSM1541824_38-Per_1_K9me3_rseg.bed2 -o hg19_chr1_171_icdseq --Nlen 171 --chr chr1
+
+#python scratch/combine_annot_edit.py work/condense_seq/hg19_chr1_167win25step_cov_Bsig.cn work/condense_seq/hg19.fa --bs work/condense_seq/GSM1541790_38-Per_rep1.cg.txt --chip k9ac work/condense_seq/GSM1541804_38-Per_1_K9ac_macs2_peaks.bed k27ac work/condense_seq/GSM1541800_38-Per_1_K27ac_macs2_peaks.bed k4me3 work/condense_seq/GSM1541808_38-Per_1_K4me3_macs2_peaks.bed k36me3 work/condense_seq/GSM1541812_38-Per_1_K36me3_solid_rseg.bed2 k27me3 work/condense_seq/GSM1541816_38-Per_1_K27me3_rseg.bed2 k9me2 work/condense_seq/GSM1541820_38-Per_1_K9me2_rseg.bed2 k9me3 work/condense_seq/GSM1541824_38-Per_1_K9me3_rseg.bed2 -o hg19_chr1_167win25step_newmetric_newchip --Bin 167 25 --chr chr1
+
+
+echo "Finished with job $SLURM_JOBID"
+
+#### mpiexec by default launches number of tasks requested

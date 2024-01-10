@@ -1,0 +1,61 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=SPIN
+#SBATCH --time=12:0:0
+#SBATCH --partition=defq
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --mem-per-cpu=100GB
+
+#### load and unload modules you may need
+# module unload openmpi/intel
+# module load mvapich2/gcc/64/2.0b
+# module list
+#module load bowtie2
+#module load python/2.7
+#module load samtools
+module load anaconda
+#module list
+
+
+#### parsing arguments
+OPTIND=1
+while getopts i:h:g:w:o:n: option  
+do                                                                                                                           
+  case "${option}"                                                                                                         
+  in
+      i) sig_fname=$OPTARG ;;
+      h) hic_fname=$OPTARG ;;
+      g) bin_fname=$OPTARG ;;
+      w) binsize=$OPTARG ;;
+      o) outdir=$OPTARG ;;
+      n) state_num=$OPTARG ;;
+            
+  esac                                                                                                                       
+done
+set +o noglob
+#set +f
+
+echo
+echo Submitted
+#echo "fname $fname"
+#echo "bsfiles ${bsfiles[@]}"
+#echo "chipfiles ${chipfiles[@]}"
+#echo "refname $refname"
+#echo "binsize $binsize"
+#echo "binstep $binstep"
+#echo "outfname $outfname"
+echo "Processing $outfname files"
+
+# SPIN
+
+python /home/spark159/scratch/SPIN/src/main.py -i ${sig_fname} --hic ${hic_fname} -g ${bin_fname} -w ${binsize} -o /home/spark159/scratch/SPIN/${outdir} -n ${state_num} 
+
+
+
+
+
+
+echo "Finished with job $SLURM_JOBID"
+echo

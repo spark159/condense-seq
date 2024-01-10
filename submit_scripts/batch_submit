@@ -1,0 +1,19 @@
+#!/bin/bash
+
+declare -a fname_array
+fname_array=()
+
+length=0
+for filename in work/sp_spd_tests/*
+do
+    ((length+=1))
+    fname_array+=($filename)
+done
+
+#length=2
+count=0
+for (( i=0; i<$length/2 ; i+=2 )) ; do
+    ((count+=1))
+    bowtie-submit -f ${fname_array[i]},${fname_array[i + $length/2]} -g ${fname_array[i+1]},${fname_array[i+1 + $length/2]} -o sp_spd_test_$count
+done
+set +o noglob

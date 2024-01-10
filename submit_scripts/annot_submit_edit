@@ -1,0 +1,82 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=annot
+#SBATCH --time=12:0:0
+#SBATCH --partition=defq
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=10
+# number of cpus (threads) per task (process)
+
+#### load and unload modules you may need
+# module unload openmpi/intel
+# module load mvapich2/gcc/64/2.0b
+# module list
+#module load bowtie2
+#module load python/2.7
+module load samtools
+#module list
+
+
+#### parsing arguments
+OPTIND=1
+while getopts f:x:w:s:o:n:b:c: option  
+do                                                                                                                           
+  case "${option}"                                                                                                         
+  in
+      f) fname=$OPTARG ;;
+      x) refname=$OPTARG ;;
+      w) binsize=$OPTARG ;;
+      s) binstep=$OPTARG ;;
+      o) outfname=$OPTARG ;;
+      n) chr_name=$OPTARG ;;
+
+      b)  set -f
+	  IFS=','
+	  bsfiles=($OPTARG) ;;
+
+      c)  set -f
+	  IFS=','
+	  chipfiles=($OPTARG) ;;
+            
+  esac                                                                                                                       
+done
+set +o noglob
+#set +f
+
+echo
+echo Submitted
+#echo "fname $fname"
+#echo "bsfiles ${bsfiles[@]}"
+#echo "chipfiles ${chipfiles[@]}"
+#echo "refname $refname"
+#echo "binsize $binsize"
+#echo "binstep $binstep"
+#echo "outfname $outfname"
+echo "Processing $outfname files"
+
+# annotation for each nucleosome
+#python2 /home/spark159/scratch/scripts/combine_annot_edit.py ${fname}_Ncov.cn ${refname} --bs ${bsfiles[*]} --chip ${chipfiles[*]} --Nlen 171 --chr ${chr_name} -o ${outfname} --full-seq
+#python2 /home/spark159/scratch/scripts/combine_annot_edit.py ${fname}_Ncov.cn ${refname} --chip ${chipfiles[*]} --Nlen 171 --chr ${chr_name} -o ${outfname} --full-seq
+
+
+#annotation for each bins (167bp 25 step binning)
+python2 /home/spark159/scratch/scripts/combine_annot_edit.py ${fname}_167win25step_cov_Bsig.cn ${refname} --bs ${bsfiles[*]} --chip ${chipfiles[*]} --chr ${chr_name} -o ${outfname}_167win25step --Bin 167 25
+#python2 /home/spark159/scratch/scripts/combine_annot_edit.py ${fname}_167win25step_cov_Bsig.cn ${refname} --chip ${chipfiles[*]} --chr ${chr_name} -o ${outfname}_167win25step --Bin 167 25
+
+#annotation for each bins (1001bp 501 step binning)
+python2 /home/spark159/scratch/scripts/combine_annot_edit.py ${fname}_1001win501step_cov_Bsig.cn ${refname} --bs ${bsfiles[*]} --chip ${chipfiles[*]} --chr ${chr_name} -o ${outfname}_1001win501step --Bin 1001 501
+#python2 /home/spark159/scratch/scripts/combine_annot_edit.py ${fname}_1001win501step_cov_Bsig.cn ${refname} --chip ${chipfiles[*]} --chr ${chr_name} -o ${outfname}_1001win501step --Bin 1001 501
+
+#annotation for each bins (10001bp 5001 step binning)
+python2 /home/spark159/scratch/scripts/combine_annot_edit.py ${fname}_10001win5001step_cov_Bsig.cn ${refname} --bs ${bsfiles[*]} --chip ${chipfiles[*]} --chr ${chr_name} -o ${outfname}_10001win5001step --Bin 10001 5001
+#python2 /home/spark159/scratch/scripts/combine_annot_edit.py ${fname}_10001win5001step_cov_Bsig.cn ${refname} --chip ${chipfiles[*]} --chr ${chr_name} -o ${outfname}_10001win5001step --Bin 10001 5001
+
+
+
+
+
+
+echo "Finished with job $SLURM_JOBID"
+echo

@@ -1,0 +1,57 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=bowtie
+#SBATCH --time=12:00:00
+#SBATCH --partition=defq
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=3
+# number of cpus (threads) per task (process)
+
+#### load and unload modules you may need
+# module unload openmpi/intel
+# module load mvapich2/gcc/64/2.0b
+# module list
+module load bowtie2
+module load samtools
+#module list
+
+#### parsing arguments
+OPTIND=1
+while getopts f:g:x:o: option  
+do                                                                                                                           
+  case "${option}"                                                                                                         
+  in
+
+      f)  set -f
+          IFS=','
+          files1=($OPTARG) ;;
+
+      g)  set -f
+          IFS=','
+          files2=($OPTARG) ;;
+
+      x) refname=$OPTARG ;;
+      o) outfname=$OPTARG ;;
+
+  esac                                                                                                                       
+done
+set +o noglob
+
+echo Submitted $outfname
+echo ${files1[@]}
+echo ${files2[@]}
+echo
+
+#bowtie2 -p 5 -1 ${files1[0]},${files1[1]} -2 ${files2[0]},${files2[1]} -x ${refname} -S ${outfname}.sam
+bowtie2 -p 5 -U ${files1[*]} -x ${refname} -S ${outfname}.sam
+#bowtie2 -p 5 -1 ${files1[0]} -2 ${files2[0]} -x ${refname} -S ${outfname}.sam
+#bowtie2 -p 5 --trim3 80 -1 ${files1[0]} -2 ${files2[0]} -x ${refname} -S ${outfname}.sam
+#bowtie2 -p 5 --trim3 100 -1 ${files1[0]} -2 ${files2[0]} -x ${refname} -S ${outfname}.sam
+samtools view -S -b ${outfname}.sam > ${outfname}.bam
+rm ${outfname}.sam
+
+
+echo "Finished with job $SLURM_JOBID"
+echo

@@ -4,6 +4,25 @@ import math
 import copy
 import time
 
+def chr_cmp (chr_name1, chr_name2):
+    assert chr_name1.startswith('chr')
+    assert chr_name2.startswith('chr')
+    chr_num1 = chr_name1[3:]
+    try:
+        chr_num1 = int(chr_num1)
+    except:
+        pass
+    chr_num2 = chr_name2[3:]
+    try:
+        chr_num2 = int(chr_num2)
+    except:
+        pass
+    if chr_num1 < chr_num2:
+        return -1
+    elif chr_num1 > chr_num2:
+        return 1
+    return 0
+
 def rev_cmp (seq):
     dic={'A':'T', 'T':'A', 'C':'G', 'G':'C', 'N':'N'}
     output=''
@@ -27,7 +46,7 @@ def NCP_count (fnames,
     data, label = [], []
     for fname in fnames:
         data.append(fname)
-        label.append(fname.split('.')[0])
+        label.append(fname.rsplit('/', 1)[-1].split('.')[0])
 
     # make genome counts dictionary
     chr_NCP = {}
@@ -200,7 +219,7 @@ def NCP_count (fnames,
         return st
 
     chr_peak = {}
-    for chr in sorted(chr_NCP.keys()):
+    for chr in sorted(chr_NCP.keys(), cmp=chr_cmp):
         name_temp = {}
         for NCPpos in sorted(chr_NCP[chr].keys()):
             for name in label:
@@ -244,7 +263,7 @@ def NCP_count (fnames,
     print >> f, s
 
     ID = 0
-    for chr in sorted(chr_NCP.keys()):
+    for chr in sorted(chr_NCP.keys(), cmp=chr_cmp):
         for NCPpos in sorted(chr_NCP[chr].keys()):
             s = str(ID) + "\t" + chr + "\t" + str(NCPpos)
             for name in label:
@@ -269,7 +288,7 @@ def NCP_count (fnames,
     print >> f, s
 
     ID = 0
-    for chr in sorted(chr_peak.keys()):
+    for chr in sorted(chr_peak.keys(), cmp=chr_cmp):
         for NCPpos in sorted(chr_peak[chr].keys()):
             s = str(ID) + "\t" + chr + "\t" + str(NCPpos)
             for name in label:
@@ -294,7 +313,7 @@ def NCP_count (fnames,
         print >> f, s
             
         ID = 0
-        for chr in sorted(chr_profile.keys()):
+        for chr in sorted(chr_profile.keys(), cmp=chr_cmp):
             previous = [0]*len(label)
             if skip_zero:
                 start = min(chr_profile[chr])
@@ -405,18 +424,18 @@ if __name__ == '__main__':
         for line in open(args.ref_fname):
             line = line.strip()
             if line.startswith('>'):
-                key = line[1:]
+                key = line.split()[0][1:]
                 assert key not in genome_size
                 genome_size[key] = 0
                 continue
             genome_size[key] += len(line)
-
+            
     
     chr_list = []
     if not args.chr_list:
-        chr_list = genome_size.keys()
+        chr_list = sorted(genome_size.keys(), cmp=chr_cmp)
     else:
-        chr_list = sorted(args.chr_list)
+        chr_list = sorted(args.chr_list, cmp=chr_cmp)
 
     NCP_count (args.fnames,
                genome_size,

@@ -1,0 +1,44 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=python_code
+#SBATCH --time=100:0:0
+#SBATCH --partition=parallel
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=24
+# number of cpus (threads) per task (process)
+#SBATCH --mem=120G
+#SBATCH --cpus-per-task=1
+#SBATCH --mail-type=end
+#SBATCH --mail-user=spark159@jhu.edu
+
+#### load and unload modules you may need
+module load samtools
+module load python
+module list
+
+#### parsing arguments
+while getopts c:w option  
+do                                                                                                                           
+  case "${option}"                                                                                                           
+  in                                                                                                                         
+  c) chr_name=${OPTARG};;                                                                                                    
+  w) win_size=${OPTARG};;                                                                                                    
+  esac                                                                                                                       
+done 
+
+#### variables
+#chr_name="chr3"
+win_size=171
+
+echo "Start NCPcount programs"
+echo "chr name $chr_name window $win_size"
+
+#### execute code and write output file to OUT-24log.
+python NCPcount.py work/condense_seq/sp9_hg19.sorted.bam work/condense_seq/sp10_hg19.sorted.bam work/condense_seq/sp1_hg19.sorted.bam -x work/condense_seq/hg19.fa -o work/condense_seq/hg19_$chr_name --chr $chr_name --cov --min --max
+python NCPcov_simple.py work/condense_seq/hg19_${chr_name}_NCP.cn work/condense_seq/hg19_${chr_name}_cov.cn -o work/condense_seq/hg19_${chr_name}_$win_size --Nlen $win_size
+
+echo "Finished with job $SLURM_JOBID"
+
+#### mpiexec by default launches number of tasks requested

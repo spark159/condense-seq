@@ -3,6 +3,25 @@ from argparse import ArgumentParser, FileType
 import math
 import copy
 
+def chr_cmp (chr_name1, chr_name2):
+    assert chr_name1.startswith('chr')
+    assert chr_name2.startswith('chr')
+    chr_num1 = chr_name1[3:]
+    try:
+        chr_num1 = int(chr_num1)
+    except:
+        pass
+    chr_num2 = chr_name2[3:]
+    try:
+        chr_num2 = int(chr_num2)
+    except:
+        pass
+    if chr_num1 < chr_num2:
+        return -1
+    elif chr_num1 > chr_num2:
+        return 1
+    return 0
+
 def rev_cmp (seq):
     dic={'A':'T', 'T':'A', 'C':'G', 'G':'C', 'N':'N'}
     output=''
@@ -346,9 +365,9 @@ if __name__ == '__main__':
     
     chr_list = []
     if not args.chr_list:
-        chr_list = sorted(genome_size.keys())
+        chr_list = sorted(genome_size.keys(), cmp=chr_cmp)
     else:
-        chr_list = sorted(args.chr_list)
+        chr_list = sorted(args.chr_list, cmp=chr_cmp)
 
     #print chr_list
 

@@ -1,0 +1,26 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=bowtie
+#SBATCH --time=12:00:00
+#SBATCH --partition=defq
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=3
+# number of cpus (threads) per task (process)
+
+#### load and unload modules you may need
+# module unload openmpi/intel
+# module load mvapich2/gcc/64/2.0b
+# module list
+#module load bowtie2
+#module load samtools
+module load bwa
+#module list
+
+bwa index /home/spark159/hic_sample_data/Homo_sapiens_assembly19.fasta
+
+
+
+echo "Finished with job $SLURM_JOBID"
+echo

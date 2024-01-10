@@ -1,0 +1,38 @@
+#!/bin/bash -l
+#SBATCH
+#SBATCH --job-name=sra_tool
+#SBATCH --time=5:0:0
+#SBATCH --partition=defq
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=1
+
+#### load and unload modules you may need
+#module load bowtie2
+#module load samtools
+#module load python
+#module list
+module load sra-tools
+
+
+#### parsing arguments
+OPTIND=1
+while getopts f:o: option  
+do                                                                                                                           
+  case "${option}"                                                                                                         
+  in
+
+      f)  set -f
+	  IFS=','
+	  ids=($OPTARG) ;;
+
+      o) outdir=$OPTARG ;;
+            
+  esac                                                                                                                       
+done
+set +o noglob
+
+fastq-dump --gzip --split-3 ${ids[*]} --outdir ${outdir}
+
+echo "Finished with job $SLURM_JOBID"
+echo

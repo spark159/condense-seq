@@ -1,0 +1,27 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=bowtie
+#SBATCH --time=24:0:0
+#SBATCH --partition=shared
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=20
+# number of cpus (threads) per task (process)
+#SBATCH --mail-type=end
+#SBATCH --mail-user=spark159@jhu.edu
+
+#### load and unload modules you may need
+# module unload openmpi/intel
+# module load mvapich2/gcc/64/2.0b
+# module list
+module load bowtie2
+module load samtools
+#module list
+
+bowtie2 -p 20 -1 data/sp_spd_test_detail/ -3 ${files2[0]},${files2[1]} -x work/condense_seq/hg19 -S ${outfname}.sam
+samtools view -S -b ${outfname}.sam > ${outfname}.bam
+#rm ${outfname}.sam
+
+
+echo "Finished with job $SLURM_JOBID"

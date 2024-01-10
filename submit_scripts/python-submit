@@ -1,0 +1,235 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=bowtie
+#SBATCH --time=12:00:00
+#SBATCH --partition=defq
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=3
+# number of cpus (threads) per task (process)
+
+#### load and unload modules you may need
+#module load bowtie2
+#module load samtools
+#module load python
+
+#module load python/2.7
+#module load anaconda
+#module load python/3.7.4-anaconda
+#module load anaconda
+module list
+
+#conda activate ./my_conda_env
+#python UMAP_after_NMF.py
+#python predictive_models.py
+
+#### execute code and write output file to OUT-24log.
+#python NCPbincount.py work/condense_seq/sp9_hg19.sorted.bam work/condense_seq/sp10_hg19.sorted.bam -c work/condense_seq/sp1_hg19.sorted.bam -x work/condense_seq/hg19.fa -o 10000win_noselect -w 10000 --min 0 --max 10000
+#python NCPcount.py work/condense_seq/sp9.chr1.bam work/condense_seq/sp10.chr1.bam work/condense_seq/sp1.chr1.bam
+#IGVTools/./igvtools sort work/condense_seq/output_NCP.cn work/condense_seq/output_NCP_sort.cn
+#IGVTools/./igvtools toTDF work/condense_seq/output_NCP_sort.cn work/condense_seq/output_NCP_sort.tdf work/condense_seq/hg38.fa
+#trim_galore -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCA -q 0 --length 0 --stringency 13 work/slide_seq/H5TYLBCX2_2_ACAGTG_1.fastq
+#trim_galore -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCA -q 0 --length 0 --stringency 13 work/slide_seq/H5TYLBCX2_2_ACTTGA_1.fastq
+#trim_galore -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCA -q 0 --length 0 --stringency 13 work/slide_seq/H5TYLBCX2_2_GCCAAT_1.fastq
+#trim_galore -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCA -q 0 --length 0 --stringency 13 work/slide_seq/H5TYLBCX2_2_GGCTAC_1.fastq
+#trim_galore -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCA -q 0 --length 0 --stringency 13 work/slide_seq/H5TYLBCX2_2_TTAGGC_1.fastq
+
+#trim_galore -a AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT -q 0 --length 0 --stringency 13 work/slide_seq/H5TYLBCX2_2_ACAGTG_2.fastq
+#trim_galore -a AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT -q 0 --length 0 --stringency 13 work/slide_seq/H5TYLBCX2_2_ACTTGA_2.fastq
+#trim_galore -a AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT -q 0 --length 0 --stringency 13 work/slide_seq/H5TYLBCX2_2_GCCAAT_2.fastq
+#trim_galore -a AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT -q 0 --length 0 --stringency 13 work/slide_seq/H5TYLBCX2_2_GGCTAC_2.fastq
+#trim_galore -a AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT -q 0 --length 0 --stringency 13 work/slide_seq/H5TYLBCX2_2_TTAGGC_2.fastq
+
+#python sort.py work/slide_seq/H5TYLBCX2_2_ACAGTG_1.fastq work/slide_seq/H5TYLBCX2_2_ACAGTG_2.fastq work/slide_seq/polyAscanlib -s
+#python sort.py work/slide_seq/H5TYLBCX2_2_ACTTGA_1.fastq work/slide_seq/H5TYLBCX2_2_ACTTGA_2.fastq work/slide_seq/polyAscanlib -s
+#python sort.py work/slide_seq/H5TYLBCX2_2_GCCAAT_1.fastq work/slide_seq/H5TYLBCX2_2_GCCAAT_2.fastq work/slide_seq/polyAscanlib -s
+#python sort.py work/slide_seq/H5TYLBCX2_2_GGCTAC_1.fastq work/slide_seq/H5TYLBCX2_2_GGCTAC_2.fastq work/slide_seq/polyAscanlib -s
+#python sort.py work/slide_seq/H5TYLBCX2_2_TTAGGC_1.fastq work/slide_seq/H5TYLBCX2_2_TTAGGC_2.fastq work/slide_seq/polyAscanlib -s
+#python coverage.py work/condense_seq/sp9_hg19.sorted.bam work/condense_seq/sp10_hg19.sorted.bam work/condense_seq/sp1_hg19.sorted.bam -x work/condense_seq/hg19.fa -o hg19
+#python NCPcount.py work/condense_seq/sp9_hg19.sorted.bam work/condense_seq/sp10_hg19.sorted.bam work/condense_seq/sp1_hg19.sorted.bam -x work/condense_seq/hg19.fa -o work/condense_seq/hg19_chr22 --chr chr22 --cov --min --max
+#python NCPcov_simple.py work/condense_seq/hg19_chr22_NCP.cn work/condense_seq/hg19_chr22_cov.cn -o work/condense_seq/hg19_chr22_171 --Nlen 171
+
+#python lendist.py work/condense_seq/sp9_hg19.sorted.bam work/condense_seq/sp10_hg19.sorted.bam work/condense_seq/sp1_hg19.sorted.bam
+
+#python scratch/coverage.py work/condense_seq/test.bam work/condense_seq/hg19.fa --chr chr1 --skip
+#python scratch/bamtobed.py work/condense_seq/sp1_hg19_chr1.bam
+#python danpos-2.2.2/xlstocn.py
+#python scratch/NCPcov.py iNPS_peak.cn work/condense_seq/hg19_chr1_cov.cn --chr chr1 -o iNPS --Nlen 171
+#python likebedtocn.py
+
+#python NCPocc.py DANPOS_sp1_chr1_peak.cn work/condense_seq/hg19.fa --cov hg19_chr1_cov.cn --skip --chr chr1 -o here
+#python profile.py hg19_chr1_cov.cn work/condense_seq/hgTables work/condense_seq/hg19.fa --skip --chr chr1
+#python coverage.py work/condense_seq/sp9_hg19_chr1.bam work/condense_seq/sp10_hg19_chr1.bam work/condense_seq/sp1_hg19_chr1.bam work/condense_seq/hg19.fa --skip --chr chr1
+#python scratch/NCPcov.py work/condense_seq/sp1_hg19_chr1_iNPS_peak.cn work/condense_seq/hg19_chr1_cov.cn --Nlen 171
+#python scratch/NCPbincount.py work/condense_seq/sp9_hg19.bam work/condense_seq/sp10_hg19.bam work/condense_seq/sp1_hg19.bam work/condense_seq/hg19.fa
+
+#python scratch/NCPocc.py work/condense_seq/sp1_hg19_chr1_iNPS_peak.cn work/condense_seq/hg19.fa --chr chr1 --skip -o test1
+#python scratch/NCPocc.py work/condense_seq/sp1_hg19_chr1_iNPS_peak.cn work/condense_seq/hg19.fa --chr chr1 --skip --sigma -o test2
+
+#python scratch/profile.py work/condense_seq/hg19_chr1_cov.cn work/condense_seq/hgTables work/condense_seq/hg19.fa --skip --chr chr1 -o test3
+#python scratch/profile.py work/condense_seq/hg19_chr1_cov.cn work/condense_seq/hgTables work/condense_seq/hg19.fa --skip --chr chr1 -o test4 --feature TTS
+#python scratch/NCPocc.py GSM907784_mnase_mids_NA18508_126_to_184.cn work/condense_seq/hg19.fa --chr chr1 --skip -o GS1 --Nlen 73
+
+#python scratch/NCPocc.py GSM907784_mnase_mids_NA18508_126_to_184.cn work/condense_seq/hg19.fa --chr chr1 --skip -o GS2 --sigma
+#python scratch/occupancy.py work/condense_seq/sp9_hg19.bam work/condense_seq/sp10_hg19.bam work/condense_seq/sp1_hg19.bam work/condense_seq/hg19.fa --skip --chr chr1 -o hg19_chr1
+
+#python scratch/profile.py work/condense_seq/hg19_chr1_occ.cn work/condense_seq/hgTables work/condense_seq/hg19.fa --skip --chr chr1 -o hg19_chr1_TTS --feature TTS --up 2000 --down 1000
+#python scratch/NCPpeak.py work/condense_seq/sp9_hg19.bam work/condense_seq/sp10_hg19.bam work/condense_seq/sp1_hg19.bam work/condense_seq/hg19.fa --cov --skip --chr chr1
+
+#python scratch/NCPcov.py work/condense_seq/hg19_chr1_peak.cn work/condense_seq/hg19_chr1_cov.cn --Nlen 171 --peak-choice input
+#python scratch/NCPcov.py work/condense_seq/hg19_chr1_peak.cn work/condense_seq/hg19_chr1_filtered_cov.cn --Nlen 171 --peak-choice input -o filtered
+
+#python scratch/Binsig.py work/condense_seq/hg19_chr1_cov.cn work/condense_seq/hg19.fa --chr chr1 -o hg19_chr1_167win25step_cov
+
+#python scratch/profile.py work/condense_seq/hg19_chr1_occ.cn work/condense_seq/hgTables work/condense_seq/hg19.fa --skip --chr chr1 -o hg19_chr1_CSS --feature CSS --up 1000 --down 2000
+#python scratch/profile.py work/condense_seq/hg19_chr1_occ.cn work/condense_seq/hgTables work/condense_seq/hg19.fa --skip --chr chr1 -o hg19_chr1_CTS --feature CTS --up 2000 --down 1000
+
+#python scratch/profile.py work/condense_seq/hg19_chr1_occ.cn work/condense_seq/hgTables work/condense_seq/hg19.fa --skip --chr chr1 -o hg19_chr1_ESS --feature ESS --up 1000 --down 2000
+#python scratch/profile.py work/condense_seq/hg19_chr1_occ.cn work/condense_seq/hgTables work/condense_seq/hg19.fa --skip --chr chr1 -o hg19_chr1_ETS --feature ETS --up 2000 --down 1000
+
+#python scratch/imputation_edit.py
+#python data/scripts/make_data.py data/scripts/IDlib_bubble_0_1rep_.combined.sort data/scripts/IDlib_bubble_0_2rep_.combined.sort --pad 3 --mchoice I --fill bayesian
+
+
+# sp7, sp8, sp1
+
+#get read length distribution
+#python data/scripts/lendist.py data/sp_spd_tests_detail/sp7.bam data/sp_spd_tests_detail/sp8.bam data/sp_spd_tests_detail/sp1.bam -o hg19
+
+#get nucleosome occupancy along the genome
+#python data/scripts/occupancy.py data/sp_spd_tests_detail/sp7.bam data/sp_spd_tests_detail/sp8.bam data/sp_spd_tests_detail/sp1.bam work/condense_seq/hg19.fa --skip --chr chr1 -o hg19_chr1
+
+#1kb bin read counts
+#python data/scripts/bincount.py data/sp_spd_tests_detail/sp7.bam data/sp_spd_tests_detail/sp8.bam data/sp_spd_tests_detail/sp1.bam work/condense_seq/hg19.fa -o hg19_1kb --gc
+
+#get coverage along the genome
+#python data/scripts/coverage.py data/sp_spd_tests_detail/sp7.bam data/sp_spd_tests_detail/sp8.bam data/sp_spd_tests_detail/sp1.bam work/condense_seq/hg19.fa --chr chr1 --skip -o hg19_chr1
+
+#call NCP peaks
+#python data/scripts/NCPpeak.py data/sp_spd_tests_detail/sp7.bam data/sp_spd_tests_detail/sp8.bam data/sp_spd_tests_detail/sp1.bam work/condense_seq/hg19.fa --chr chr1 --skip -o hg19_chr1
+
+#get coverage for each NCP
+#python data/scripts/NCPcov.py data/sp_spd_tests_detail/hg19_chr1_peak.cn data/sp_spd_tests_detail/hg19_chr1_cov.cn --Nlen 171 --peak-choice input --chr chr1 -o hg19_chr1
+
+#167bp 25 step binning of the coverage
+#python data/scripts/Binsig.py data/sp_spd_tests_detail/hg19_chr1_cov.cn work/condense_seq/hg19.fa --chr chr1 -o hg19_chr1_167win25step_cov
+
+#1001bp 501 step binning of the coverage
+#python data/scripts/Binsig.py data/sp_spd_tests_detail/hg19_chr1_cov.cn work/condense_seq/hg19.fa --chr chr1 -o hg19_chr1_1001win501step_cov --Bsize 1001 --Bstep 501
+
+#10001bp 5001 step binning of the coverage
+#python data/scripts/Binsig.py data/sp_spd_tests_detail/hg19_chr1_cov.cn work/condense_seq/hg19.fa --chr chr1 -o hg19_chr1_10001win5001step_cov --Bsize 10001 --Bstep 5001
+
+
+#annotation for each NCP
+#python data/scripts/combine_annot_edit.py data/sp_spd_tests_detail/hg19_chr1_Ncov.cn work/condense_seq/hg19.fa --bs work/condense_seq/GSM1541790_38-Per_rep1.cg.txt --chip k9ac work/condense_seq/GSM1541804_38-Per_1_K9ac_macs2_peaks.bed k27ac work/condense_seq/GSM1541800_38-Per_1_K27ac_macs2_peaks.bed k4me3 work/condense_seq/GSM1541808_38-Per_1_K4me3_macs2_peaks.bed k36me3 work/condense_seq/GSM1541812_38-Per_1_K36me3_solid_rseg.bed k36me3_2 work/condense_seq/GSM1541812_38-Per_1_K36me3_solid_rseg.bed2 k27me3a work/condense_seq/GSM1541816_38-Per_1_K27me3_rseg.bed k27me3a_2 work/condense_seq/GSM1541816_38-Per_1_K27me3_rseg.bed2 k27me3b work/condense_seq/GSM1541817_38-Per_1_K27me3_solid_rseg.bed k27me3b_2 work/condense_seq/GSM1541817_38-Per_1_K27me3_solid_rseg.bed2 k9me2 work/condense_seq/GSM1541820_38-Per_1_K9me2_rseg.bed k9me2_2 work/condense_seq/GSM1541820_38-Per_1_K9me2_rseg.bed2 k9me3 work/condense_seq/GSM1541824_38-Per_1_K9me3_rseg.bed k9me3_2 work/condense_seq/GSM1541824_38-Per_1_K9me3_rseg.bed2 -o hg19_chr1_NCP_ics --Nlen 171 --chr chr1 --full-seq
+
+#annotation for each bins
+#python data/scripts/combine_annot_edit.py data/sp_spd_tests_detail/hg19_chr1_167win25step_cov_Bsig.cn work/condense_seq/hg19.fa --bs work/condense_seq/GSM1541790_38-Per_rep1.cg.txt --chip k9ac work/condense_seq/GSM1541804_38-Per_1_K9ac_macs2_peaks.bed k27ac work/condense_seq/GSM1541800_38-Per_1_K27ac_macs2_peaks.bed k4me3 work/condense_seq/GSM1541808_38-Per_1_K4me3_macs2_peaks.bed k36me3 work/condense_seq/GSM1541812_38-Per_1_K36me3_solid_rseg.bed2 k27me3 work/condense_seq/GSM1541816_38-Per_1_K27me3_rseg.bed2 k9me2 work/condense_seq/GSM1541820_38-Per_1_K9me2_rseg.bed2 k9me3 work/condense_seq/GSM1541824_38-Per_1_K9me3_rseg.bed2 -o hg19_chr1_167win25step --Bin 167 25 --chr chr1 --full-seq
+#python data/scripts/combine_annot_edit.py data/sp_spd_tests_detail/hg19_chr1_1001win501step_cov_Bsig.cn work/condense_seq/hg19.fa --bs work/condense_seq/GSM1541790_38-Per_rep1.cg.txt --chip k9ac work/condense_seq/GSM1541804_38-Per_1_K9ac_macs2_peaks.bed k27ac work/condense_seq/GSM1541800_38-Per_1_K27ac_macs2_peaks.bed k4me3 work/condense_seq/GSM1541808_38-Per_1_K4me3_macs2_peaks.bed k36me3 work/condense_seq/GSM1541812_38-Per_1_K36me3_solid_rseg.bed2 k27me3 work/condense_seq/GSM1541816_38-Per_1_K27me3_rseg.bed2 k9me2 work/condense_seq/GSM1541820_38-Per_1_K9me2_rseg.bed2 k9me3 work/condense_seq/GSM1541824_38-Per_1_K9me3_rseg.bed2 -o hg19_chr1_1001win501step --Bin 1001 501 --chr chr1 --full-seq
+#python data/scripts/combine_annot_edit.py data/sp_spd_tests_detail/hg19_chr1_10001win5001step_cov_Bsig.cn work/condense_seq/hg19.fa --bs work/condense_seq/GSM1541790_38-Per_rep1.cg.txt --chip k9ac work/condense_seq/GSM1541804_38-Per_1_K9ac_macs2_peaks.bed k27ac work/condense_seq/GSM1541800_38-Per_1_K27ac_macs2_peaks.bed k4me3 work/condense_seq/GSM1541808_38-Per_1_K4me3_macs2_peaks.bed k36me3 work/condense_seq/GSM1541812_38-Per_1_K36me3_solid_rseg.bed2 k27me3 work/condense_seq/GSM1541816_38-Per_1_K27me3_rseg.bed2 k9me2 work/condense_seq/GSM1541820_38-Per_1_K9me2_rseg.bed2 k9me3 work/condense_seq/GSM1541824_38-Per_1_K9me3_rseg.bed2 -o hg19_chr1_10001win5001step --Bin 10001 5001 --chr chr1
+
+
+#profile for occupnacy
+#python data/scripts/profile_edit.py data/sp_spd_tests_detail/hg19_chr1_occ.cn work/condense_seq/Homo_sapiens.GRCh37.87.gtf work/condense_seq/hg19.fa --skip --chr chr1 -o hg19_chr1_gtf_TSS_occ --feature TSS --up 1000 --down 2000
+#python data/scripts/profile_edit.py data/sp_spd_tests_detail/hg19_chr1_occ.cn work/condense_seq/Homo_sapiens.GRCh37.87.gtf work/condense_seq/hg19.fa --skip --chr chr1 -o hg19_chr1_gtf_TTS_occ --feature TTS --up 2000 --down 1000
+#python data/scripts/profile_edit.py data/sp_spd_tests_detail/hg19_chr1_occ.cn work/condense_seq/Homo_sapiens.GRCh37.87.gtf work/condense_seq/hg19.fa --skip --chr chr1 -o hg19_chr1_gtf_TSS_TTS_occ --feature TSS-TTS --up 2500 --down 2500
+
+
+#find NCP motif
+#python data/scripts/motif.py data/sp_spd_tests_detail/hg19_chr1_peak.cn work/condense_seq/hg19.fa -o hg19_chr1 --chr chr1
+
+#profile for binned annotation
+#python data/scripts/profile_edit.py data/sp_spd_tests_detail/hg19_chr1_167win25step_anot.cn work/condense_seq/Homo_sapiens.GRCh37.87.gtf work/condense_seq/hg19.fa --skip --chr chr1 -o hg19_chr1_gtf_TSS --feature TSS --up 1000 --down 2000
+#python data/scripts/profile_edit.py data/sp_spd_tests_detail/hg19_chr1_167win25step_anot.cn work/condense_seq/Homo_sapiens.GRCh37.87.gtf work/condense_seq/hg19.fa --skip --chr chr1 -o hg19_chr1_gtf_TTS --feature TTS --up 2000 --down 1000
+#python data/scripts/profile_edit.py data/sp_spd_tests_detail/hg19_chr1_167win25step_anot.cn work/condense_seq/Homo_sapiens.GRCh37.87.gtf work/condense_seq/hg19.fa --skip --chr chr1 -o hg19_chr1_gtf_TSS_TTS --feature TSS-TTS --up 2500 --down 2500
+
+
+# H1 spermine(4+) picks
+path='work/2021_06_07_H1_sp_detail/'
+#get read length distribution
+#python work/scripts/lendist.py ${path}H1-NCP-sp-4.bam ${path}H1-NCP-sp-8.bam ${path}H1-NCP-sp-0.bam -o ${path}H1_NCP_sp
+
+#get read length over genome
+#python work/scripts/readlen.py ${path}H1-NCP-sp-4.bam ${path}H1-NCP-sp-8.bam ${path}H1-NCP-sp-0.bam --chr chr1 -o ${path}H1_NCP_sp
+
+#get nucleosome occupancy along the genome
+#python work/scripts/occupancy_edit.py ${path}H1-NCP-sp-4.bam ${path}H1-NCP-sp-8.bam ${path}H1-NCP-sp-0.bam ${path}hg38.fa --skip --chr chr1 -o ${path}H1_NCP_sp_chr1
+
+#1kb bin read counts
+#python work/scripts/bincount.py ${path}H1-NCP-sp-4.bam ${path}H1-NCP-sp-8.bam ${path}H1-NCP-sp-0.bam ${path}hg38.fa -o ${path}H1_NCP_sp_1kb --g
+#python work/scripts/bincount_edit.py ${path}H1-NCP-sp-4.bam ${path}H1-NCP-sp-8.bam ${path}H1-NCP-sp-0.bam ${path}hg38.fa -o ${path}H1_NCP_sp_1kb_tlen --gc --tlen
+
+#get coverage along the genome
+#python work/scripts/coverage.py ${path}H1-NCP-sp-4.bam ${path}H1-NCP-sp-8.bam ${path}H1-NCP-sp-0.bam ${path}hg38.fa --chr chr1 --skip -o ${path}H1_NCP_sp_chr1
+
+#call NCP peaks
+#python work/scripts/NCPpeak.py ${path}H1-NCP-sp-4.bam ${path}H1-NCP-sp-8.bam ${path}H1-NCP-sp-0.bam ${path}hg38.fa --chr chr1 --skip -o ${path}H1_NCP_sp_chr1
+
+#get coverage for each NCP
+#python work/scripts/NCPcov.py ${path}H1_NCP_sp_chr1_peak.cn ${path}H1_NCP_sp_chr1_cov.cn --Nlen 171 --peak-choice input --chr chr1 -o ${path}H1_NCP_sp_chr1
+
+#167bp 25 step binning of the coverage
+#python work/scripts/Binsig.py ${path}H1_NCP_sp_chr1_cov.cn ${path}hg38.fa --chr chr1 -o ${path}H1_NCP_sp_chr1_167win25step_cov
+
+# 167bp 25 step binning of the read length
+#python work/scripts/Binsig_edit.py ${path}H1_NCP_sp_chr1_rlen.cn ${path}hg38.fa --chr chr1 --mean -o ${path}H1_NCP_sp_chr1_167win25step_rlen
+
+#1001bp 501 step binning of the coverage
+#python work/scripts/Binsig.py ${path}H1_NCP_sp_chr1_cov.cn ${path}hg38.fa --chr chr1 -o ${path}H1_NCP_sp_chr1_1001win501step_cov --Bsize 1001 --Bstep 501
+
+#10001bp 5001 step binning of the coverage
+#python work/scripts/Binsig.py ${path}H1_NCP_sp_chr1_cov.cn ${path}hg38.fa --chr chr1 -o ${path}H1_NCP_sp_chr1_10001win5001step_cov --Bsize 10001 --Bstep 5001
+
+
+#annotation for each NCP
+#python work/scripts/combine_annot_edit.py ${path}H1_NCP_sp_chr1_Ncov.cn ${path}hg38.fa --bs CpG ${path}CpG.bed --chip H2AFZ ${path}H2AFZ.bed H3k27ac ${path}H3K27ac.bed H3K27me3 ${path}H3K27me3.bed H3K36me3 ${path}H3K36me3.bed H3K4me1 ${path}H3K4me1.bed H3K4me2 ${path}H3K4me2.bed H3K4me3 ${path}H3K4me3.bed H3K79me2 ${path}H3K79me2.bed H3K9ac ${path}H3K9ac.bed H3K9me3 ${path}H3K9me3.bed H4k20me1 ${path}H4K20me1.bed -o ${path}H1_NCP_sp_chr1 --Nlen 171 --chr chr1 --full-seq
+
+#annotation for each bins (167bp 25 step binning)
+#python work/scripts/combine_annot_edit.py ${path}H1_NCP_sp_chr1_167win25step_cov_Bsig.cn ${path}hg38.fa --bs CpG ${path}CpG.bed --chip H2AFZ ${path}H2AFZ.bed H3k27ac ${path}H3K27ac.bed H3K27me3 ${path}H3K27me3.bed H3K36me3 ${path}H3K36me3.bed H3K4me1 ${path}H3K4me1.bed H3K4me2 ${path}H3K4me2.bed H3K4me3 ${path}H3K4me3.bed H3K79me2 ${path}H3K79me2.bed H3K9ac ${path}H3K9ac.bed H3K9me3 ${path}H3K9me3.bed H4k20me1 ${path}H4K20me1.bed -o ${path}H1_NCP_sp_chr1_167win25step --chr chr1 --Bin 167 25
+
+#annotation for each bins (1001bp 501 step binning)
+#python work/scripts/combine_annot_edit.py ${path}H1_NCP_sp_chr1_1001win501step_cov_Bsig.cn ${path}hg38.fa --bs CpG ${path}CpG.bed --chip H2AFZ ${path}H2AFZ.bed H3k27ac ${path}H3K27ac.bed H3K27me3 ${path}H3K27me3.bed H3K36me3 ${path}H3K36me3.bed H3K4me1 ${path}H3K4me1.bed H3K4me2 ${path}H3K4me2.bed H3K4me3 ${path}H3K4me3.bed H3K79me2 ${path}H3K79me2.bed H3K9ac ${path}H3K9ac.bed H3K9me3 ${path}H3K9me3.bed H4k20me1 ${path}H4K20me1.bed -o ${path}H1_NCP_sp_chr1_1001win501step --chr chr1 --Bin 1001 501
+
+#annotation for each bins (10001bp 5001 step binning)
+#python work/scripts/combine_annot_edit.py  ${path}H1_NCP_sp_chr1_10001win5001step_cov_Bsig.cn ${path}hg38.fa --bs CpG ${path}CpG.bed --chip H2AFZ ${path}H2AFZ.bed H3k27ac ${path}H3K27ac.bed H3K27me3 ${path}H3K27me3.bed H3K36me3 ${path}H3K36me3.bed H3K4me1 ${path}H3K4me1.bed H3K4me2 ${path}H3K4me2.bed H3K4me3 ${path}H3K4me3.bed H3K79me2 ${path}H3K79me2.bed H3K9ac ${path}H3K9ac.bed H3K9me3 ${path}H3K9me3.bed H4k20me1 ${path}H4K20me1.bed -o ${path}H1_NCP_sp_chr1_10001win5001step --chr chr1 --Bin 10001 5001
+
+
+#profile for occupnacy
+#python work/scripts/profile_edit.py ${path}H1_NCP_sp_chr1_occ.cn ${path}ENCFF159KBI.gtf ${path}hg38.fa --skip --chr chr1 -o ${path}H1_NCP_sp_chr1_TSS_occ --feature TSS --up 1000 --down 2000
+#python work/scripts/profile_edit.py ${path}H1_NCP_sp_chr1_occ.cn ${path}ENCFF159KBI.gtf ${path}hg38.fa --skip --chr chr1 -o ${path}H1_NCP_sp_chr1_TTS_occ --feature TTS --up 2000 --down 1000
+#python work/scripts/profile_edit.py ${path}H1_NCP_sp_chr1_occ.cn ${path}ENCFF159KBI.gtf ${path}hg38.fa --skip --chr chr1 -o ${path}H1_NCP_sp_chr1_TSS_TTS_occ --feature TSS-TTS --up 2500 --down 2500
+
+#profile for ATAC score
+#python work/scripts/profile_edit.py ${path}H1_ATAC_foldchange_Bsig.cn ${path}ENCFF159KBI.gtf ${path}hg38.fa --skip --chr chr1 -o ${path}H1_ATAC_foldchange_TSS --feature TSS --up 1000 --down 2000
+#python work/scripts/profile_edit.py ${path}H1_ATAC_foldchange_Bsig.cn ${path}ENCFF159KBI.gtf ${path}hg38.fa --skip --chr chr1 -o ${path}H1_ATAC_foldchange_TTS --feature TTS --up 2000 --down 1000
+#python work/scripts/profile_edit.py ${path}H1_ATAC_foldchange_Bsig.cn ${path}ENCFF159KBI.gtf ${path}hg38.fa --skip --chr chr1 -o ${path}H1_ATAC_foldchange_TSS_TTS --feature TSS-TTS --up 2500 --down 2500
+
+
+
+#find NCP motif
+#python work/scripts/motif.py ${path}H1_NCP_sp_chr1_peak.cn ${path}hg38.fa -o ${path}H1_NCP_sp_chr1 --chr chr1 --Mlen 151
+
+#profile for binned annotation
+#python work/scripts/profile_edit.py ${path}H1_NCP_sp_chr1_167win25step_anot.cn ${path}ENCFF159KBI.gtf ${path}hg38.fa --skip --chr chr1 -o ${path}H1_NCP_sp_chr1_TSS --feature TSS --up 1000 --down 2000
+#python work/scripts/profile_edit.py ${path}H1_NCP_sp_chr1_167win25step_anot.cn ${path}ENCFF159KBI.gtf ${path}hg38.fa --skip --chr chr1 -o ${path}H1_NCP_sp_chr1_TTS --feature TTS --up 2000 --down 1000
+#python work/scripts/profile_edit.py ${path}H1_NCP_sp_chr1_167win25step_anot.cn ${path}ENCFF159KBI.gtf ${path}hg38.fa --skip --chr chr1 -o ${path}H1_NCP_sp_chr1_TSS_TTS --feature TSS-TTS --up 2500 --down 2500
+
+
+# go through chromosomes
+#path='work/2021_06_07_H1_sp_detail/'
+
+#get coverage along the genome
+#python work/scripts/coverage.py ${path}H1-NCP-sp-4.bam ${path}H1-NCP-sp-8.bam ${path}H1-NCP-sp-0.bam ${path}hg38.fa --chr chr1 --skip -o ${path}H1_NCP_sp_chr1
+
+#call NCP peaks
+#python work/scripts/NCPpeak.py ${path}H1-NCP-sp-4.bam ${path}H1-NCP-sp-8.bam ${path}H1-NCP-sp-0.bam ${path}hg38.fa --chr chr1 --skip -o ${path}H1_NCP_sp_chr1
+
+#get coverage for each NCP
+#python work/scripts/NCPcov.py ${path}H1_NCP_sp_chr1_peak.cn ${path}H1_NCP_sp_chr1_cov.cn --Nlen 171 --peak-choice input --chr chr1 -o ${path}H1_NCP_sp_chr1
+
+
+echo "Finished with job $SLURM_JOBID"
+
+#### mpiexec by default launches number of tasks requested

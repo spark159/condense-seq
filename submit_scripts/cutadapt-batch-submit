@@ -1,0 +1,55 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=cutadapt
+#SBATCH --time=12:0:0
+#SBATCH --partition=express
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=5
+# number of cpus (threads) per task (process)
+#SBATCH --mail-type=end
+#SBATCH --mail-user=spark159@jhu.edu
+
+#### load and unload modules you may need
+# module unload openmpi/intel
+# module load mvapich2/gcc/64/2.0b
+# module list
+module load cutadapt
+
+
+#### execute code and write output file to OUT-24log.
+path='/home-4/spark159@jhu.edu/work/2021_02_10_H1_sp_spd_test/'
+adapt_seq='AGATCGGAAGAGCACACGTC'
+
+cells=('H1')
+stypes=('DNA' 'NCP-new')
+agents=('sp' 'spd')
+
+for cell in ${cells[*]}
+do
+    for stype in ${stypes[*]}
+    do
+	for agent in ${agents[*]}
+	do
+	    for i in 0 1 2 3 4 5
+	    do
+		for j in 1 2
+		do
+		    name="${path}${cell}-${stype}-${agent}-${i}_R${j}_001"
+		    infname="${name}.fastq.gz"
+		    outfname="${name}_trimmed.fastq.gz"
+		    echo $infname
+		    #echo $outfname
+		    echo
+		    cutadapt -a $adapt_seq -o $outfname $infname
+		    echo
+		done
+	    done
+	done
+    done
+done
+
+				 
+				 
+echo "Finished with job $SLURM_JOBID"
