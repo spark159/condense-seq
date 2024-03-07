@@ -29,7 +29,7 @@ do
           IFS=','
           files=($OPTARG) ;;
 
-      c)  set -c
+      c)  set -f
           IFS=','
           chr_list=($OPTARG) ;;
 
