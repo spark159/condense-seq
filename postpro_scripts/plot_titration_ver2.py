@@ -21,9 +21,6 @@ def read_titration (fname):
     return conc_list, mean_list, std_list
 
 ### parameters
-path = ""
-#path = "/home/spark159/../../media/spark159/sw/"
-
 agent_unit = {'sp':'mM',
               'spd':'mM',
               'CoH':'mM',
@@ -56,7 +53,10 @@ agent_fullname = {'sp':'Spermine(4+)',
                   'HP1bSUV':'HP1$\\beta$/SUV39H1',
                   'LKH':'Linker histone1',
                   'Ki67':'Ki67'}
-
+xx
+#path = ""
+#path = "/home/spark159/../../media/spark159/sw/"
+path = "/data/"
 
 ### experiment information
 # mouse data

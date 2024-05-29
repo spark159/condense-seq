@@ -68,22 +68,22 @@ def rclone_dir (from_path,
 #from_path = 'rockfish_jhu:/home/spark159/data/'
 #to_path = 'onedrive_jhu:/Ha-SPark/Condense-seq_project/data/fastq_files/'
 
-dir_names = ['spark205_172495',
-             'spark205_172936',
-             'spark205_180247',
-             'spark205_181643',
-             'spark205_183500',
-             'spark205_185389',
-             'spark205_185767',
-             'spark205_186596',
-             'spark205_186600',
-             'spark205_186759',
-             'spark205_187243',
-             'spark205_188157',
-             'spark205_188441',
-             'spark205_188633',
-             'spark205_188810',
-             'spark205_H1spqc']
+#dir_names = ['spark205_172495',
+#             'spark205_172936',
+#             'spark205_180247',
+#             'spark205_181643',
+#             'spark205_183500',
+#             'spark205_185389',
+#             'spark205_185767',
+#             'spark205_186596',
+#             'spark205_186600',
+#             'spark205_186759',
+#             'spark205_187243',
+#             'spark205_188157',
+#             'spark205_188441',
+#             'spark205_188633',
+#             'spark205_188810',
+#             'spark205_H1spqc']
 
 #dir_names = ['pancancer_data']
 #dir_names = ['spark205_172495']
@@ -94,10 +94,15 @@ dir_names = ['spark205_172495',
 #to_path = 'onedrive_jhu:/Ha-SPark/Condense-seq_project/scripts/SLRUM_submit/'
 #dir_names = ['submit_scripts']
 
-from_path = 'onedrive_jhu:/'
-to_path = 'sangwoo_dropbox:/'
-dir_names = ['Ha-SPark']
+#from_path = 'onedrive_jhu:/'
+#to_path = 'sangwoo_dropbox:/'
+#dir_names = ['Ha-SPark']
 
+from_path = 'azenta_halab:'
+#to_path = 'my_dropbox:My\ PhD\ works/Research\ projects/Condense-seq_project/data/'
+#to_path = 'my_dropbox:My PhD works/Research projects/Condense-seq_project/data/'
+to_path = 'jhu_rockfish:data/ODC_mouse_RNAseq/'
+dir_names = ['30-916504364']
 
 for dir_name in dir_names:
     rclone_copy (from_path, to_path, dir_name)

@@ -594,7 +594,7 @@ if False:
 
             subprocess.call(tar_cmd)
 
-### Compute C-half using concatenated num files over titrations
+### logistic regression of concatenated num files over titrations
 if False:
     # group exps over titrations
     dexp_tnums = {}
@@ -605,9 +605,11 @@ if False:
             dexp_tnums[dexp] = []
         dexp_tnums[dexp].append(tnum)
 
-    # compute C-half for 10kb data set with >5 titration points
+    # logistic regression for 10kb data set with >5 titration points
     bin_size = 10000
     min_tnum = 5
+    min_rsq = 0.5
+    models = ['sigmoid', 'hill']
     for dexp, tnums in dexp_tnums.items():
         if len(tnums) < min_tnum:
             continue
@@ -615,13 +617,19 @@ if False:
         tnums = sorted(tnums)
         fheader = '_'.join([cell, sample, agent, str(rep)+'rep'])
         fname = output_path + '/' + fheader  + '_' + str(int(bin_size/1000)) + 'kb' + '_num.cn'
-        outfname = output_path + '/' + fheader  + '_' + str(int(bin_size/1000)) + 'kb'
         tfname = titr_path + '/' + '_'.join([cell, sample, agent, 'titration']) + '.csv'
 
-        subprocess.call(["sbatch",
-                         "Chalf-submit",
-                         "-f", ','.join([fname]),
-                         "-g", tfname,
-                         "-t", ','.join(tnums),
-                         "-o", outfname])
-        
+        for model in models:
+            
+            outfname = output_path + '/' + fheader  + '_' + str(int(bin_size/1000)) + 'kb' + '_' + model
+            subprocess.call(["sbatch",
+                             "logistic-submit",
+                             "-f", ','.join([fname]),
+                             "-g", tfname,
+                             "-t", ','.join([str(tnum) for tnum in tnums]),
+                             "-m", model,
+                             "-r", str(min_rsq),
+                             "-o", outfname])
+
+### make annotation table
+

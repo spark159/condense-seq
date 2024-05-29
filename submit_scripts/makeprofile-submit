@@ -1,0 +1,48 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=profile
+#SBATCH --time=12:0:0
+#SBATCH --partition=defq
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=3
+# number of cpus (threads) per task (process)
+
+#### load and unload modules you may need
+# module unload openmpi/intel
+# module load mvapich2/gcc/64/2.0b
+# module list
+#module load bowtie2
+#module load python/2.7
+module load samtools
+#module list
+
+
+#### parsing arguments
+OPTIND=1
+while getopts f:g:x:c:r:u:d:o: option  
+do                                                                                                                           
+  case "${option}"                                                                                                         
+  in
+      f) fname=$OPTARG ;;
+      g) gtfname=$OPTARG ;;
+      x) refname=$OPTARG ;;
+      c) chr_name=$OPTARG ;;
+      r) feature=$OPTARG ;;
+      u) upstream=$OPTARG ;;
+      d) downstream=$OPTARG ;;
+      o) outfname=$OPTARG ;;
+  esac                                                                                                                       
+done
+set +o noglob
+#set +f
+
+echo
+echo Submitted
+echo "fname $fname"
+
+python2 /home/spark159/scratch/scripts/make_profile.py ${fname} ${gtfname} ${refname} -o ${outfname} --skip --chr ${chr_name} --feature ${feature} --up ${upstream} --down ${downstream}
+
+echo "Finished with job $SLURM_JOBID"
+echo

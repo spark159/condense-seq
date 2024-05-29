@@ -1,0 +1,59 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=bincount
+#SBATCH --time=12:0:0
+#SBATCH --partition=parallel
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=5
+# number of cpus (threads) per task (process)
+
+#### load and unload modules you may need
+# module unload openmpi/intel
+# module load mvapich2/gcc/64/2.0b
+# module list
+#module load bowtie2
+#module load python/2.7
+#module load samtools
+module load anaconda
+#module list
+
+
+#### parsing arguments
+OPTIND=1
+while getopts f:t:c:g:m:r:o: option  
+do                                                                                                                           
+  case "${option}"                                                                                                         
+  in
+      f)  set -f
+          IFS=','
+          files=($OPTARG) ;;
+
+      t)  set -f
+          IFS=','
+          tnums=($OPTARG) ;;
+
+      c)  set -f
+          IFS=','
+          chr_list=($OPTARG) ;;
+
+      g) tfname=$OPTARG ;;
+      m) model=$OPTARG ;;
+      r) min_rsq=$OPTARG ;;
+      o) outfname=$OPTARG ;;
+      
+  esac                                                                                                                       
+done
+set +o noglob
+
+echo ${files[@]}
+echo ${tfname}
+echo ${tnums[@]}
+echo ${model}
+echo ${min_rsq}
+echo
+
+python /home/spark159/scratch/scripts/logistic_fit_ver2.py ${files[*]} -t ${tfname} --tnum ${tnums[*]} --model ${model} --min_rsq ${min_rsq} --min_top 1 --max_top 1 --min_bottom 0 --max_bottom 0 --min_rate 0 --max_rate 100 -o ${outfname}
+
+echo "Finished with job $SLURM_JOBID"
