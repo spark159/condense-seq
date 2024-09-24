@@ -3,7 +3,7 @@
 #SBATCH
 #SBATCH --job-name=bincount
 #SBATCH --time=12:0:0
-#SBATCH --partition=defq
+#SBATCH --partition=parallel
 #SBATCH --nodes=1
 # number of tasks (processes) per node
 #SBATCH --ntasks-per-node=1
@@ -45,6 +45,6 @@ echo Submitted $outfname
 echo ${files[@]}
 echo
 
-python2 /home/spark159/scratch/scripts/bincount_ver2.py ${files[*]} ${refname} -o ${outfname} -w ${binsize} --chr ${chr_list[*]} --gc --tlen
+python2 /home/spark159/scratch/scripts/bincount_ver3.py ${files[*]} ${refname} -o ${outfname} -w ${binsize} --chr ${chr_list[*]} --gc --tlen
 
 echo "Finished with job $SLURM_JOBID"

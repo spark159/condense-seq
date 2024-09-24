@@ -1,9 +1,9 @@
 #!/bin/bash -l
 
 #SBATCH
-#SBATCH --job-name=condense
+#SBATCH --job-name=NCPcov
 #SBATCH --time=24:00:00
-#SBATCH --partition=defq
+#SBATCH --partition=parallel
 #SBATCH --nodes=1
 # number of tasks (processes) per node
 #SBATCH --ntasks-per-node=10
@@ -43,4 +43,4 @@ echo
 echo "Producing $outfname files"
 
 #get coverage for each NCP
-python2 /home/spark159/scratch/scripts/NCPcov_ver2.py ${peak_fname} ${cov_fname} --Nlen ${Nlen} --peak-choice input --chr ${chr_name} -o ${outfname}
+python2 /home/spark159/scratch/scripts/NCPcov_ver3.py ${peak_fname} ${cov_fname} --Nlen ${Nlen} --peak-choice input --chr ${chr_name} -o ${outfname}

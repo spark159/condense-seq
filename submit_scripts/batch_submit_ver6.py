@@ -3,6 +3,7 @@ import glob
 import sys, re
 import copy
 import csv, codecs
+import gzip
 
 # sort exp tuple (rep, cell, sample, agent, tnum)
 def exp_cmp (exp1, exp2):
@@ -190,23 +191,23 @@ output_path = '/home/spark159/data/2024_01_05_GEO/processed_files'
 org_anot_path = {'human':'/home/spark159/data/HumanEpigeneticData',
                  'mouse':'/home/spark159/data/MouseEpigeneticData'}
 
-### analysis parameters
-# alignment parameters
+### parameter information
+## Bowtie2 alignment parameters
 trim_to = 50 # trim fastq reads to make 50 bp
-# data resolution parameters
+## data resolution parameters
 bin_sizes = [1000, 10000] # genomic bin size in bp for counting reads (shallow)
 Nlen = 171 # NCP length window for computing coverage area (deep)
-sliding_windows = [(167, 25)] # bin size and step for sliding windows (deep)
-# physical number parameters
+sliding_windows = [(167, 25)] # sliding windows (Bsize,Bstep) for coverage area (deep)
+## physical number parameters
 agent_mscale = {'sp':1, 'spd':1, 'CoH':1, 'PEG':1, 'Ca':5, 'HP1a':1, 'HP1bSUV':1} # input molecule number scale for each agent
-# logistic fitting parameters
-min_rsq = 0.5
-models = ['sigmoid', 'hill']
-# annotation parameters
-annot_mtypes = ['HistoneChipseq', 'BSseq']
-# profile parameters
+## logistic fitting parameters
+min_rsq = 0.5 # mininum R-square value for quality filter
+models = ['sigmoid'] # fitting model
+## annotation parameters
+annot_mtypes = ['HistoneChipseq', 'BSseq'] # Epigenetic data used for making table
+## profile parameters
 feature_updownstream = {"TSS": (2500, 5000),
-                        "TSS-TTS": (5000, 2500)}
+                        "TSS-TTS": (5000, 2500)} # up/downstream (bp) around feature
 
 ### read condense-seq data table
 table_fname = 'Condense-seq NGS data table.csv'
@@ -234,7 +235,7 @@ if False:
         exp_fastq[exp]['shallow'] = fname_pairs
         exp_fastq[exp]['deep'] = fname_pairs_deep
 
-    
+
 ### Condense-seq analysis for each exp
 ## Bowtie2 alignment
 if False:
@@ -415,17 +416,18 @@ if False:
 
         rep, cell, sample, agent, tnum = exp
         chr_names = cell_chrnames[cell]
+        refname = ref_path + '/' + org_ref[cell_org[cell]]
 
         fheader = '_'.join([cell, sample, agent, str(tnum), str(rep)+'rep', 'deep'])
         for Bsize, Bstep in sliding_windows:
             for chr_name in chr_names:
-                cov_fname = output_path + '/' + fheader + '_' + chr_name + '_' + '_cov.cn'
+                cov_fname = output_path + '/' + fheader + '_' + chr_name + '_cov.cn'
                 outfname = output_path + '/' + fheader + '_' + chr_name
                 outfname += '_%dwin%dstep' % (Bsize, Bstep)
 
                 subprocess.call(["sbatch",
                                  "Bindata-submit",
-                                 "-f", fname,
+                                 "-f", cov_fname,
                                  "-x", refname+'.fa',
                                  "-c", chr_name,
                                  "-w", str(Bsize),
@@ -450,13 +452,13 @@ if False:
             fname = output_path + '/' + fheader  + '_' + str(int(bin_size/1000)) + 'kb' + '_bin.cn'
             input_fname = output_path + '/' + input_fheader  + '_' + str(int(bin_size/1000)) + 'kb' + '_bin.cn'
             
-            subprocess.call(["sbatch",
-                             "NCPscore-submit_ver2",
-                             "-f", fname,
-                             "-i", input_fname,
-                             "-g", tfname,
-                             "-t", str(tnum),
-                             "-c", ','.join(chr_names)])
+            #subprocess.call(["sbatch",
+            #                 "NCPscore-submit_ver2",
+            #                 "-f", fname,
+            #                 "-i", input_fname,
+            #                 "-g", tfname,
+            #                 "-t", str(tnum),
+            #                 "-c", ','.join(chr_names)])
             
             if ID_deep != '':
 
@@ -465,13 +467,13 @@ if False:
                 fname = output_path + '/' + fheader  + '_' + str(int(bin_size/1000)) + 'kb' + '_bin.cn'
                 input_fname = output_path + '/' + input_fheader  + '_' + str(int(bin_size/1000)) + 'kb' + '_bin.cn'
 
-                subprocess.call(["sbatch",
-                                 "NCPscore-submit_ver2",
-                                 "-f", fname,
-                                 "-i", input_fname,
-                                 "-g", tfname,
-                                 "-t", str(tnum),
-                                 "-c", ','.join(chr_names)])
+                #subprocess.call(["sbatch",
+                #                 "NCPscore-submit_ver2",
+                #                 "-f", fname,
+                #                 "-i", input_fname,
+                #                 "-g", tfname,
+                #                 "-t", str(tnum),
+                #                 "-c", ','.join(chr_names)])
 
 
         # deeply sequnced case
@@ -487,13 +489,13 @@ if False:
                 input_fname = output_path + '/' + input_fheader + '_' + chr_name + '_Ncov.cn'
                 input_fnames.append(input_fname)
 
-            subprocess.call(["sbatch",
-                             "NCPscore-submit_ver2",
-                             "-f", ','.join(fnames),
-                             "-i", ','.join(input_fnames),
-                             "-g", tfname,
-                             "-t", str(tnum),
-                             "-c", ','.join(chr_names)])
+            #subprocess.call(["sbatch",
+            #                 "NCPscore-submit_ver2",
+            #                 "-f", ','.join(fnames),
+            #                 "-i", ','.join(input_fnames),
+            #                 "-g", tfname,
+            #                 "-t", str(tnum),
+            #                 "-c", ','.join(chr_names)])
 
             for Bsize, Bstep in sliding_windows:
                 fnames = []
@@ -507,7 +509,7 @@ if False:
                     input_fnames.append(input_fname)
 
                 subprocess.call(["sbatch",
-                                 "NCPscore-submit_ver2",
+                                 "NCPscore-submit_ver3",
                                  "-f", ','.join(fnames),
                                  "-i", ','.join(input_fnames),
                                  "-g", tfname,
@@ -529,24 +531,24 @@ if False:
         for bin_size in bin_sizes:
             fheader = '_'.join([cell, sample, agent, str(tnum), str(rep)+'rep'])
             fname = output_path + '/' + fheader  + '_' + str(int(bin_size/1000)) + 'kb' + '_bin.cn'
-            subprocess.call(["sbatch",
-                             "NCPnum-submit",
-                             "-f", fname,
-                             "-g", tfname,
-                             "-t", str(tnum),
-                             "-c", ','.join(chr_names),
-                             "-i", str(mscale)])
+            #subprocess.call(["sbatch",
+            #                 "NCPnum-submit",
+            #                 "-f", fname,
+            #                 "-g", tfname,
+            #                 "-t", str(tnum),
+            #                 "-c", ','.join(chr_names),
+            #                 "-i", str(mscale)])
 
             if ID_deep != '':
                 fheader = '_'.join([cell, sample, agent, str(tnum), str(rep)+'rep', 'deep'])
                 fname = output_path + '/' + fheader  + '_' + str(int(bin_size/1000)) + 'kb' + '_bin.cn'
-                subprocess.call(["sbatch",
-                                 "NCPnum-submit",
-                                 "-f", fname,
-                                 "-g", tfname,
-                                 "-t", str(tnum),
-                                 "-c", ','.join(chr_names),
-                                 "-i", str(mscale)])
+                #subprocess.call(["sbatch",
+                #                 "NCPnum-submit",
+                #                 "-f", fname,
+                #                 "-g", tfname,
+                #                 "-t", str(tnum),
+                #                 "-c", ','.join(chr_names),
+                #                 "-i", str(mscale)])
 
         # deeply sequnced case
         if ID_deep != '':
@@ -557,15 +559,15 @@ if False:
                 fname = output_path + '/' + fheader + '_' + chr_name + '_Ncov.cn'
                 fnames.append(fname)
 
-            subprocess.call(["sbatch",
-                             "NCPnum-submit",
-                             "-f", ','.join(fnames),
-                             "-g", tfname,
-                             "-t", str(tnum),
-                             "-c", ','.join(chr_names),
-                             "-i", str(mscale)])
+            #subprocess.call(["sbatch",
+            #                 "NCPnum-submit",
+            #                 "-f", ','.join(fnames),
+            #                 "-g", tfname,
+            #                 "-t", str(tnum),
+            #                 "-c", ','.join(chr_names),
+            #                 "-i", str(mscale)])
 
-                        fheader = '_'.join([cell, sample, agent, str(tnum), str(rep)+'rep', 'deep'])
+            fheader = '_'.join([cell, sample, agent, str(tnum), str(rep)+'rep', 'deep'])
             fnames = []
             chr_names = cell_chrnames[cell]
             for Bsize, Bstep in sliding_windows:
@@ -629,11 +631,11 @@ if False:
                 outfname = output_path + '/' + fheader  + '_' + str(int(bin_size/1000)) + 'kb' + extension
                 colnums = [str(colnum) for colnum in colnums]
                 
-                subprocess.call(["sbatch",
-                                 "concat-files",
-                                 "-f", ','.join(fnames),
-                                 "-c", ','.join(colnums),
-                                 "-o", outfname])
+                #subprocess.call(["sbatch",
+                #                 "concat-files",
+                #                 "-f", ','.join(fnames),
+                #                 "-c", ','.join(colnums),
+                #                 "-o", outfname])
 
     # concatenate num/score files (deeply sequenced)
     for extension in ['_num.cn', '_score.cn']:
@@ -662,11 +664,11 @@ if False:
                 outfname = output_path + '/' + fheader  + '_' + str(int(bin_size/1000)) + 'kb' + extension
                 colnums = [str(colnum) for colnum in colnums]
                 
-                subprocess.call(["sbatch",
-                                 "concat-files",
-                                 "-f", ','.join(fnames),
-                                 "-c", ','.join(colnums),
-                                 "-o", outfname])
+                #subprocess.call(["sbatch",
+                #                 "concat-files",
+                #                 "-f", ','.join(fnames),
+                #                 "-c", ','.join(colnums),
+                #                 "-o", outfname])
             
 
             chr_names = cell_chrnames[cell]
@@ -688,11 +690,11 @@ if False:
                 outfname = output_path + '/' + fheader  + '_' + chr_name + extension
                 colnums = [str(colnum) for colnum in colnums]
 
-                subprocess.call(["sbatch",
-                                 "concat-files",
-                                 "-f", ','.join(fnames),
-                                 "-c", ','.join(colnums),
-                                 "-o", outfname])
+                #subprocess.call(["sbatch",
+                #                 "concat-files",
+                #                 "-f", ','.join(fnames),
+                #                 "-c", ','.join(colnums),
+                #                 "-o", outfname])
 
             for Bsize, Bstep in sliding_windows:
                 for chr_name in chr_names:
@@ -704,21 +706,21 @@ if False:
                         fname = output_path + '/' + fheader + '_' + chr_name
                         fname += '_' + '%dwin%dstep' % (Bsize, Bstep) + extension
 
-                        if i == 0:
-                            fnames += [fname]*3
-                            colnums += range(1,4)
+                        #if i == 0:
+                        #    fnames += [fname]*3
+                        #    colnums += range(1,4)
                         fnames.append(fname)
                         colnums.append(4)
 
                     fheader = '_'.join([cell, sample, agent, str(rep)+'rep', 'deep'])
                     outfname = output_path + '/' + fheader  + '_' + chr_name
-                    outfname += '_' + '%dwin%dstep' % (Bsize, Bstep) + extension
+                    outfname += '_' + '%dwin%dstep' % (Bsize, Bstep) + extension.rsplit('.', 1)[0]
                     colnums = [str(colnum) for colnum in colnums]
 
                     subprocess.call(["sbatch",
-                                     "concat-files",
+                                     "concat-submit",
                                      "-f", ','.join(fnames),
-                                     "-c", ','.join(colnums),
+                                     "-c", ':'.join(colnums),
                                      "-o", outfname])
 
 
@@ -816,8 +818,8 @@ if False:
                              "-o", outfname])
 
 ### make annotation table
-if True:
-    # get histone PTM chip-seq/bisulfite information
+if False:
+    # get Epigenetic data information
     cell_mtype_mark_bedfiles = {}
     for org in ['human', 'mouse']:
         for mtype in annot_mtypes:
@@ -913,7 +915,7 @@ if True:
             outfname = output_path + '/' + fheader  + '_' + str(int(bin_size/1000)) + 'kb' + extension.rsplit('.',1)[0]
             
             subprocess.call(["sbatch",
-                             "maketable_submit",
+                             "maketable-submit",
                              "-f", fname,
                              "-x", refname+'.fa',
                              "-c", ','.join(chr_names),
@@ -930,7 +932,7 @@ if True:
                 outfname = output_path + '/' + fheader  + '_deep_' + chr_name + extension.rsplit('.',1)[0]
                 
                 subprocess.call(["sbatch",
-                                 "maketable_submit",
+                                 "maketable-submit",
                                  "-f", fname,
                                  "-x", refname+'.fa',
                                  "-c", chr_name,
@@ -949,7 +951,7 @@ if True:
                     outfname += extension.rsplit('.',1)[0]
 
                     subprocess.call(["sbatch",
-                                     "maketable_submit",
+                                     "maketable-submit",
                                      "-f", fname,
                                      "-x", refname+'.fa',
                                      "-c", ','.join(chr_names),
@@ -962,6 +964,7 @@ if True:
 
 
 ### make profile around genomic feature (deep only)
+if True:
     # get GTF information
     org_gtfname = {}
     for org in ['human', 'mouse']:
@@ -971,7 +974,7 @@ if True:
         ID_field_value = read_csv_file(anot_fname, rowID=False)
 
         for ID in ID_field_value:
-            org = ID_field_value[ID]['Organism']
+            org = ID_field_value[ID]['Organism'].lower()
             gtfname = ID_field_value[ID]['GTF file'] + '.gtf'
 
             assert org not in org_gtfname
@@ -981,42 +984,65 @@ if True:
     dexp_tnums_deep = {}
     for exp in exps:
         rep, cell, sample, agent, tnum = exp
+        dexp = (rep, cell, sample, agent)
         ID, qn, ID_deep, qn_deep = exp_IDs[exp]
         if ID_deep != '':
             if dexp not in dexp_tnums_deep:
                 dexp_tnums_deep[dexp] = []
             dexp_tnums_deep[dexp].append(tnum)
 
-    # make profile matrix based on the annotation table (sliding window)    
+    # make profile matrix
     for dexp in dexp_tnums_deep:
         rep, cell, sample, agent = dexp
-            
-        refname = ref_path + '/' + org_ref[cell_org[cell]]
-        gtfname = org_anot_path[org] + '/' + 'GTF' + '/' + org_gtfname[cell_org[cell]]
+        
+        org = cell_org[cell]
+        refname = ref_path + '/' + org_ref[org]
+        gtfname = org_anot_path[org] + '/' + 'GTF' + '/' + org_gtfname[org]
         
         chr_names = cell_chrnames[cell]
         fheader = '_'.join([cell, sample, agent, str(rep)+'rep', 'deep'])
 
-        for extension in ['_score.cn']:
-            for Bsize, Bstep in sliding_windows:
-                for chr_name in chr_names:
-                    fname = output_path + '/' + fheader  + '_' + chr_name
-                    fname += '_' + '%dwin%dstep' % (Bsize, Bstep) + extension
+        for extension in ['_score_table.cn']:
 
-                    for feature, updownstream in feature_updownstream.items():
-                        upstream, downstream = updownstream
+            for feature, updownstream in feature_updownstream.items():
+                upstream, downstream = updownstream
+                for chr_name in chr_names:
+                    fname = output_path + '/' + fheader  + '_' + chr_name + extension
+
+                    outfname = output_path + '/' + fheader  + '_' + chr_name 
+                    outfname += extension.rsplit('.',1)[0]
+                    outfname += '_' + feature
+
+                    subprocess.call(["sbatch",
+                                     "makeprofile-submit",
+                                     "-f", fname,
+                                     "-g", gtfname,
+                                     "-x", refname+'.fa',
+                                     "-c", chr_name,
+                                     "-r", feature,
+                                     "-u", str(upstream),
+                                     "-d", str(downstream),
+                                     "-o", outfname])
+            
+            for Bsize, Bstep in sliding_windows:
+                for feature, updownstream in feature_updownstream.items():
+                    upstream, downstream = updownstream
+                    for chr_name in chr_names:
+                        fname = output_path + '/' + fheader  + '_' + chr_name
+                        fname += '_' + '%dwin%dstep' % (Bsize, Bstep) + extension
+
                         outfname = output_path + '/' + fheader  + '_' + chr_name 
                         outfname += '_' + '%dwin%dstep' % (Bsize, Bstep)
                         outfname += extension.rsplit('.',1)[0]
                         outfname += '_' + feature
-                        
-                        subprocess.call(["sbatch",
-                                         "makeprofile_submit",
-                                         "-f", fname,
-                                         "-g", gtfname,
-                                         "-x", refname+'.fa',
-                                         "-c", chr_name,
-                                         "-r", feature,
-                                         "-u", str(upstream),
-                                         "-d", str(downstream),
-                                         "-o", outfname])
+
+                        #subprocess.call(["sbatch",
+                        #                 "makeprofile-submit",
+                        #                 "-f", fname,
+                        #                 "-g", gtfname,
+                        #                 "-x", refname+'.fa',
+                        #                 "-c", chr_name,
+                        #                 "-r", feature,
+                        #                 "-u", str(upstream),
+                        #                 "-d", str(downstream),
+                        #                 "-o", outfname])

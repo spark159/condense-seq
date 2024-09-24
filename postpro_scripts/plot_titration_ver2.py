@@ -53,7 +53,7 @@ agent_fullname = {'sp':'Spermine(4+)',
                   'HP1bSUV':'HP1$\\beta$/SUV39H1',
                   'LKH':'Linker histone1',
                   'Ki67':'Ki67'}
-xx
+
 #path = ""
 #path = "/home/spark159/../../media/spark159/sw/"
 path = "/data/"

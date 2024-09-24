@@ -1,4 +1,5 @@
 import sys
+import math
 
 def binary_search (sortlist, target):
     st, ed = 0, len(sortlist)-1
@@ -29,15 +30,25 @@ def tuple_cmp (a,b):
 class bin_hash:
 
     def __init__(self,
-                 ID_interval,
                  bin_size,
                  bin_step,
-                 max_pos):
+                 max_pos=None,
+                 ID_interval=None,
+                 silent=False):
 
         self.ID_value = {}    
         self.bin_size = bin_size
         self.bin_step = bin_step
-        self.max_pos = max_pos
+
+        # if ID:interval not defined
+        if ID_interval == None:
+            assert max_pos != None # max_pos must be provided
+            ID_interval = {}
+            for i in range(max_pos/bin_step + 1):
+                ID = i
+                st = bin_step * i
+                ed = st + bin_size
+                ID_interval[ID] = (st, ed)
 
         # map bin idx to bin ID
         self.idx_ID = {}
@@ -50,8 +61,15 @@ class bin_hash:
             assert idx not in self.idx_ID
             self.idx_ID[idx] = ID
             self.ID_idx[ID] = idx
-            
-        print >> sys.stderr, "hash function is built"
+
+        # if max_pos not provided
+        if max_pos == None:
+            max_idx = max(self.idx_ID.keys())
+            max_pos = max_idx * self.bin_step + self.bin_size
+        self.max_pos = max_pos
+        
+        if not silent:
+            print >> sys.stderr, "hash function is built"
         
     def find(self, pos):
         find_IDs = []
@@ -131,16 +149,21 @@ class bin_hash:
     def get (self):
         return self.ID_value
 
+    def clear (self):
+        self.ID_value = {}
+
 # build interval dictionary by using double hashing
 class double_hash:
     def __init__(self,
                  ID_interval,
-                 domain_size,
-                 max_pos):
+                 domain_size=None,
+                 max_pos=None,
+                 silent=False):
         
         self.ID_value = {}
         self.ID_interval = ID_interval
 
+        # record the boundaries of intervals
         edID = []
         for ID, interval in ID_interval.items():
             st, ed = interval
@@ -151,9 +174,18 @@ class double_hash:
         for ed, ID in edID:
             edlist.append(ed)
             IDlist.append(ID)
-        
-        self.domain_size = domain_size
+
+        # if max_pos not provided
+        if max_pos == None:
+            max_pos = edlist[-1]
         self.max_pos = max_pos
+
+        # if domain_size not provided:
+        if domain_size == None:
+            domain_size = 10**(int(math.log10(max_pos))/2)
+        self.domain_size = domain_size
+
+        # categorize the IDs into each domains
         self.domain_IDs = {}
         self.domain_num = max_pos // domain_size + 1
 
@@ -169,8 +201,9 @@ class double_hash:
                 st, ed = self.ID_interval[ID]
                 if st < ded:
                     self.domain_IDs[i].append(ID)
-                
-        print >> sys.stdout, "hash fucntion is built"
+
+        if not silent:
+            print >> sys.stdout, "hash fucntion is built"
 
     def __str__ (self):
         print "%s\t%s\t%s\t%s" % ("ID", "st", "ed", "value")
@@ -271,3 +304,6 @@ class double_hash:
         
     def get (self):
         return self.ID_value
+
+    def clear (self):
+        self.ID_value = {}

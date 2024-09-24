@@ -1,0 +1,48 @@
+#!/bin/bash -l
+
+#SBATCH
+#SBATCH --job-name=concat
+#SBATCH --time=12:0:0
+#SBATCH --partition=parallel
+#SBATCH --nodes=1
+# number of tasks (processes) per node
+#SBATCH --ntasks-per-node=3
+# number of cpus (threads) per task (process)
+
+#### load and unload modules you may need
+# module unload openmpi/intel
+# module load mvapich2/gcc/64/2.0b
+# module list
+#module load bowtie2
+#module load python/2.7
+#module load samtools
+#module list
+
+
+#### parsing arguments
+OPTIND=1
+while getopts f:c:o: option  
+do                                                                                                                           
+  case "${option}"                                                                                                         
+  in
+      f)  set -f
+          IFS=','
+          fnames=($OPTARG)
+	  unset IFS ;;
+
+      c)  set -f
+          IFS=':'
+          colnums=($OPTARG)
+	  unset IFS ;;
+
+      o) outfname=$OPTARG ;;
+
+  esac                                                                                                                       
+done
+set +o noglob
+echo 'concat' ${fnames[@]} 'to' ${outfname}
+
+python2 /home/spark159/scratch/scripts/concat_gtab.py ${fnames[*]} -c ${colnums[*]} -o ${outfname}
+
+echo "Finished with job $SLURM_JOBID"
+

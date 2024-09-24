@@ -60,10 +60,20 @@ def read_GSEA (path):
                 First = False
                 continue
             cols = line.strip().split('\t')
-            name, size, nes = cols[0], cols[3], cols[5]
+            #name, size, nes = cols[0], cols[3], cols[5]
+            name, size, nes, pvalue = cols[0], cols[3], cols[5], cols[8]
             size = int(size)
-            nes = float(nes)
-            gs_list.append({'name':name, 'size':size, 'nes':nes})
+            #nes = float(nes)
+            try:
+                nes = float(nes)
+            except:
+                nes = 3
+            try:
+                pvalue = float(pvalue) + 10**-10 # add dummy value
+            except:
+                pvalue = 10**-10
+            #gs_list.append({'name':name, 'size':size, 'nes':nes})
+            gs_list.append({'name':name, 'size':size, 'nes':nes, 'pvalue':pvalue})
             if len(gs_list) >= cutoff:
                 break
         return gs_list

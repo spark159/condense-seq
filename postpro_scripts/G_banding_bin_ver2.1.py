@@ -433,7 +433,7 @@ name_label = {target_name:target_name.split('-')[-1] for target_name in target_n
 
 # set the list of figure frames (each frame is a matrix of varables to be plotted)
 #fig_list = [ [[[target], ['Gene activity']]] for target in target_names ]
-#fig_list = [[[[target], ['Gene activity']] for target in target_names]]
+#fig_list = [ [ [[target], ['Gene activity']] for target in target_names ] ]
 fig_list = [ [[[target for target in target_names], []]] ]
 #fig_list = [ [[[target for target in target_names], ['Gene activity']]] ]
 note_list = [target for target in target_names]

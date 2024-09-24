@@ -1,7 +1,7 @@
 #!/bin/bash -l
 
 #SBATCH
-#SBATCH --job-name=bincount
+#SBATCH --job-name=logistic
 #SBATCH --time=12:0:0
 #SBATCH --partition=parallel
 #SBATCH --nodes=1
@@ -54,6 +54,6 @@ echo ${model}
 echo ${min_rsq}
 echo
 
-python /home/spark159/scratch/scripts/logistic_fit_ver2.py ${files[*]} -t ${tfname} --tnum ${tnums[*]} --model ${model} --min_rsq ${min_rsq} --min_top 1 --max_top 1 --min_bottom 0 --max_bottom 0 --min_rate 0 --max_rate 100 -o ${outfname}
+python /home/spark159/scratch/scripts/logistic_fit_ver3.py ${files[*]} -t ${tfname} --tnum ${tnums[*]} --model ${model} --min_rsq ${min_rsq} --min_top 1 --max_top 1 --min_bottom 0 --max_bottom 0 --min_rate 0 --max_rate 100 -o ${outfname}
 
 echo "Finished with job $SLURM_JOBID"

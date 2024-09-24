@@ -1,9 +1,9 @@
 #!/bin/bash -l
 
 #SBATCH
-#SBATCH --job-name=profile
+#SBATCH --job-name=makeprofile
 #SBATCH --time=12:0:0
-#SBATCH --partition=defq
+#SBATCH --partition=parallel
 #SBATCH --nodes=1
 # number of tasks (processes) per node
 #SBATCH --ntasks-per-node=3
@@ -15,7 +15,7 @@
 # module list
 #module load bowtie2
 #module load python/2.7
-module load samtools
+#module load samtools
 #module list
 
 
@@ -42,7 +42,7 @@ echo
 echo Submitted
 echo "fname $fname"
 
-python2 /home/spark159/scratch/scripts/make_profile.py ${fname} ${gtfname} ${refname} -o ${outfname} --skip --chr ${chr_name} --feature ${feature} --up ${upstream} --down ${downstream}
+python2 /home/spark159/scratch/scripts/make_profile_ver2.py ${fname} ${gtfname} ${refname} -o ${outfname} --skip --chr ${chr_name} --feature ${feature} --up ${upstream} --down ${downstream}
 
 echo "Finished with job $SLURM_JOBID"
 echo
