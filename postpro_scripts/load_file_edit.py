@@ -1,8 +1,30 @@
 import sys
+import copy
+import re
 import gzip
 import glob
 import numpy as np
 import statis_edit as statis
+
+# chromosome name comparison
+def chr_cmp (chr_name1, chr_name2):
+    assert chr_name1.startswith('chr')
+    assert chr_name2.startswith('chr')
+    chr_num1 = chr_name1[3:]
+    try:
+        chr_num1 = int(chr_num1)
+    except:
+        pass
+    chr_num2 = chr_name2[3:]
+    try:
+        chr_num2 = int(chr_num2)
+    except:
+        pass
+    if chr_num1 < chr_num2:
+        return -1
+    elif chr_num1 > chr_num2:
+        return 1
+    return 0
 
 # open file w/o gzip compression
 def gzopen (fname):
@@ -11,6 +33,28 @@ def gzopen (fname):
     else:
         reading_file = open(fname, 'r')
     return reading_file
+
+# read rlen file
+def read_rlen_file (fname,
+                    chr_list=None):
+    rlen_count = {}
+    First = True
+    for line in open(fname):
+        if First:
+            First = False
+            continue
+        line = line.strip()
+        if not line:
+            continue
+        cols = line.strip().split()
+        chr, rlen, count = cols
+        if chr_list and chr not in chr_list:
+            continue
+        rlen, count = int(rlen), int(count)
+        if rlen not in rlen_count:
+            rlen_count[rlen] = 0
+        rlen_count[rlen] += count
+    return rlen_count
 
 # read csv file
 def read_csv_file (fname,
@@ -324,6 +368,172 @@ def read_gtab (fname,
         if mode == 'both':
             return ID_field_value, field_ID_value
 
+
+# read gtab files in batch
+def read_gtab_batch (dinfo_dkey,
+                     data_path='./',
+                     chr_choices=None,
+                     skip_nan=False,
+                     by_chr=False,
+                     by_chr_first=False,
+                     verbal=True):
+
+    if by_chr_first:
+        by_chr = True # by_chr is True if by_chr_first is True
+
+    if by_chr:
+        if by_chr_first:
+            chr_dkey_ID_value = {}
+        else:
+            dkey_chr_ID_value = {}
+    else:
+        dkey_ID_value = {}
+        
+    for fkey in dinfo_dkey:
+        field_dkey = dinfo_dkey[fkey]
+
+        if not field_dkey:
+            field_choices = None
+        else:
+            field_choices = field_dkey.keys()
+
+        for fname in glob.glob(data_path + '*'):
+            if not re.match(fkey, fname.rsplit('/')[-1]):
+                continue
+
+            if verbal:
+                print "loading %s" % (fname.rsplit('/')[-1])
+
+            if by_chr:
+                field_chr_ID_value = read_gtab(fname,
+                                               mode='col',
+                                               field_choices=field_choices,
+                                               chr_choices=chr_choices,
+                                               skip_nan=skip_nan,
+                                               by_chr=by_chr)
+            else:
+                field_ID_value = read_gtab(fname,
+                                           mode='col',
+                                           field_choices=field_choices,
+                                           chr_choices=chr_choices,
+                                           skip_nan=skip_nan,
+                                           by_chr=by_chr)
+
+
+            if field_dkey == None:
+                field_dkey = {field:field for field in field_ID_value.keys()}
+
+            if by_chr:
+                for field, chr_ID_value in field_chr_ID_value.items():
+                    try:
+                        dkey = field_dkey[field]
+                    except:
+                        dkey = field
+                    if by_chr_first:
+                        for chr, ID_value in chr_ID_value.items():
+                            if chr not in chr_dkey_ID_value:
+                                chr_dkey_ID_value[chr] = {}
+                            if dkey not in chr_dkey_ID_value[chr]:
+                                chr_dkey_ID_value[chr][dkey] = {}
+                            chr_dkey_ID_value[chr][dkey].update(ID_value)
+                    else:
+                        if dkey not in dkey_chr_ID_value:
+                            dkey_chr_ID_value[dkey] = {}
+                        dkey_chr_ID_value[dkey].update(chr_ID_value)
+
+            else:
+                for field, ID_value in field_ID_value.items():
+                    try:
+                        dkey = field_dkey[field]
+                    except:
+                        dkey = field
+                    if dkey not in dkey_ID_value:
+                        dkey_ID_value[dkey] = {}
+                    dkey_ID_value[dkey].update(ID_value)
+
+    if verbal:
+        print "Done"
+        
+    if by_chr:
+        if by_chr_first:
+            return chr_dkey_ID_value
+        else:
+            return dkey_chr_ID_value
+    else:
+        return dkey_ID_value
+
+
+# read bedgraph file
+def read_bedgraph (fname,
+                   chr_choices=None,
+                   skip_nan=False,
+                   by_chr=False):
+
+    # sort by chromosomes
+    if by_chr:
+        chr_ID_value = {}
+    else:
+        ID_value = {}
+
+    if chr_choices != None:
+        target_chr = None
+        target_chrs = copy.deepcopy(chr_choices)
+
+    for line in open(fname):
+        line = line.strip()
+
+        if not line:
+            continue
+
+        cols = line.split('\t')
+        try:
+            chr, start, end, value = cols
+        except:
+            continue
+
+        if chr_choices != None:
+            if chr != target_chr:
+                if len(target_chrs) == 0:
+                    break
+                try:
+                    idx = target_chrs.index(chr)
+                    target_chr = target_chrs.pop(idx)
+                except:
+                    continue
+
+        start, end = int(start), int(end)
+        ID = (chr, start, end)
+
+        #sys.stdout.write('\r %s %d %d' % ID)
+        #sys.stdout.flush()
+
+        try:
+            value = float(value)
+        except:
+            pass
+            
+        if value == 'NA':
+            if skip_nan:
+                continue
+            else:
+                value = np.NaN
+
+        if by_chr:
+            try:
+                chr_ID_value[chr]
+            except:
+                chr_ID_value[chr] = {}
+            chr_ID_value[chr][ID] = value
+
+        else:
+            ID_value[ID] = value
+
+    if by_chr:
+        return chr_ID_value
+    else:    
+        return ID_value
+    
+
 # read referenec fasta file and get each chromosome length
 def read_genome_size(fname,
                      chr_choices=None):
@@ -459,10 +669,79 @@ def read_profile(fname,
         name_mean_profile[name] = mean_profile
     return name_mean_profile, name_ID_profile
 
+# read profile files in batch
+def read_profile_batch (dinfo_dkey,
+                        data_path='./',
+                        ID_choice=None,
+                        strip_ver=True,
+                        moving_win=None,
+                        average=False,
+                        verbal=True):
+
+    if average:
+        dkey_mprofile = {}
+    else:
+        dkey_geneID_profile = {}
+        
+    for fkey in dinfo_dkey:
+        field_dkey = dinfo_dkey[fkey]
+
+        if not field_dkey:
+            field_choices = None
+        else:
+            field_choices = field_dkey.keys()
+
+        for fname in glob.glob(data_path + '*'):
+            if not re.match(fkey, fname.rsplit('/')[-1]):
+                continue
+
+            if verbal:
+                print "loading %s" % (fname.rsplit('/')[-1])
+
+            if average:
+                field_mprofile = read_profile(fname,
+                                              name_choice=field_choices,
+                                              ID_choice=ID_choice,
+                                              strip_ver=strip_ver,
+                                              moving_win=moving_win)
+            else:
+                field_geneID_profile = read_profile(fname,
+                                                    name_choice=field_choices,
+                                                    ID_choice=ID_choice,
+                                                    strip_ver=strip_ver,
+                                                    moving_win=moving_win)
+
+            if average:
+                for field, mprofile in field_mprofile.items():
+                    try:
+                        dkey = field_dkey[field]
+                    except:
+                        dkey = field
+                    dkey_mprofile[dkey] = mprofile
+            else:
+                for field, geneID_profile in field_geneID_profile.items():
+                    try:
+                        dkey = field_dkey[field]
+                    except:
+                        dkey = field
+                    if dkey not in dkey_geneID_profile:
+                        dkey_geneID_profile[dkey] = {}
+                    dkey_geneID_profile[dkey].update(geneID_profile)
+
+    if verbal:
+        print "Done"
+
+    if average:
+        return dkey_mprofile
+    return dkey_geneID_profile
+
 # read GTF file
 def read_GTF (fname,
-              chr_list=None,
               mode="gene",
+              chr_list=None,
+              gene_names=None,
+              geneIDs=None,
+              merge_exons=True,
               strip_ver=True):
 
     ID_field_values = {}
@@ -471,25 +750,46 @@ def read_GTF (fname,
             continue
         cols = line.strip().split('\t')
         chr, source, feature, start, end, score, strand, frame, attribute = cols[:9]
+
         if not chr.startswith('chr'):
             chr = "chr" + chr
         if chr_list and chr not in chr_list:
             continue
-        if feature not in ["gene", "exon", "start_codon", "stop_codon"]:
+
+        # skip protein coding information (UTR, CDS, Selenocysteine)
+        if feature not in ["gene",
+                           "transcript",
+                           "exon",
+                           "start_codon",
+                           "stop_codon"]:
             continue
+
+        # make zero-based coordinate
         start = int(start) - 1
         end = int(end) - 1
+
+        # parse tags
         attcols = attribute.strip(';').split('; ')
         tag_value = {}
         for item in attcols:
             tag, value = item.strip().split(' ')
             value = value.strip('"')
             tag_value[tag] = value
+
         geneID = tag_value["gene_id"]
+        # strip off version information
         if strip_ver:
             geneID = geneID.split('.')[0]
+
+        if geneIDs and geneID not in geneID:
+            continue
+
         geneType = tag_value["gene_type"]
         geneName = tag_value["gene_name"]
+
+        if gene_names and geneName not in gene_names:
+            continue
+
         if geneID not in ID_field_values:
             ID_field_values[geneID] = {}
         if "chr" not in ID_field_values[geneID]:
@@ -499,7 +799,22 @@ def read_GTF (fname,
         if "geneType" not in ID_field_values[geneID]:
             ID_field_values[geneID]["geneType"] = geneType
         if "geneName" not in ID_field_values[geneID]:
-            ID_field_values[geneID]["geneName"] = geneName            
+            ID_field_values[geneID]["geneName"] = geneName
+
+        # read transcript id if available
+        try:
+            txpID = tag_value["transcript_id"]
+            # strip off version information
+            if strip_ver:
+                txpID = txpID.split('.')[0]
+            if "txps" not in ID_field_values[geneID]:
+                ID_field_values[geneID]["txps"] = {}
+            if txpID not in ID_field_values[geneID]['txps']:
+                ID_field_values[geneID]['txps'][txpID] = {}
+        except:
+            txpID = None
+            pass
+
         if feature == "gene":
             if strand == "+":
                 TSS, TTS = start, end
@@ -507,16 +822,31 @@ def read_GTF (fname,
                 TTS, TSS = start, end
             ID_field_values[geneID]["TSS"] = TSS
             ID_field_values[geneID]["TTS"] = TTS
-        if feature == "exon":
-            interval = [start, end]
+
+        elif feature == "transcript":
+            if strand == "+":
+                TSS, TTS = start, end
+            else:
+                TTS, TSS = start, end
+            ID_field_values[geneID]["txps"][txpID]["TSS"] = TSS
+            ID_field_values[geneID]["txps"][txpID]["TTS"] = TTS
+            
+        elif feature == "exon":
+            # save all exons of all transcripts for each genes
             if "exons" not in ID_field_values[geneID]:
                 ID_field_values[geneID]["exons"] = []
-            ID_field_values[geneID]["exons"].append(interval)
-        if feature == "start_codon":
+            ID_field_values[geneID]["exons"].append((start, end))
+            # save all exons for each transcripts   
+            if "exons" not in ID_field_values[geneID]["txps"][txpID]:
+                ID_field_values[geneID]["txps"][txpID]["exons"] = []
+            ID_field_values[geneID]["txps"][txpID]["exons"].append((start, end))
+            
+        elif feature == "start_codon":
             if strand == "+":
                 CSS = start
             else:
                 CSS = end
+            # take only the earliest CSS for each gene
             if "CSS" not in ID_field_values[geneID]:
                 ID_field_values[geneID]["CSS"] = CSS
             else:
@@ -526,11 +856,22 @@ def read_GTF (fname,
                 else:
                     CSS = max(prev, CSS)
                 ID_field_values[geneID]["CSS"] = CSS
-        if feature == "stop_codon":
+            # save all CSSs for each transcript
+            if "CSS" not in ID_field_values[geneID]["txps"][txpID]:
+                ID_field_values[geneID]["txps"][txpID]["CSS"] = CSS
+            else:
+                prev = ID_field_values[geneID]["txps"][txpID]["CSS"]
+                if type(prev) != list:
+                    ID_field_values[geneID]["txps"][txpID]["CSS"] = [prev, CSS]
+                else:
+                    ID_field_values[geneID]["txps"][txpID]["CSS"].append(CSS)                  
+                
+        elif feature == "stop_codon":
             if strand == "+":
                 CTS = end
             else:
                 CTS = start
+            # take only the latest CTS for each gene
             if "CTS" not in ID_field_values[geneID]:
                 ID_field_values[geneID]["CTS"] = CTS
             else:
@@ -540,19 +881,33 @@ def read_GTF (fname,
                 else:
                     CTS = min(prev, CTS)
                 ID_field_values[geneID]["CTS"] = CTS
-
-    for ID in ID_field_values:
-        try:
-            exons = ID_field_values[ID]["exons"]
-        except:
-            continue
-        new = []
-        for start, end in sorted(exons):
-            if new and new[-1][1] >= start:
-                new[-1][1] = max(new[-1][1], end)
+            # save all CTSs for each transcript
+            if "CTS" not in ID_field_values[geneID]["txps"][txpID]:
+                ID_field_values[geneID]["txps"][txpID]["CTS"] = CTS
             else:
-                new.append([start, end])
-        ID_field_values[ID]["exons"] = new
+                prev = ID_field_values[geneID]["txps"][txpID]["CTS"]
+                if type(prev) != list:
+                    ID_field_values[geneID]["txps"][txpID]["CTS"] = [prev, CTS]
+                else:
+                    ID_field_values[geneID]["txps"][txpID]["CTS"].append(CTS)
+
+    # merge overalpping exons for each genes
+    if merge_exons:
+        for geneID in ID_field_values:
+            exons = sorted(ID_field_values[geneID]["exons"])
+            new_exons = []
+            for exon in exons:
+                st, ed = exon
+                if not new_exons:
+                    new_exons.append((st, ed))
+                    continue
+                prev_st, prev_ed = new_exons.pop()
+                if st <= prev_ed:
+                    new_exons.append((prev_st, max(prev_ed, ed)))
+                else:
+                    new_exons.append((prev_st, prev_ed))
+                    new_exons.append((st, ed))
+            ID_field_values[geneID]["exons"] = new_exons
 
     if mode == "gene":
         return ID_field_values

@@ -187,21 +187,76 @@ def get_kmer_count(seq, klen, both=False):
     return kmer_count
 
 
-def get_fract_dict (ID_total,
-                    ID_count,
+def get_fract_dict (ID_test,
+                    ID_control,
+                    IDs=None,
+                    dummy_addon=0,
                     div_error=np.NaN):
+
+    if IDs == None:
+        IDs = set(ID_test.keys()) | set(ID_control.keys())
+
     ID_fract = {}
-    for ID in ID_total:
-        total = ID_total[ID]
-        if total <= 0:
+    for ID in IDs:
+        try:
+            test = float(ID_test[ID])
+        except:
+            test = 0.0
+        try:
+            control = float(ID_control[ID])
+        except:
+            control = 0.0
+            
+        test += dummy_addon
+        control += dummy_addon
+
+        if control <= 0:
             ID_fract[ID] = div_error
             continue
-        count = ID_count[ID]
-        fract = float(count) / (total)
+
+        fract = test / control
         ID_fract[ID] = fract
     return ID_fract
 
+def get_fract_profile (ID_tests,
+                       ID_controls,
+                       IDs=None,
+                       dummy_addon=0,
+                       div_error=np.NaN):
 
+    if IDs == None:
+        IDs = set(ID_tests.keys()) | set(ID_controls.keys())
+        IDs = sorted(list(IDs))
+        
+    data_len = len(ID_tests[IDs[0]])
+
+    ID_fracts = {}
+    for ID in IDs:
+        fracts = []
+        for i in range(data_len):
+            try:
+                test = ID_tests[ID][i]
+            except:
+                test = 0.0
+            try:
+                control = ID_controls[ID][i]
+            except:
+                control = 0.0
+
+            test += dummy_addon
+            control += dummy_addon
+
+            if control <= 0:
+                fracts.append(div_error)
+                continue
+
+            fract = test / control
+            fracts.append(fract)
+
+        ID_fracts[ID] = fracts
+    return ID_fracts
+    
+                       
 def stat_Markov(seq_list, NCPlen, order):
     ntdic = {}
     for nt in all_kmer(order+1, 'ATCG'):
@@ -435,7 +490,7 @@ def test(x):
     return output
 
 
-def quantile (ID_score, num, IDs=None, frac=None):
+def quantile_dict (ID_score, num, IDs=None, frac=None):
     def value_cmp(a, b):
         if a[1] <= b[1]:
             return -1
@@ -517,6 +572,14 @@ def NN_interpolate (raw_data_list):
             data_list[mid:j+1] = [data_list[i]]*(j-mid+1)
         i = j
     return data_list
+
+
+def NN_interpolate_dict (ID_data):
+    ID_newdata = {}
+    for ID, data in ID_data.items():
+        ID_newdata[ID] = NN_interpolate(data)
+    return ID_newdata
+
 
 def slow_moving_average (signal, win):
     assert win % 2 != 0
@@ -754,6 +817,7 @@ def rbin_data_mean (bin_size,
                     bin_step,
                     ID_loc,
                     ID_value,
+                    binID_interval=None,
                     hash_func=None,
                     max_pos=None,
                     min_sample_size=1,
@@ -765,6 +829,7 @@ def rbin_data_mean (bin_size,
         Int_dict = Interval_dict.bin_hash(bin_size,
                                           bin_size,
                                           max_pos=max_pos,
+                                          ID_interval=binID_interval,
                                           silent=silent)
     else:
         Int_dict = hash_func
@@ -788,9 +853,13 @@ def rbin_data_mean (bin_size,
     binID_sum = Int_dict_sum.get()
     binID_count = Int_dict_count.get()
 
+    if binID_interval != None:
+        binIDs = binID_interval.keys()
+    else:
+        binIDs = range(0, max_pos / bin_step + 1)
+
     binID_mean = {}
-    binID_st, binID_ed = 0, max_pos / bin_step
-    for binID in range(binID_st, binID_ed+1):
+    for binID in binIDs:
         try:
             total = binID_sum[binID]
             count = binID_count[binID]

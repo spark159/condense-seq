@@ -33,18 +33,32 @@ def density_scatter (X,
                      bins=20,
                      density=False,
                      sort=True,
-                     cbar=False,
+                     cbar=True,
                      cmap=None,
-                     ax=None,
                      s=3,
+                     xlabel=None,
+                     ylabel=None,
+                     title=None,
+                     fig_width=4,
+                     fig_height=3,
+                     ax=None,
+                     save=False,
+                     note='',
                      **kwargs):
     
-    if ax == None :
-        fig , ax = plt.subplots()
+    if ax == None:
+        fig, ax = plt.subplots(nrows=1,
+                               ncols=1,
+                               figsize=(fig_width, fig_height))
+        make_fig = True
+    else:
+        make_fig = False
 
-    # filter out data outside of limits
+    # filter out data nan or outside of limits
     newX, newY = [], []
     for x, y in zip(X, Y):
+        if np.isnan(x) or np.isnan(y):
+            continue
         if xlim[0] != None and x < xlim[0]:
             continue
         if xlim[1] != None and x > xlim[1]:
@@ -102,16 +116,34 @@ def density_scatter (X,
                      c=Z,
                      s=s,
                      cmap=cmap,
-                     **kwargs )
+                     **kwarg)
 
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
+
+    if xlabel:
+        ax.set_xlabel(xlabel)
+    if ylabel:
+        ax.set_ylabel(ylabel)
+    if title:
+        ax.set_title(title)
     
     if cbar:
         cbar = plt.colorbar(img)
         cbar.ax.tick_params(labelsize=5)
     #cbar = plt.colorbar(cm.ScalarMappable(norm = norm), ax=img)
     #cbar.ax.set_ylabel('Density')
+
+    if make_fig:
+        if save:
+            plt.savefig("_".join(['DensityScatter', note]) + ".png",
+                        format='png',
+                        dpi=300,
+                        bbox_inches='tight')
+        else:
+            plt.tight_layout()
+            plt.show()    
+        plt.close()
 
     return ax
 
@@ -123,7 +155,9 @@ def plot_corr_matrix (id_data,
                       ylim=[None,None],
                       pair_corr=None,
                       corr='Spearman',
+                      fig_scale=1,
                       cell_size=1,
+                      label_color='black',
                       text_color='black',
                       scatter_style='dot',
                       ms=1,
@@ -152,21 +186,21 @@ def plot_corr_matrix (id_data,
     data_num = len(ids)
 
     # set figure and subplot sizes
-    cell_width = cell_size  # subplot axes width in inch 
-    cell_height = cell_size # subplot axes height in inch
+    cell_width = cell_size * fig_scale  # subplot axes width in inch 
+    cell_height = cell_size * fig_scale # subplot axes height in inch
 
-    left  = 0.1    # left space of the figure in inch
-    right = 0.1    # right space of the figure in inch
-    bottom = 0.1   # bottom space of the figure in inch
-    top = 0.1      # top space of the figure in inch
-    wspace = 0.2   # width space between subplots in inch
-    hspace = 0.2   # height space between subplots in inch
+    left  = 0.1 * fig_scale    # left space of the figure in inch
+    right = 0.1 * fig_scale    # right space of the figure in inch
+    bottom = 0.1 * fig_scale   # bottom space of the figure in inch
+    top = 0.1 * fig_scale      # top space of the figure in inch
+    wspace = 0.2 * fig_scale   # width space between subplots in inch
+    hspace = 0.2 * fig_scale   # height space between subplots in inch
 
     if cbar:
-        right += wspace + 0.3*cell_size # give more space for adding color bar
+        right += wspace + 0.3 * cell_size * fig_scale # give more space for adding color bar
 
     if title != None:
-        top += hspace + 0.3*cell_size # give more space for adding title
+        top += hspace + 0.3 * cell_size * fig_scale # give more space for adding title
 
     nrows = data_num # row number
     ncols = data_num # column number
@@ -237,12 +271,10 @@ def plot_corr_matrix (id_data,
 
             elif i == j:
                 assert label1 == label2
-                matrix = np.zeros((10, 10))
-                matrix[:] = np.nan
-                axes[i,j].imshow(matrix, origin='lower')
-                axes[i,j].text(5,
-                               5,
+                axes[i,j].text(4.5,
+                               4.5,
                                label1,
+                               color=label_color,
                                ha="center",
                                va="center",
                                fontsize=10,
@@ -268,8 +300,8 @@ def plot_corr_matrix (id_data,
                                        vmin=vmin,
                                        vmax=vmax,
                                        origin='lower')
-                axes[i,j].text(5,
-                               5,
+                axes[i,j].text(4.5,
+                               4.5,
                                str(round(value,2)),
                                ha="center",
                                va="center",
@@ -312,7 +344,7 @@ def plot_corr_matrix (id_data,
         cax.set_ylabel(cbar_label,
                        rotation=-90,
                        va="bottom",
-                       fontsize=12)
+                       fontsize=10)
 
     if title !=None:
 
@@ -1333,7 +1365,7 @@ def plot_dendrogram(Z,
                     idx_name,
                     node_color=None,
                     name_color=None,
-                    fig_wdith=8,
+                    fig_width=8,
                     fig_height=8,
                     ax=None,
                     save=False,
@@ -1436,7 +1468,7 @@ def plot_GSEA (gene_value,
 
                 if j == 1:
                     # put gene-set name
-                    axes[i][j].annotate(gsname,
+                    axes[i][j].annotate(label,
                                         (0,0),
                                         ha='left',
                                         va='center',
@@ -1947,6 +1979,82 @@ def plot_polar (phases,
     if make_fig:
         if save:
             plt.savefig("polar_%s.svg" % (note),
+                        format='svg',
+                        bbox_inches='tight')
+        else:
+            plt.tight_layout()
+            plt.show()    
+        plt.close()
+
+    return ax
+
+def plot_rlen_dist (rlen_counts,
+                    colors=None,
+                    labels=None,
+                    alphas=None,
+                    fig_width=3,
+                    fig_height=2,
+                    xlim=[None, None],
+                    xticks=range(0, 500, 50),
+                    xlabel="Read length (bp)",
+                    ylabel="Read counts",
+                    title="Read length distribution",
+                    legend_loc='best',
+                    save=False,
+                    note=''):
+
+    if ax == None:
+        fig, ax = plt.subplots(nrows=1,
+                               ncols=1,
+                               figsize=(fig_width, fig_height))
+        make_fig = True
+    else:
+        make_fig = False
+
+    for i in range(len(rlen_counts)):
+        rlen_count = rlen_counts[i]
+        X = sorted(rlen_count.keys())
+        Y = [rlen_count[x] for x in X]
+
+        try:
+            color = colors[i]
+        except:
+            color = 'black'
+
+        try:
+            label = labels[i]
+        except:
+            label = None
+
+        try:
+            alpha = alphas[i]
+        except:
+            alpha = 1
+        
+        ax.plot(X,
+                Y,
+                color=color,
+                label=label,
+                alpha=alpha)
+
+    ax.set_xlim(xlim)
+    ax.set_grid(True)
+    
+    ax.set_xticks(xticks)
+    ax.set_xticklabels([str(xtick) for xtick in xticks])
+    
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+
+    if title:
+        ax.set_title(title)
+
+    if labels:
+        ax.legend(loc=legend_loc)
+
+    if make_fig:
+        if save:
+            plt.savefig("_".join(['rlen', note]) + ".svg",
                         format='svg',
                         bbox_inches='tight')
         else:
