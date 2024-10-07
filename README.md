@@ -7,7 +7,7 @@ Condense-seq is a high-throughput technique designed to directly measure the bio
 ![Screenshot 2024-10-07 at 10 00 00 AM](https://github.com/user-attachments/assets/997795d9-6beb-4380-a118-38e8be7e7bb8)
 
 
-## Analysis Workflow
+## Analysis workflow
 
 ```mermaid
 graph LR;
