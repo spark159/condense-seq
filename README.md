@@ -1,7 +1,8 @@
-# Condense-seq analysis
+# Condense-seq
 
-Github storage of custom python scripts used in the paper
-(https://www.biorxiv.org/content/10.1101/2023.12.08.570828v1)
+## Overview
+
+Condense-seq is a high-throughput technique designed to directly measure the biophysical properties of native nucleosomes at a genome-wide scale with single-nucleosome resolution [1]. In this method, native mononucleosomes are purified from cells and condensed in vitro using various condensing agents, including polyamines, polycations, and heterochromatin proteins. By sequencing the supernatant phase of the condensate and comparing it to the input, the condensation propensity, or “condensability,” of individual genomic nucleosomes can be determined. Our findings demonstrate that native nucleosome condensability illuminates the biophysical principles driving genomic organization [1].
 
 ## Workflow
 
@@ -206,3 +207,6 @@ Compute condensation point (C 1/2) by fitting logistic curve to molecular number
 
 </details>
 
+## Publication
+
+[1] https://www.biorxiv.org/content/10.1101/2023.12.08.570828v1
