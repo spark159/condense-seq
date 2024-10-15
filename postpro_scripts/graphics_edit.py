@@ -116,7 +116,7 @@ def density_scatter (X,
                      c=Z,
                      s=s,
                      cmap=cmap,
-                     **kwarg)
+                     **kwargs)
 
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
@@ -245,9 +245,19 @@ def plot_corr_matrix (id_data,
                 elif scatter_style == 'density':
                     density_scatter(data1,
                                     data2,
+                                    cbar=False,
                                     xlim=xlim,
                                     ylim=ylim,
                                     ax=axes[i,j])
+
+                #wspace = 0.1*(max(X) - min(X))
+                #hspace = 0.1*(max(Y) - min(Y))
+                #axes[i,j].set_xticks([min(data1), max(data1)])
+                #axes[i,j].set_xticklabels([str(round(min(data1),1)),
+                #                           str(round(max(data1),1))], rotation=45)
+                #axes[i,j].set_yticks([min(data2), max(data2)])
+                #axes[i,j].set_yticklabels([str(round(min(data2),1)),
+                #                           str(round(max(data2),1))])
 
                 axes[i,j].set_xlim(xlim)
                 axes[i,j].set_ylim(ylim)
@@ -287,9 +297,13 @@ def plot_corr_matrix (id_data,
 
                 if pair_corr == None:
                     if corr == 'Spearman':
-                        value = stats.spearmanr(data1, data2)[0]
+                        value = stats.spearmanr(data1,
+                                                data2,
+                                                nan_policy='omit')[0]
                     elif corr == 'Pearson':
-                        value = stats.pearsonr(data1, data2)[0]
+                        value = stats.pearsonr(data1,
+                                               data2,
+                                               nan_policy='omit')[0]
                 else:
                     value = pair_corr[(id1, id2)]
 
@@ -464,6 +478,7 @@ def plot_genome_wide (side_names,
                       Gtick_labels=[],
                       fig_width=15,
                       fig_height=4,
+                      spine_option=None,
                       height_ratios=[8,1],
                       hspace=0.65,
                       axes=None,
@@ -577,6 +592,13 @@ def plot_genome_wide (side_names,
         ax.set_ylim(ylim)
         ax.set_yscale(yscale, basey=basey)
 
+        for spine in ['top', 'bottom', 'left', 'right']:
+            try:
+                option = spine_option[spine]
+            except:
+                continue
+            ax.spines[spine].set_visible(option)
+
     if shade_wins:
         for win in shade_wins:
             st, ed = win
@@ -611,28 +633,33 @@ def plot_genome_wide (side_names,
             plt.tight_layout()
             plt.show()    
         plt.close()
-        
-    return axes
+
+    if Gtype_ideogram:
+        return side_ax, axes[1]
+    
+    return side_ax
 
 # plot data in genome-wide with chromosome ideogram (mulitple)
 def plot_genome_wide_multiple (side_names_list,
                                name_sig,
-                               name_color,
-                               name_alpha,
-                               name_lw,
-                               name_linestyle,
-                               name_label,
-                               side_ylabel_list,
-                               side_ycolor_list,
-                               side_yim_list,
-                               side_yscale_list,
-                               xtick_locs,
-                               xtick_labels,
+                               name_color=None,
+                               name_alpha=None,
+                               name_lw=None,
+                               name_linestyle=None,
+                               name_label=None,
+                               side_ylabel_list=None,
+                               side_ycolor_list=None,
+                               side_ylim_list=None,
+                               side_yscale_list=None,
+                               side_basey_list=None,
+                               xtick_locs=[],
+                               xtick_labels=[],
                                Gtype_ideogram=None,
                                Gtick_locs=None,
                                Gtick_labels=None,
                                fig_width=None,
                                fig_height=None,
+                               spine_option={},
                                xlabel="Position (Mb)",
                                legend_loc='best',
                                shade_wins=None,
@@ -660,14 +687,16 @@ def plot_genome_wide_multiple (side_names_list,
         for ideogram in Gtype_ideogram.values():
             assert len(ideogram) == xaxis_len
 
+    if fig_width == None:
+        fig_width = round(6.4*float(xaxis_len)/10000, 1)
 
-    fig_width = round(6.4*float(len(xaxis_len))/10000, 1)
-    fig_height = 1.4*len(side_name_list)
+    if fig_height == None:
+        fig_height = 1.4*len(side_names_list)
     
-    nrows = len(side_name_list)
+    nrows = len(side_names_list)
     ncols = 1
     
-    height_ratios = [7]*len(side_name_list)
+    height_ratios = [7]*len(side_names_list)
 
     if Gtype_ideogram:
         fig_height +=1
@@ -684,36 +713,53 @@ def plot_genome_wide_multiple (side_names_list,
 
     for k in range(len(side_names_list)):
         side_names = side_names_list[k]
-        side_ylabel = side_ylabel_list[k]
-        side_ycolor = side_ycolor_list[k]
-        side_ylim = side_ylim_list[k]
-        side_yscale = side_yscale_list[k]
 
-        ax_k = axes[k]
-        plot_genome_wide (side_names,
-                          name_sig,
-                          name_color,
-                          name_alpha,
-                          name_lw,
-                          name_linestyle,
-                          name_label,
-                          side_ylabel,
-                          side_ycolor,
-                          side_yim,
-                          side_yscale,
-                          xtick_locs,
-                          xtick_labels,
-                          axes=[ax_k])[0]
-        
-        ax_k.spines['top'].set_visible(False)
-        ax_k.spines['bottom'].set_visible(False)
-        ax_k.spines['left'].set_visible(False)
-        ax_k.spines['right'].set_visible(False)
-        ax_k.tick_params(top='off',
-                         bottom='off',
-                         left='on',
-                         right='on',
-                         labelbottom='off')
+        try:
+            side_ylabel = side_ylabel_list[k]
+        except:
+            side_ylabel = None
+        try:
+            side_ycolor = side_ycolor_list[k]
+        except:
+            side_ycolor = None
+        try:
+            side_ylim = side_ylim_list[k]
+        except:
+            side_ylim = None
+        try:
+            side_yscale = side_yscale_list[k]
+        except:
+            side_yscale = None
+        try:
+            side_basey = side_basey_list[k]
+        except:
+            side_basey = None
+
+        side_ax = plot_genome_wide (side_names,
+                                    name_sig,
+                                    name_color=name_color,
+                                    name_alpha=name_alpha,
+                                    name_lw=name_lw,
+                                    name_linestyle=name_linestyle,
+                                    name_label=name_label,
+                                    side_ylabel=side_ylabel,
+                                    side_ycolor=side_ycolor,
+                                    side_ylim=side_ylim,
+                                    side_yscale=side_yscale,
+                                    side_basey=side_basey,
+                                    xtick_locs=xtick_locs,
+                                    xtick_labels=xtick_labels,
+                                    xlabel=xlabel,
+                                    legend_loc=legend_loc,
+                                    shade_wins=shade_wins,
+                                    spine_option=spine_option,
+                                    axes=[axes[k]])
+
+        axes[k].tick_params(top='off',
+                            bottom='off',
+                            left='on',
+                            right='on',
+                            labelbottom='off')
 
     if Gtype_ideogram:
         plot_ideogram (Gtype_ideogram,
@@ -1733,7 +1779,7 @@ def plot_ATGC_periodicity (AT_sig,
                            save=False,
                            note=''):
 
-    if not ax:
+    if not axes:
         fig, ax = plt.subplots(nrows=1,
                                ncols=1,
                                figsize=(fig_width, fig_height))
@@ -1793,7 +1839,7 @@ def plot_ATGC_periodicity_multiple (AT_sigs,
                                     save=False,
                                     note=''):
 
-    if not ax:
+    if not axes:
         fig, ax = plt.subplots(nrows=1,
                                ncols=1,
                                figsize=(fig_width, fig_height))
@@ -1885,7 +1931,8 @@ def plot_polar (phases,
     if not ax:
         fig, ax = plt.subplots(nrows=1,
                                ncols=1,
-                               figsize=(fig_width, fig_height))
+                               figsize=(fig_width, fig_height),
+                               subplot_kw={'projection': 'polar'})
         make_fig = True
     else:
         make_fig = False
@@ -1946,25 +1993,25 @@ def plot_polar (phases,
         text_color = text_colors[i]
         text_size = text_sizes[i]
         
-        plt.polar(phase,
-                  amplt,
-                  '.',
-                  markersize=marker_size,
-                  color=color,
-                  alpha=alpha,
-                  label=label)
+        ax.plot(phase,
+                amplt,
+                '.',
+                markersize=marker_size,
+                color=color,
+                alpha=alpha,
+                label=label)
 
         if text != None:
-            plt.text(phase,
-                     amplt,
-                     text,
-                     ha=text_ha,
-                     va=text_va,
-                     color=text_color,
-                     size=text_size)
+            ax.text(phase,
+                    amplt,
+                    text,
+                    ha=text_ha,
+                    va=text_va,
+                    color=text_color,
+                    size=text_size)
 
     ax.set_rlabel_position(rlabel_pos)
-    ax.set_rticks(rtick_list) 
+    ax.set_rticks(rticks) 
     ax.set_yticklabels(rtick_labels, fontsize=5)
     ax.tick_params(axis='both', which='major', labelsize=5, pad=-5)
     ax.tick_params(axis='both', which='minor', labelsize=5, pad=-5)
@@ -2055,6 +2102,100 @@ def plot_rlen_dist (rlen_counts,
     if make_fig:
         if save:
             plt.savefig("_".join(['rlen', note]) + ".svg",
+                        format='svg',
+                        bbox_inches='tight')
+        else:
+            plt.tight_layout()
+            plt.show()    
+        plt.close()
+
+    return ax
+
+
+# plot NMF basis matrix
+def plot_NMF_basis_matrix (basis_matrix,
+                           basis_idxs,
+                           features,
+                           feature_cmaps=None,
+                           xlabel='Property class',
+                           title=None,
+                           fig_width=5,
+                           fig_height=6,
+                           ax=None,
+                           save=False,
+                           note=''):
+
+    if not ax:
+        fig, ax = plt.subplots(nrows=1,
+                               ncols=1,
+                               figsize=(fig_width, fig_height))
+        make_fig = True
+    else:
+        make_fig = False
+
+    assert len(basis_idxs) == len(basis_matrix)
+    assert len(features) == len(basis_matrix[0])
+
+    if not feature_cmaps:
+        feature_cmaps = ['Greys'] * len(features)
+        
+    elif type(feature_cmaps) == list:
+        if len(feature_cmaps) < len(features):
+            repeat = float(len(features)) / len(feature_cmaps)
+            repeat = int(math.ceil(repeat))
+            feature_cmaps = feature_cmaps * repeat
+            feature_cmaps = feature_cmaps[:len(features)]
+
+    elif type(feature_cmaps) == str:
+        feature_cmaps = [feature_cmaps] * len(features)
+        
+    imgs = []
+    for i in range(len(features)):
+        img = np.zeros((len(features), len(basis_idxs)))
+        img[:] = np.nan
+        for j in range(len(basis_idxs)):
+            idx = basis_idxs[j]
+            img[i][j] = basis_matrix[idx][i]
+        imgs.append(img)
+
+    for img, cmap in zip(imgs, feature_cmaps):
+        plt.imshow(img, cmap=cmap, aspect='auto')
+
+    for i in range(len(basis_idxs)):
+        idx = basis_idxs[i]
+        for j in range(len(features)):
+            mean = np.mean(basis_matrix[:,j])
+            std = np.std(basis_matrix[:,j])
+            value = basis_matrix[idx][j]
+            if value > mean + std:
+                color = 'white'
+            else:
+                color = 'black'
+            ax.text(i,
+                    j,
+                    str(round(value, 2)),
+                    ha="center",
+                    va="center",
+                    fontsize=8,
+                    color=color)
+
+    ax.set_xticks(range(len(basis_idxs)))
+    ax.set_xticklabels(range(1, len(basis_idxs)+1),
+                       fontsize=8)
+
+    ax.set_yticks(range(len(features)))
+    ax.set_yticklabels(features,
+                       fontsize=8)
+
+    if xlabel:
+        ax.set_xlabel(xlabel, fontsize=10)
+
+    if title:
+        ax.set_title(title, fontsize=12)
+
+    if make_fig:
+        if save:
+            plt.savefig("NMF_basis_matrix_%s.svg" % (note),
                         format='svg',
                         bbox_inches='tight')
         else:

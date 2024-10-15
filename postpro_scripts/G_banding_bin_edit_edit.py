@@ -431,7 +431,7 @@ for chr_choice in chr_choices:
     # read GTF file
     geneID_field_values, field_geneID_values = load_file.read_GTF (path+"ENCFF159KBI.gtf", mode="both", chr_list=[chr_choice]) # human
 
-    #geneID_field_values, field_geneID_values = load_file.read_GTF (path+"gencodeM21pri-UCSC-tRNAs-ERCC-phiX.gtf", mode="both", chr_list=[chr_choice]) # mouse
+    #geneID_field_values, field_geneID_values = load_file.read_GTF (path+"gencodeM21pri-UCSC-tRNAs-ERCC-pohiX.gtf", mode="both", chr_list=[chr_choice]) # mouse
     
     geneID_pos = {}
     for geneID in geneID_field_values:

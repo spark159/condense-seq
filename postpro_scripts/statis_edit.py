@@ -402,18 +402,24 @@ def standardize (data_list,
     return [float(data - mean)/std for data in data_list]
 
 def standardize_dict (key_value,
+                      keys=None,
                       by_mean=True,
                       by_std=True):
+    if keys == None:
+        keys = key_value.keys()
+        
     if by_mean:
-        mean = np.nanmean(key_value.values())
+        mean = np.nanmean([key_value[key] for key in keys])
     else:
         mean = 0.0
     if by_std:
-        std = np.std(key_value.values())
+        std = np.nanstd([key_value[key] for key in keys])
     else:
-        mean= 1.0
+        std = 1.0
+        
     key_zscore = {}
-    for key, value in key_value.items():
+    for key in keys:
+        value = key_value[key]
         zscore = float(value - mean)/std
         key_zscore[key] = zscore
     return key_zscore
@@ -448,6 +454,7 @@ def get_spearman_corr (X, Y):
     if len(X) < 2:
         return np.nan
     return scipy.stats.spearmanr(X, Y)[0]
+
 
 def acf(x):
     #xp = ifftshift((x - np.average(x))/np.std(x))

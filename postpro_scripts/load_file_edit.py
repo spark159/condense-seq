@@ -34,6 +34,26 @@ def gzopen (fname):
         reading_file = open(fname, 'r')
     return reading_file
 
+# read titration file
+def read_titration (fname):
+    tnum_conc = {}
+    tnum_frac = {}
+    for line in gzopen(fname):
+        line = line.strip()
+        if not line:
+            continue
+        cols = line.split('\t')
+        conc, frac, tnum = cols[0], cols[-2], cols[-1]
+        try:
+            tnum = int(tnum)
+        except:
+            continue
+        conc = float(conc)
+        frac = float(frac)
+        tnum_conc[tnum] = conc
+        tnum_frac[tnum] = frac
+    return tnum_conc, tnum_frac
+
 # read rlen file
 def read_rlen_file (fname,
                     chr_list=None):
