@@ -219,6 +219,9 @@ Fit the logistic curves to molecular number changes over titrations for each gen
 ## IPython notebook
 All further analysis and graph generation are documented in IPython notebooks, which can be found in the *ipython_notebooks* folder
 
+## Data deposition
+All raw FASTQ files and processed data have been deposited in NCBI GEO under accession number GSE252941.
+
 ## Publication
 
 [1] https://www.biorxiv.org/content/10.1101/2023.12.08.570828v1
