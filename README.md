@@ -8,6 +8,7 @@ Condense-seq is a high-throughput technique designed to directly measure the bio
 
 
 ## Analysis workflow
+This is a summary of the workflow for Condense-seq analysis, from the FASTQ file processing to condensability score computation.
 
 ```mermaid
 graph LR;
@@ -29,7 +30,7 @@ graph LR;
         lendist_script("lendist.py"):::script
         lendist_file("ReadlengthFile.txt"):::file
         occ_script("occupancy.py"):::script
-        occ_file("NCPoccupancyFile_occ.cn"):::file
+        occ_file("NCPoccupancyFile_occ.gtab"):::file
         motif_script("motif.py"):::script
         motif_file("MotifFile_motif.txt"):::file
 
@@ -43,7 +44,7 @@ graph LR;
         direction LR
 
         bincount_script("bincount.py"):::script
-        bincount_file("BincountFile_bin.cn"):::file
+        bincount_file("BincountFile_bin.gtab"):::file
 
         bincount_script --> bincount_file
 
@@ -53,12 +54,12 @@ graph LR;
         direction LR
 
         NCPpeak_script("NCPpeak.py"):::script    
-        NCPpeak_file("NCPpeakFile_peak.cn"):::file
+        NCPpeak_file("NCPpeakFile_peak.gtab"):::file
 
         NCPpeak_script --> NCPpeak_file
 
         NCPcov_script("NCPcov.py"):::script
-        NCPcov_file("NCPcoverageFile_Ncov.cn"):::file
+        NCPcov_file("NCPcoverageFile_Ncov.gtab"):::file
         
         NCPcov_script --> NCPcov_file
 
@@ -67,10 +68,10 @@ graph LR;
     subgraph Sliding window analysis
         direction LR
 
-        binsig_script("Binsig.py"):::script
-        binsig_file("BinnedSignalFile_Bsig.cn"):::file
+        bindata_script("Bindata.py"):::script
+        bindata_file("BinnedDataFile_Bdata.gtab"):::file
 
-        binsig_script --> binsig_file
+        bindata_script --> bindata_file
 
     end
 
@@ -79,7 +80,7 @@ graph LR;
     NCPpeak_file --- motif_script
 
     coverage_script("coverage.py"):::script
-    coverage_file("CoverageFile_cov.cn"):::file
+    coverage_file("CoverageFile_cov.gtab"):::file
 
     AlignedReads --- coverage_script
     coverage_script --> coverage_file
@@ -87,33 +88,39 @@ graph LR;
     AlignedReads --- bincount_script
     AlignedReads --- NCPpeak_script
     NCPpeak_file & coverage_file --- NCPcov_script
-    coverage_file --- binsig_script
+    coverage_file --- bindata_script
 
     NCPnum_script("NCPnum.py"):::script
-    NCPnum_file("NCPnumberFile_num.cn"):::file
+    NCPnum_file("NCPnumberFile_num.gtab"):::file
 
     bincount_file --- NCPnum_script    
     NCPcov_file --- NCPnum_script
-    binsig_file --- NCPnum_script
+    bindata_file --- NCPnum_script
     titr_file --- NCPnum_script
 
     NCPnum_script --> NCPnum_file
 
     NCPscore_script("NCPscore.py"):::script
-    NCPscore_file("ScoreFile_score.cn"):::file
+    NCPscore_file("ScoreFile_score.gtab"):::file
 
-    NCPnum_file --- NCPscore_script
+    bincount_file --- NCPscore_script
+    NCPcov_file --- NCPscore_script
+    bindata_file --- NCPscore_script
+    titr_file --- NCPscore_script
+    
     NCPscore_script --> NCPscore_file
 
-    Chalf_script("get_Chalf.py"):::script
-    Chalf_file("ChalfFiles_Chalf.cn"):::file
+    logistic_script("logistic_fit.py"):::script
+    logistic_file("LogisticfitFile_4PL.gtab"):::file
 
-    NCPnum_file --- Chalf_script
-    Chalf_script --> Chalf_file
+    NCPnum_file --- logistic_script
+    logistic_script --> logistic_file
 
 ```
 
 ## Usage
+The following is a list of custom Python scripts used for Condense-seq analysis, located in the *prepro_scripts* folder. Detailed usage instructions and execution examples are provided below. Many output files are formatted in the custom **gtab** (genomic table) format, a simple tab-delimited file with either the structure: Chromosome \<tab> Position \<tab> Value or Chromosome \<tab> Start \<tab> End \<tab> Value. (Note: Genomic coordinates are 0-based and half-open.)
+
 <details>
 <summary> bincount.py </summary>
 
@@ -124,6 +131,7 @@ Binning reference genome and get aligned read counts for each bin
   ```
 
 </details>
+
 
 <details>
 <summary> coverage.py </summary>
@@ -136,7 +144,6 @@ Reading SAM/BAM files to get read coverage along reference genome.
 
 </details>
 
-</details>
 
 <details>
 <summary> NCPpeak.py </summary>
@@ -149,7 +156,6 @@ Peak calling for each nucleosome positions
 
 </details>
 
-</details>
 
 <details>
 <summary> NCPcov.py </summary>
@@ -157,58 +163,61 @@ Peak calling for each nucleosome positions
 Compute coverage area under each nucleosome peaks
 
   ```
-  python NCPcov.py NCPpeakFile_peak.cn CoverageFile_cov.cn --chr chromosome -o out_fname
+  python NCPcov.py NCPpeakFile_peak.gtab CoverageFile_cov.gtab --chr chromosome -o out_fname
   ```
 
 </details>
 
-</details>
 
 <details>
-<summary> Binsig.py </summary>
+<summary> Bindata.py </summary>
 
 Compute coverage area for each sliding window along genome
 
   ```
-  python Binsig.py CoverageFile_cov.cn -x ref_genome --Bsize bin_size --Bstep Bin_step --chr chromosome -o out_fname
+  python Bindata.py CoverageFile_cov.gtab -x ref_genome --Bsize bin_size --Bstep Bin_step --chr chromosome -o out_fname
   ```
 
 </details>
+
 
 <details>
 <summary> NCPnum.py </summary>
 
-Using titration file, estimate molecular number of nucleosomes for each bin or peak
+Using reads coverage/counts and titration file, estimate molecular number of nucleosomes for each bin or peak
 
   ```
-  python NCPnum.py BincountFile_bin.cn | NCPcoverageFile_Ncov.cn | BinnedSigFile_Bsig.cn -t TitrationFile.csv --tnum TitrationNumber --chr chromosome -o out_fname
+  python NCPnum.py BincountFile_bin.gtab | NCPcoverageFile_Ncov.gtab | BinnedDataFile_Bdata.gtab -t TitrationFile.csv --tnum TitrationNumber --chr chromosome -o out_fname
   ```
 
 </details>
 
-</details>
 
 <details>
 <summary> NCPscore.py </summary>
 
-Get condensability score, which is a negative log of molecular number ratio over input, for each genomic bin or peaks
+Compute the condensability score, which is a negative log of molecular number ratio over input, for each genomic bin or peaks
 
   ```
-  python NCPscore.py NCPnumFile_num.cn --inpu NCPnumFile_num.cn -o out_fname
+  python NCPscore.py BincountFile_bin.gtab | NCPcoverageFile_Ncov.gtab | BinnedDataFile_Bdata.gtab -t TitrationFile.csv --tnum TitrationNumber --chr chromosome -o out_fname
   ```
 
 </details>
+
 
 <details>
-<summary> get_Chalf.py </summary>
+<summary> logistic_fit.py </summary>
 
-Compute condensation point (C 1/2) by fitting logistic curve to molecular number changes over titrations
+Fit the logistic curves to molecular number changes over titrations for each genomic bins
 
   ```
-  python get_Chalf.py NCPnumFile_num.cn
+  python logistic_fit.py NCPnumFile_num.gtab -t TitrationFile.csv --tnum TitrationNumber -m FittingModel -o out_fname
   ```
 
 </details>
+
+## IPython notebook
+All further analysis and graph generation are documented in IPython notebooks, which can be found in the *ipython_notebooks* folder
 
 ## Publication
 
