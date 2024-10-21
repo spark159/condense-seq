@@ -4,6 +4,7 @@ import math
 import copy
 import matplotlib.pyplot as plt
 from sklearn import linear_model
+from scipy import stats
 from scipy import signal
 from scipy.fftpack import fft, ifft, ifftshift, fftshift
 import sklearn.cluster
@@ -1016,3 +1017,48 @@ def FFT (sig, clip=10):
     shifts = np.asarray([(phases[k-1] * N) / (2*np.pi*k) for k in range(1, N/2)]) /np.pi # unit of pi
     return periods, amplts, phases
 
+
+### two independent sample t-test
+def get_two_sample_t (data1, data2):
+    assert len(data1) == len(data2)
+    assert len(data1) > 1
+    mean1 = np.mean(data1)
+    mean2 = np.mean(data2)
+    std1 = np.std(data1)
+    std2 = np.std(data2)
+    t = float(mean1 - mean2)/np.sqrt((std1**2 + std2**2)/len(data1))
+    return t
+
+### compute pair-wise p-value for comparing two independent samples
+def get_pvalue_pair (key_values,
+                     keys=None,
+                     testing='ttest'):
+
+    if keys == None:
+        keys = key_values.keys()
+
+    pair_pvalue = {}
+    for i in range(len(keys)-1):
+        for j in range(i+1, len(keys)):
+            key1, key2 = keys[i], keys[j]
+            values1, values2 = key_values[key1], key_values[key2]
+
+            if testing == 'ttest':
+                pvalue = stats.ttest_ind(values1,
+                                         values2,
+                                         equal_var=False)[1]
+            elif testing == 'mannwhitneyu':
+                pvalue = stats.mannwhitneyu(values1, values2)[1]
+            elif testing == 'kruskal':
+                pvalue = stats.kruskal(values1, values2)[1]
+
+
+            if key1 not in pair_pvalue:
+                pair_pvalue[key1] = {}
+            pair_pvalue[key1][key2] = pvalue
+
+            if key2 not in pair_pvalue:
+                pair_pvalue[key2] = {}
+            pair_pvalue[key2][key1] = pvalue
+            
+    return pair_pvalue

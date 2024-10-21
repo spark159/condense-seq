@@ -2204,3 +2204,92 @@ def plot_NMF_basis_matrix (basis_matrix,
         plt.close()
 
     return ax
+
+
+# plot p-value matrix for pair-wise pvalue data
+def plot_pvalue_matrix (pair_pvalue,
+                        keys=None,
+                        key_label=None,
+                        take_neglog10=False,
+                        dummy=0.0,
+                        rotation=45,
+                        cmap='viridis',
+                        vmin=None,
+                        vmax=None,
+                        cbar=True,
+                        cbar_label=None,
+                        fig_width=5,
+                        fig_height=5,
+                        save=False,
+                        note='',
+                        ax=None):
+
+    if not ax:        
+        fig, ax = plt.subplots(nrows=1,
+                               ncols=1,
+                               figsize=(fig_width, fig_height))
+        make_fig = True
+    else:
+        make_fig = False
+
+    if not keys:
+        keys = sorted(pair_pvalue.keys())
+
+    if not key_label:
+        labels = keys
+    else:
+        labels = [key_label[key] for key in keys]
+
+    matrix = np.zeros((len(keys), len(keys)))
+    matrix[:] = np.nan
+
+    for i in range(len(keys)-1):
+        for j in range(i+1, len(keys)):
+            pvalue = pair_pvalue[keys[i]][keys[j]]
+            if take_neglog10:
+                value = -np.log10(pvalue + dummy)
+            else:
+                value = pvalue
+
+            matrix[i][j] = value
+            matrix[j][i] = value
+
+    img = ax.imshow(matrix,
+                    cmap=cmap,
+                    vmin=vmin,
+                    vmax=vmax)
+
+    ax.set_xticks(range(len(labels)))
+    ax.set_xticklabels(labels,
+                       ha="right",
+                       rotation_mode="anchor",
+                       rotation=rotation)
+
+    ax.set_yticks(range(len(labels)))
+    ax.set_yticklabels(labels)
+
+    if cbar:
+        if cbar_label == None:
+            if take_neglog10:
+                cbar_label = '-log10 p-value'
+            else:
+                cbar_label = 'p-value'
+                
+        cbar = plt.colorbar(img,
+                            shrink=0.6)
+
+        cbar.ax.set_ylabel(cbar_label,
+                           rotation=-90,
+                           va="bottom")
+
+    if make_fig:
+        if save:
+            plt.savefig("pvalue_matrix_%s.svg" % (note),
+                        format='svg',
+                        bbox_inches='tight')
+        else:
+            plt.tight_layout()
+            plt.show()    
+        plt.close()
+
+    return ax
