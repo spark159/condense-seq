@@ -119,7 +119,7 @@ graph LR;
 ```
 
 ## Usage
-The following is a list of custom Python scripts used for Condense-seq analysis, located in the *prepro_scripts* folder. Detailed usage instructions and execution examples are provided below. Many output files are formatted in the custom **gtab** (genomic table) format, a simple tab-delimited file with either the structure: Chromosome \<tab> Position \<tab> Value or Chromosome \<tab> Start \<tab> End \<tab> Value. (Note: Genomic coordinates are 0-based and half-open.)
+The following is a list of custom Python scripts used for Condense-seq analysis, located in the *prepro_scripts* folder. Detailed usage instructions and execution examples are provided below click-and-drop menus. Many output files are formatted in the custom **gtab** (genomic table) format, a simple tab-delimited file with either the structure: Chromosome \<tab> Position \<tab> Value or Chromosome \<tab> Start \<tab> End \<tab> Value. (Note: Genomic coordinates are 0-based and half-open.)
 
 <details>
 <summary> bincount.py </summary>
