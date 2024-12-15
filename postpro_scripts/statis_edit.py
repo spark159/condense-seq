@@ -640,6 +640,7 @@ def categorize (state_intervals,
                 hash_func=None,
                 max_pos=None,
                 domain_size=None,
+                unique=False,
                 silent=False):
 
     # if hash function not provided
@@ -666,6 +667,8 @@ def categorize (state_intervals,
         for dID in find_dIDs:
             state = dID.split(':')[0]
             state_IDs[state].append(ID)
+            if unique:
+                break
 
     return state_IDs
 
@@ -676,6 +679,7 @@ def categorize_bin (state_intervals,
                     hash_func=None,
                     max_pos=None,
                     domain_size=None,
+                    unique=False,
                     silent=False):
 
     # if hash function not provided
@@ -714,6 +718,8 @@ def categorize_bin (state_intervals,
             if weight < best_weight:
                 break
             state_binIDs[state].append(binID)
+            if unique:
+                break
 
         state_dict.clear()                
 
@@ -727,6 +733,7 @@ def categorize_rbin (state_intervals,
                      hash_func=None,
                      max_pos=None,
                      binID_interval=None,
+                     unique=False,
                      silent=False):
 
     # if hash function not provided
@@ -761,7 +768,9 @@ def categorize_rbin (state_intervals,
             if weight < best_weight:
                 break
             state_binIDs[state].append(binID)
-
+            if unique:
+                break
+            
     return state_binIDs
 
 ### binning average the data in genomic bins
@@ -904,6 +913,7 @@ def Hierarchial_clustering (dist_matrix):
 
     #idx_cID = [cID-1 for cID in fcluster(Z, t=0.01, criterion='distance')]
     idx_cID = [cID-1 for cID in fcluster(Z, t=3, criterion='maxclust')]
+    #idx_cID = [cID-1 for cID in fcluster(Z, t=4, criterion='maxclust')]
     cID_idxs = {}
     for i in range(len(idx_cID)):
         cID = idx_cID[i]
@@ -1062,3 +1072,49 @@ def get_pvalue_pair (key_values,
             pair_pvalue[key2][key1] = pvalue
             
     return pair_pvalue
+
+### compute Cohen's d for two independent samples
+def get_CohenD (data1, data2, take_abs=True):
+    mean1 = np.mean(data1)
+    mean2 = np.mean(data2)
+    std1 = np.std(data1)
+    std2 = np.std(data2)
+    std = ((len(data1)-1)*(std1**2) + (len(data2)-1)*(std2**2)) / (len(data1)+len(data2)-2)
+    std = np.sqrt(std)
+    d = (mean1 - mean2) / std
+    if take_abs:
+        return abs(d)
+    return d
+
+### compute pair-wise Cohen's d for comparing two independent samples
+def get_CohenD_pair (key_values,
+                     keys=None,
+                     take_abs=True):
+
+    if keys == None:
+        keys = key_values.keys()
+
+    pair_CohenD = {}
+    for i in range(len(keys)-1):
+        for j in range(i+1, len(keys)):
+            key1, key2 = keys[i], keys[j]
+            values1, values2 = key_values[key1], key_values[key2]
+
+            CohenD = get_CohenD (values1, values2)
+
+            if take_abs:
+                CohenD = abs(CohenD)
+
+            if key1 not in pair_CohenD:
+                pair_CohenD[key1] = {}
+            pair_CohenD[key1][key2] = CohenD
+
+            if key2 not in pair_CohenD:
+                pair_CohenD[key2] = {}
+            pair_CohenD[key2][key1] = CohenD
+            
+    return pair_CohenD
+
+
+    
+

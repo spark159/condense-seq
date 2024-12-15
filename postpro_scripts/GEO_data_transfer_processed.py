@@ -8,24 +8,27 @@ cell_info = {'H1':('Homo sapiens', 'H1-hESC', 'WT', 'None'),
              'GM':('Homo sapiens', 'GM12878', 'WT', 'None'),
              'mCD8T:WT':('Mus musculus', 'CD8+ T cell', 'WT', 'None'),
              'mCD8T:DFMO':('Mus musculus', 'CD8+ T cell', 'WT', 'Difluoromethylornithine (DFMO) treated'),
-             'mCD8T:ODCKO':('Mus musculus', 'CD8+ T cell', 'Ornithine decarboxylase (ODC) knockout', 'None')}
+             'mCD8T:ODCKO':('Mus musculus', 'CD8+ T cell', 'Ornithine decarboxylase (ODC) knockout', 'None'),
+             'E14':('Mus musculus', 'E14 mESC', 'WT', 'None')}
 
 # sample type fullnames
-sample_fullname = {'NCP':'Native mono-nucleosome',
+sample_fullname = {'NCP':'Native nucleosome',
+                   'synNCP': 'Reconstituted nucleosome',
                    'DNA':'Nucleosomal DNA'}
+
 # agent fullnames
 agent_fullname = {'sp':'Spermine',
                   'spd':'Spermidine',
                   'CoH':'Cobalt Hexammine',
                   'PEG':'PEG 8000',
                   'Ca':'Calcium',
-                  'HP1a':'HP1$\\alpha$',
-                  'HP1bSUV':'HP1$\\beta$/SUV39H1'}
+                  'HP1a':'HP1-alpha ',
+                  'HP1bSUV':'HP1-beta/SUV39H1'}
 
 # sort exp tuple (rep, cell, sample, agent, tnum)
 def exp_cmp (exp1, exp2):
-    cell_order = {'H1':0, 'GM':1, 'mCD8T:WT':2, 'mCD8T:DFMO':3, 'mCD8T:ODCKO':4}
-    sample_order = {'NCP':0, 'DNA':1}
+    cell_order = {'H1':0, 'GM':1, 'mCD8T:WT':2, 'mCD8T:DFMO':3, 'mCD8T:ODCKO':4, 'E14':5}
+    sample_order = {'NCP':0, 'synNCP':2, 'DNA':3}
     agent_order = {'sp':0, 'spd':1, 'CoH':2, 'PEG':3, 'Ca':4, 'HP1a':5, 'HP1bSUV':6}
 
     rep1, cell1, sample1, agent1, tnum1 = exp1
@@ -83,7 +86,7 @@ def read_table (fname):
 
 # get all fastq files in the path
 def get_fastq (path, header):
-    cmd = ['rclone',
+    cmd = ['./rclone',
            'ls',
            '--include',
            header + '*.fastq.gz',
@@ -114,7 +117,7 @@ def make_pairs (fnames):
         fname_pairs.append((f1, f2))
     return fname_pairs
 
-# rclone_copyo
+# rclone_copyto
 def rclone_copyto (from_path,
                    to_path,
                    fname):
@@ -125,7 +128,7 @@ def rclone_copyto (from_path,
     if len(glob.glob('./' + today)) == 0:
         subprocess.call(['mkdir', today])
 
-    cmd = ['rclone',
+    cmd = ['./rclone',
            'copyto',
            '--ignore-existing',
            from_path + '/' + fname,
@@ -141,12 +144,12 @@ def rclone_copyto (from_path,
 
 
 ### read Condense-seq data table
-exp_IDs = read_table('Condense-seq NGS data table.csv')
+exp_IDs = read_table('Condense-seq NGS data table revision.csv')
 exps = sorted(exp_IDs.keys(), cmp=exp_cmp)
 
 ### transfer processed files into GEO
-from_path = ''
-to_path = 'GEO_ftp:uploads/sparkly205@gmail.com_AhGDIowW/fastq_files'
+from_path = '/home/spark159/data/2024_01_05_GEO/processed_files'
+to_path = 'GEO_ftp:uploads/sparkly205@gmail.com_AhGDIowW/processed_files_update'
 
 for exp in exps:
     ID, qn, ID_deep, qn_deep = exp_IDs[exp]
@@ -154,10 +157,10 @@ for exp in exps:
 
     processed_files = []
     fhead = '_'.join([cell, sample, agent, str(rep)+'rep'])
-    processed_files.append(fhead + '_10kb_score.cn')
+    processed_files.append(fhead + '_10kb_score.gtab.gz')
     if ID_deep != '':
-        processed_files.append(fhead + '_deep_1kb_score.cn')
-        processed_files.append(fhead + '_deep_score.gz')
+        processed_files.append(fhead + '_deep_1kb_score.gtab.gz')
+        processed_files.append(fhead + '_deep_score.tar')
 
     for fname in processed_files:
         rclone_copyto (from_path,

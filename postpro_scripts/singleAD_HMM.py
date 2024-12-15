@@ -4,7 +4,6 @@ import math
 import random
 import matplotlib.cm as cm
 import scipy
-import seaborn as sns
 import matplotlib as mpl
 from hmmlearn import hmm
 import scipy.stats as stats
@@ -52,7 +51,8 @@ def read_bedgraph(fname):
     
 
 # parameters
-path = "/home/spark159/../../storage/"
+#path = "/home/spark159/../../storage/"
+path = "./data/"
 
 # HMM type
 HMM_type = 'Gaussian'
@@ -70,7 +70,8 @@ name_fname = {"LAD":"Lamin_score.bedgraph",
 
 
 # set data names to be analyzed
-names = ['SPAD', 'NAD', 'LAD', 'eigen']
+#names = ['SPAD', 'NAD', 'LAD', 'eigen']
+names = ['SPAD', 'NAD', 'LAD']
 
 # set chromosome list
 chr_list = None
@@ -161,7 +162,7 @@ for name in names:
         #plt.gca().fill_between(x, stats.norm.pdf(x, mean, std), alpha=0.3, label='E'+str(k+1))
 
     leg = plt.legend(loc='upper right')
-    for lh in leg.legendHandles:
+    for lh in leg.legend_handles:
         lh.set_alpha(1)
 
     plt.savefig(HMM_fname + '_em_dist.svg', format='svg', bbox_inches='tight')

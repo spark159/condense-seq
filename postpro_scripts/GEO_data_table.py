@@ -8,24 +8,27 @@ cell_info = {'H1':('Homo sapiens', 'H1-hESC', 'WT', 'None'),
              'GM':('Homo sapiens', 'GM12878', 'WT', 'None'),
              'mCD8T:WT':('Mus musculus', 'CD8+ T cell', 'WT', 'None'),
              'mCD8T:DFMO':('Mus musculus', 'CD8+ T cell', 'WT', 'Difluoromethylornithine (DFMO) treated'),
-             'mCD8T:ODCKO':('Mus musculus', 'CD8+ T cell', 'Ornithine decarboxylase (ODC) knockout', 'None')}
+             'mCD8T:ODCKO':('Mus musculus', 'CD8+ T cell', 'Ornithine decarboxylase (ODC) knockout', 'None'),
+             'E14':('Mus musculus', 'E14 mESC', 'WT', 'None')}
 
 # sample type fullnames
-sample_fullname = {'NCP':'Native mono-nucleosome',
+sample_fullname = {'NCP':'Native nucleosome',
+                   'synNCP': 'Reconstituted nucleosome',
                    'DNA':'Nucleosomal DNA'}
+
 # agent fullnames
 agent_fullname = {'sp':'Spermine',
                   'spd':'Spermidine',
                   'CoH':'Cobalt Hexammine',
                   'PEG':'PEG 8000',
                   'Ca':'Calcium',
-                  'HP1a':'HP1$\\alpha$',
-                  'HP1bSUV':'HP1$\\beta$/SUV39H1'}
+                  'HP1a':'HP1-alpha ',
+                  'HP1bSUV':'HP1-beta/SUV39H1'}
 
 # sort exp tuple (rep, cell, sample, agent, tnum)
 def exp_cmp (exp1, exp2):
-    cell_order = {'H1':0, 'GM':1, 'mCD8T:WT':2, 'mCD8T:DFMO':3, 'mCD8T:ODCKO':4}
-    sample_order = {'NCP':0, 'DNA':1}
+    cell_order = {'H1':0, 'GM':1, 'mCD8T:WT':2, 'mCD8T:DFMO':3, 'mCD8T:ODCKO':4, 'E14':5}
+    sample_order = {'NCP':0, 'synNCP':2, 'DNA':3}
     agent_order = {'sp':0, 'spd':1, 'CoH':2, 'PEG':3, 'Ca':4, 'HP1a':5, 'HP1bSUV':6}
 
     rep1, cell1, sample1, agent1, tnum1 = exp1
@@ -116,7 +119,7 @@ def make_pairs (fnames):
 
 
 ### read Condense-seq data table
-exp_IDs = read_table('Condense-seq NGS data table.csv')
+exp_IDs = read_table('../Condense-seq NGS data table revision.csv')
 exps = sorted(exp_IDs.keys(), cmp=exp_cmp)
 
 ### list out fastq files for each exp
@@ -180,10 +183,10 @@ for exp in exps:
 
     processed_files = []
     fhead = '_'.join([cell, sample, agent, str(rep)+'rep'])
-    processed_files.append(fhead + '_10kb_score.cn')
+    processed_files.append(fhead + '_10kb_score.gtab.gz')
     if len(exp_fastq[exp]['deep']) > 0:
-        processed_files.append(fhead + '_deep_1kb_score.cn')
-        processed_files.append(fhead + '_deep_score.tar.gz')
+        processed_files.append(fhead + '_deep_1kb_score.gtab.gz')
+        processed_files.append(fhead + '_deep_score.tar')
     else:
         processed_files += ['']*2
     row += processed_files

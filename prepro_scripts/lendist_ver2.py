@@ -127,7 +127,7 @@ def get_lendist (fnames,
         chr_rlen = output_list[i]
         name = label[i]
         
-        f = gzip.open(out_fname + '_' + name + '_rlen.txt.gz', 'w')
+        f = gzip.open(out_fname + '_rlen.txt.gz', 'w')
         s = 'Chromosome\tReadLength\tCounts'
         print >> f, s
 

@@ -216,7 +216,10 @@ class double_hash:
         find_IDs = []
         
         domain = pos // self.domain_size
-        IDs = self.domain_IDs[domain]
+        try:
+            IDs = self.domain_IDs[domain]
+        except:
+            IDs = []
 
         edID = []
         for ID in IDs:
@@ -256,7 +259,10 @@ class double_hash:
 
         IDs = set([])
         for i in range(domain1, domain2 + 1):
-            IDs |= set(self.domain_IDs[i])
+            try:
+                IDs |= set(self.domain_IDs[i])
+            except:
+                pass
         IDs = list(IDs)
 
         edID = []

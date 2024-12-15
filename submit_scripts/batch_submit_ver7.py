@@ -7,7 +7,7 @@ import gzip
 
 # sort exp tuple (rep, cell, sample, agent, tnum)
 def exp_cmp (exp1, exp2):
-    cell_order = {'H1':0, 'GM':1, 'mCD8T:WT':2, 'mCD8T:DFMO':3, 'mCD8T:ODCKO':4}
+    cell_order = {'H1':0, 'GM':1, 'E14':2, 'mCD8T:WT':3, 'mCD8T:DFMO':4, 'mCD8T:ODCKO':5}
     sample_order = {'NCP':0, 'DNA':1}
     agent_order = {'sp':0, 'spd':1, 'CoH':2, 'PEG':3, 'Ca':4, 'HP1a':5, 'HP1bSUV':6}
 
@@ -175,9 +175,15 @@ def read_csv_file (fname,
 
 ### ref information
 org_ref = {'human':"4D_hg38", 'mouse':"4D_mm10"}
-cell_org = {'H1':'human', 'GM':'human', 'mCD8T:WT':'mouse', 'mCD8T:DFMO':'mouse', 'mCD8T:ODCKO':'mouse'}
+cell_org = {'H1':'human',
+            'GM':'human',
+            'E14':'mouse',
+            'mCD8T:WT':'mouse',
+            'mCD8T:DFMO':'mouse',
+            'mCD8T:ODCKO':'mouse'}
 cell_chrnames = {'H1':['chr%s' % (i) for i in range(1, 23)] + ['chrX', 'chrY'],
                  'GM':['chr%s' % (i) for i in range(1, 23)] + ['chrX'],
+                 'E14':['chr%s' % (i) for i in range(1, 20)] + ['chrX', 'chrY'],
                  'mCD8T:WT':['chr%s' % (i) for i in range(1, 20)] + ['chrX'],
                  'mCD8T:DFMO':['chr%s' % (i) for i in range(1, 20)] + ['chrX'],
                  'mCD8T:ODCKO':['chr%s' % (i) for i in range(1, 20)] + ['chrX']}
@@ -212,7 +218,8 @@ feature_updownstream = {"TSS": (2500, 5000),
                         "TSS-TTS": (5000, 2500)} # up/downstream (bp) around feature
 
 ### read condense-seq data table
-table_fname = 'Condense-seq NGS data table.csv'
+#table_fname = 'Condense-seq NGS data table.csv'
+table_fname = 'Condense-seq NGS data table ver3.csv'
 exp_IDs = read_table(bam_path + '/' + table_fname)
 exps = sorted(exp_IDs.keys(), cmp=exp_cmp)
 
@@ -258,6 +265,10 @@ if False:
     # Bowtie2 alignment
     for exp in exps:
         rep, cell, sample, agent, tnum = exp
+
+        if cell != 'E14': # temporal
+            continue
+
         ID, qn, ID_deep, qn_deep = exp_IDs[exp]
 
         fheader = '_'.join([cell, sample, agent, str(tnum), str(rep)+'rep'])
@@ -295,6 +306,10 @@ if False:
 if False:
     for exp in exps:
         rep, cell, sample, agent, tnum = exp
+
+        if cell != 'E14': # temporal
+            continue
+
         ID, qn, ID_deep, qn_deep = exp_IDs[exp]
         fheader = '_'.join([cell, sample, agent, str(tnum), str(rep)+'rep'])
         
@@ -319,6 +334,10 @@ if False:
     for bin_size in bin_sizes:
         for exp in exps:
             rep, cell, sample, agent, tnum = exp
+
+            if cell != 'E14': # temporal
+                continue
+
             ID, qn, ID_deep, qn_deep = exp_IDs[exp]
             
             fheader = '_'.join([cell, sample, agent, str(tnum), str(rep)+'rep'])
@@ -455,6 +474,10 @@ if False:
 if False:
     for exp in exps:
         rep, cell, sample, agent, tnum = exp
+
+        if cell != 'E14': # temporal
+            continue
+
         if tnum == 0:
             continue
 
@@ -540,6 +563,10 @@ if False:
     for exp in exps:
         ID, qn, ID_deep, qn_deep = exp_IDs[exp]
         rep, cell, sample, agent, tnum = exp
+
+        if cell != 'E14': # temporal
+            continue
+
         mscale = agent_mscale[agent]
         tfname = titr_path + '/' + '_'.join([cell, sample, agent, 'titration']) + '.csv'
         chr_names = cell_chrnames[cell]
@@ -608,6 +635,10 @@ if False:
     for extension in ['_num.gtab.gz', '_score.gtab.gz']:
         for dexp, tnums in dexp_tnums.items():
             rep, cell, sample, agent = dexp
+
+            if cell != 'E14': # temporal
+                continue
+
             tnums = copy.deepcopy(sorted(tnums))
             
             if extension == '_score.gtab.gz':
@@ -638,6 +669,10 @@ if False:
     for extension in ['_num.gtab.gz', '_score.gtab.gz']:
         for dexp, tnums in dexp_tnums_deep.items():
             rep, cell, sample, agent = dexp
+
+            if cell != 'E14': # temporal
+                continue
+
             tnums = copy.deepcopy(sorted(tnums))
 
             if extension == '_score.gtab.gz':
@@ -720,6 +755,10 @@ if False:
             if bin_size < min_bin_size:
                 continue
             rep, cell, sample, agent = dexp
+
+            if cell != 'E14': # temporal
+                continue
+
             tnums = sorted(tnums)
             fheader = '_'.join([cell, sample, agent, str(rep)+'rep'])
             fname = output_path + '/' + fheader  + '_' + str(int(bin_size/1000)) + 'kb' + '_num.gtab.gz'
@@ -745,6 +784,14 @@ if False:
             anot_path = org_anot_path[org] + '/' + mtype
             anot_fname = anot_path + '/' + '%s_%s_info.csv' % (org, mtype)
 
+            # get E14 chip-seq data (temporal)
+            if org != 'mouse':
+                continue
+            if mtype != 'HistoneChipseq':
+                continue
+            anot_path = '/home/spark159/data/MouseEpigeneticData/E14_HistoneChipseq'
+            anot_fname = anot_path + '/' + 'E14_HistoneChipseq_info.csv'
+
             try:
                 ID_field_value = read_csv_file(anot_fname, rowID=False)
             except:
@@ -761,6 +808,8 @@ if False:
                     cell = 'H1'
                 elif cell == 'Mouse CD8 T cell (invitro activated)':
                     cell = 'mCD8T:WT'
+                elif cell in ['E14TG2a.4', 'ES-E14']:
+                    cell = 'E14'
                 else:
                     continue
 
@@ -786,7 +835,6 @@ if False:
                     cell_mtype_mark_bedfiles[cell][mtype][mark] = []
                 cell_mtype_mark_bedfiles[cell][mtype][mark] += bed_files
 
-
     # read in-house mouse chip-seq data
     cell_mark_gtabfiles = {}
     cell_tag = {'mCD8T:WT':'Ctrl', 'mCD8T:DFMO':'Treat'}
@@ -807,7 +855,16 @@ if False:
     # make annotation table
     for dexp in dexp_tnums:
         rep, cell, sample, agent = dexp
-            
+
+        #if cell not in ['mCD8T:WT', 'mCD8T:DFMO']: # temporal
+        #    continue
+
+        #if cell not in ['mCD8T:ODCKO']: # temporal
+        #    continue
+
+        if cell != 'E14':
+            continue
+        
         chip_input = []
         try:
             for mark, bedfiles in cell_mtype_mark_bedfiles[cell]['HistoneChipseq'].items():
@@ -829,12 +886,13 @@ if False:
         except:
             pass
 
-        if len(chip_input + gtab_input + bs_input) <=0:
-            continue
+        #if len(chip_input + gtab_input + bs_input) <=0:
+        #    continue
 
         refname = ref_path + '/' + org_ref[cell_org[cell]]
         chr_names = cell_chrnames[cell]
         fheader = '_'.join([cell, sample, agent, str(rep)+'rep'])
+        #extension = '_zscore.gtab.gz'
         extension = '_score.gtab.gz'
 
         # shallow case
@@ -893,6 +951,68 @@ if False:
                                      "-h", ':'.join(chip_input),
                                      "-g", ':'.join(gtab_input)])
 
+### make profile around genomic feature (E14 QC)
+if True:
+    # get GTF information
+    org_gtfname = {}
+    for org in org_ref:
+        anot_path = org_anot_path[org] + '/' + 'GTF'
+        anot_fname = anot_path + '/' + '%s_%s_info.csv' % (org, 'GTF')
+
+        ID_field_value = read_csv_file(anot_fname, rowID=False)
+
+        for ID in ID_field_value:
+            org = ID_field_value[ID]['Organism'].lower()
+            gtfname = ID_field_value[ID]['GTF file'] + '.gtf'
+
+            assert org not in org_gtfname
+            org_gtfname[org] = gtfname
+
+    # make profile matrix
+    for dexp in dexp_tnums:
+        rep, cell, sample, agent = dexp
+
+        #if cell in ['mCD8T:DFMO', 'mCD8T:ODCKO']: # temporal
+        #    continue
+
+        #if cell not in ['mCD8T:WT', 'mCD8T:DFMO']: # temporal
+        #    continue
+
+        #if cell not in ['mCD8T:ODCKO']: # temporal
+        #    continue
+
+        if cell != 'E14':
+            continue
+        
+        org = cell_org[cell]
+        refname = ref_path + '/' + org_ref[org]
+        gtfname = org_anot_path[org] + '/' + 'GTF' + '/' + org_gtfname[org]
+        
+        chr_names = cell_chrnames[cell]
+        chr_names = ['chr1']
+        fheader = '_'.join([cell, sample, agent, str(rep)+'rep', '1kb'])
+
+        #for extension in ['_score_table.gtab.gz', '_zscore_table.gtab.gz']:
+        for extension in ['_score_table.gtab.gz']:
+
+            for feature, updownstream in feature_updownstream.items():
+                upstream, downstream = updownstream
+                fname = output_path + '/' + fheader + extension
+                outfname = output_path + '/' + fheader
+                outfname += extension.split('.')[0]
+                outfname += '_' + feature
+
+                subprocess.call(["sbatch",
+                                 "makeprofile-submit",
+                                 "-f", fname,
+                                 "-g", gtfname,
+                                 "-x", refname+'.fa',
+                                 "-c", ','.join(chr_names),
+                                 "-r", feature,
+                                 "-u", str(upstream),
+                                 "-d", str(downstream),
+                                 "-o", outfname])
+
 
 
 ### make profile around genomic feature (deep only)
@@ -916,7 +1036,13 @@ if False:
     for dexp in dexp_tnums_deep:
         rep, cell, sample, agent = dexp
 
-        if cell in ['mCD8T:DFMO', 'mCD8T:ODCKO']: # temporal
+        #if cell in ['mCD8T:DFMO', 'mCD8T:ODCKO']: # temporal
+        #    continue
+
+        #if cell not in ['mCD8T:WT', 'mCD8T:DFMO']: # temporal
+        #    continue
+
+        if cell not in ['mCD8T:ODCKO']: # temporal
             continue
         
         org = cell_org[cell]
@@ -926,6 +1052,7 @@ if False:
         chr_names = cell_chrnames[cell]
         fheader = '_'.join([cell, sample, agent, str(rep)+'rep', 'deep'])
 
+        #for extension in ['_score_table.gtab.gz', '_zscore_table.gtab.gz']:
         for extension in ['_score_table.gtab.gz']:
 
             for feature, updownstream in feature_updownstream.items():

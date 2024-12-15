@@ -59,7 +59,7 @@ def read_rlen_file (fname,
                     chr_list=None):
     rlen_count = {}
     First = True
-    for line in open(fname):
+    for line in gzopen(fname):
         if First:
             First = False
             continue
@@ -552,8 +552,53 @@ def read_bedgraph (fname,
         return chr_ID_value
     else:    
         return ID_value
-    
 
+    
+# read peak-bed file in ENCODE format
+def read_ENCODEpeak (fname,
+                     chr_choices=None,
+                     unit='signal',
+                     by_chr=False):
+
+    # sort by chromosomes
+    if by_chr:
+        chr_ID_value = {}
+    else:
+        ID_value = {}
+    
+    for line in gzopen(fname):
+        cols = line.strip().split()
+        chr, st, ed, peakname, _, strand, signal, pvalue, qvalue = cols[:9]
+
+        if chr_choices and chr not in chr_choices:
+            continue
+
+        if unit == 'signal':
+            score = float(signal)
+        elif unit == 'pvalue':
+            score = float(pvalue)
+        elif unit == 'qvalue':
+            score = float(qvalue)
+
+        st, ed = int(st), int(ed)
+        ID = (chr, st, ed)
+
+        if by_chr:
+            try:
+                chr_ID_value[chr]
+            except:
+                chr_ID_value[chr] = {}
+            chr_ID_value[chr][ID] = score
+
+        else:
+            ID_value[ID] = score
+
+    if by_chr:
+        return chr_ID_value
+    else:    
+        return ID_value
+
+    
 # read referenec fasta file and get each chromosome length
 def read_genome_size(fname,
                      chr_choices=None):
@@ -970,6 +1015,57 @@ def read_ENCODE_RNA_seq (fname,
 
         geneID_value[geneID] = value
     return geneID_value
+
+# read RNA-seq count and return FPKM
+def get_FPKM (count_fname,
+              geneID_exonlen=None,
+              GTF_fname=None,
+              field_choices=None):
+
+    # get read counts
+    field_geneID_count = load_file.read_tabular_file (count_fname,
+                                                      mode="col",
+                                                      field_choices=field_choices)
+
+    ## read GTF file and compute exon lengths if not provided
+    if geneID_exonlen == None:
+        assert GTF_fname != None
+        geneID_field_value = load_file.read_GTF (GTF_fname)
+        geneID_exonlen = {}
+        for geneID in geneID_field_value:
+            exons = geneID_field_value[geneID]['exons']
+            length = 0
+            for start, end in exons:
+                length +=  end - start + 1
+            geneID_exonlen[geneID] = length
+
+    # compute FPKM
+    field_geneID_FPKM = {}
+    for field in field_geneID_count:
+        
+        # normalize by total count
+        total_count = 0
+        for geneID in geneID_count:
+            count = geneID_count[geneID]
+            #if count <=0:
+            #    continue
+            geneID_count[geneID] +=1 # add pseudocount
+            total_count += geneID_count[geneID]
+
+        # compute FPKM
+        geneID_FPKM = {}
+        for geneID in geneID_count:
+            try:
+                FPM = (float(geneID_count[geneID]) / total_count)*(10**6)
+                FPKM = float(FPM)/(geneID_exonlen[geneID]/1000.0)
+            except:
+                continue
+            geneID_FPKM[geneID] = FPKM
+
+        field_geneID_FPKM[field] = geneID_FPKM
+
+    return field_geneID_FPKM
+    
 
 # read GSEA rank file
 def read_rank (fname):

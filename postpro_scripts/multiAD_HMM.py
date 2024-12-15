@@ -54,9 +54,9 @@ HMM_fname = "multiAD_%s_%d" % (HMM_type, state_num)
 
 
 # bedgraph file information
-name_fname = {"LAD":"Lamin_score.bedgraph",
-               "SPAD":"SON_score.bedgraph",
-               "NAD":"K562_NucleolarDamID.bedgraph"}
+name_fname = {"LAD":"./data/Lamin_score.bedgraph",
+               "SPAD":"./data/SON_score.bedgraph",
+               "NAD":"./data/K562_NucleolarDamID.bedgraph"}
 
 
 # set data names to be analyzed

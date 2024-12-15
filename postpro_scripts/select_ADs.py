@@ -65,7 +65,8 @@ def read_chromHMM(fname, chr_choice=None, change=False):
 
 
 # parameters
-path = "/home/spark159/../../storage/"
+#path = "/home/spark159/../../storage/"
+path = "./data/"
 
 # bedgraph file information
 name_bedgraph = {"LAD":"Lamin_score.bedgraph",

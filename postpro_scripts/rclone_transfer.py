@@ -107,6 +107,23 @@ def rclone_dir (from_path,
 #for dir_name in dir_names:
 #    rclone_copy (from_path, to_path, dir_name)
 
+### data transfer from Alberto
+from_path = 'google_drive:Data for Sangwoo/Sequencing_Runs/241102_VL00754_75_AAG2V7KM5/Analysis/1/Data/fastq/'
+to_path = 'jhu_rockfish:data/Vio_E14/'
+
+cmd = ['rclone',
+       'copy',
+       '-vP',
+       '--drive-shared-with-me',
+       from_path,
+       to_path]
+
+subprocess.call(cmd,
+                stdout=open("./report_out.txt", 'w'),
+                stderr=open("./report_err.txt", 'w'))
+
+
+"""
 #### data transfer for jonghan
 from_path = 'jhu_rockfish:data/2024_01_05_GEO/processed_files/'
 to_path = 'my_dropbox:Condense-seq data share/'
@@ -130,7 +147,7 @@ for rep in reps:
                         stderr=open("./logs/%s-%d_err.txt"
                                     % (cell, rep), 'w'))
 
-"""
+
 cell_chrnames = {'H1':['chr%s' % (i) for i in range(1, 23)] + ['chrX', 'chrY'],
                  'GM':['chr%s' % (i) for i in range(1, 23)] + ['chrX'],
                  'mCD8T:WT':['chr%s' % (i) for i in range(1, 20)] + ['chrX'],
@@ -159,4 +176,5 @@ for ext in ['cov', 'peak', 'Ncov']:
                                                 % (rep, cell, chr, tnum, ext), 'w'),
                                     stderr=open("./logs/%d-%s-%s-%d-%s_err.txt"
                                                 % (rep, cell, chr, tnum, ext), 'w'))
+
 """

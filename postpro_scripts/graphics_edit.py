@@ -43,6 +43,8 @@ def density_scatter (X,
                      fig_height=3,
                      ax=None,
                      save=False,
+                     save_path='./',
+                     show=True,
                      note='',
                      **kwargs):
     
@@ -136,11 +138,11 @@ def density_scatter (X,
 
     if make_fig:
         if save:
-            plt.savefig("_".join(['DensityScatter', note]) + ".png",
+            plt.savefig(save_path + 'DensityScatter_' + note + '.png',
                         format='png',
                         dpi=300,
                         bbox_inches='tight')
-        else:
+        if show:
             plt.tight_layout()
             plt.show()    
         plt.close()
@@ -174,6 +176,9 @@ def plot_corr_matrix (id_data,
                       vmin=0.1,
                       vmax=0.9,
                       save=False,
+                      save_path='./',
+                      save_type='png',
+                      show=True,
                       title=None,
                       cbar_label=None,
                       note=''):
@@ -302,8 +307,7 @@ def plot_corr_matrix (id_data,
                                                 nan_policy='omit')[0]
                     elif corr == 'Pearson':
                         value = stats.pearsonr(data1,
-                                               data2,
-                                               nan_policy='omit')[0]
+                                               data2)[0]
                 else:
                     value = pair_corr[(id1, id2)]
 
@@ -386,8 +390,16 @@ def plot_corr_matrix (id_data,
         tax.set_axis_off()
     
     if save:
-        plt.savefig("Corr_matrix_%s.png" % (note), dpi=1000, bbox_inches='tight')
-    plt.show()
+        if save_type == 'png':
+            plt.savefig(save_path + "Corr_matrix_%s.png" % (note),
+                        dpi=1000,
+                        bbox_inches='tight')
+        elif save_type == 'svg':
+            plt.savefig(save_path + "Corr_matrix_%s.svg" % (note),
+                        format='svg',
+                        bbox_inches='tight')
+    if show:
+        plt.show()
     plt.close()
     return
 
@@ -399,6 +411,8 @@ def plot_ideogram (Gtype_ideogram,
                    fig_height=2,
                    aspect='auto',
                    save=False,
+                   show=True,
+                   save_path='./',
                    ax=None,
                    note=''):
 
@@ -447,10 +461,10 @@ def plot_ideogram (Gtype_ideogram,
 
     if make_fig:
         if save:
-            plt.savefig("_".join(['Ideogram', note]) + ".svg",
+            plt.savefig(save_path + 'Ideogram_%s.svg' % (note),
                         format='svg',
                         bbox_inches='tight')
-        else:
+        if show:
             plt.tight_layout()
             plt.show()    
         plt.close()
@@ -485,7 +499,10 @@ def plot_genome_wide (side_names,
                       xlabel="Position (Mb)",
                       legend_loc='best',
                       shade_wins=None,
+                      mask_wins=None,
                       save=False,
+                      show=True,
+                      save_path='./',
                       note=''):
 
     names = []
@@ -587,7 +604,7 @@ def plot_genome_wide (side_names,
         except:
             basey = None
 
-        ax.set_ylabel(ylabel, color=ycolor, fontsize=12)
+        ax.set_ylabel(ylabel, color=ycolor, fontsize=15)
         ax.tick_params('y', colors=ycolor)
         ax.set_ylim(ylim)
         ax.set_yscale(yscale, basey=basey)
@@ -599,6 +616,13 @@ def plot_genome_wide (side_names,
                 continue
             ax.spines[spine].set_visible(option)
 
+
+    if mask_wins:
+        for win in mask_wins:
+            st, ed = win
+            axes[0].axvspan(st, ed-1, facecolor='white', zorder=2.5)
+
+            
     if shade_wins:
         for win in shade_wins:
             st, ed = win
@@ -626,10 +650,10 @@ def plot_genome_wide (side_names,
 
     if make_fig:
         if save:
-            plt.savefig("_".join(['Gwide', note]) + ".svg",
+            plt.savefig(save_path + 'Gwide_%s.svg' % (note),
                         format='svg',
                         bbox_inches='tight')
-        else:
+        if show:
             plt.tight_layout()
             plt.show()    
         plt.close()
@@ -663,7 +687,10 @@ def plot_genome_wide_multiple (side_names_list,
                                xlabel="Position (Mb)",
                                legend_loc='best',
                                shade_wins=None,
+                               mask_wins=None,
                                save=False,
+                               show=True,
+                               save_path='./',
                                note=''):
 
     names = []
@@ -752,6 +779,7 @@ def plot_genome_wide_multiple (side_names_list,
                                     xlabel=xlabel,
                                     legend_loc=legend_loc,
                                     shade_wins=shade_wins,
+                                    mask_wins=mask_wins,
                                     spine_option=spine_option,
                                     axes=[axes[k]])
 
@@ -771,10 +799,10 @@ def plot_genome_wide_multiple (side_names_list,
         axes[-1].set_yticks([])
 
     if save:
-        plt.savefig("_".join(['Gwide_multi', note]) + ".svg",
+        plt.savefig(save_path + 'Gwide_multi_%s.svg' % (note),
                     format='svg',
                     bbox_inches='tight')
-    else:
+    if show:
         plt.tight_layout()
         plt.show()    
     plt.close()
@@ -791,10 +819,15 @@ def plot_boxplot (key_values,
                   ylim=[None, None],
                   color='white',
                   ycolor='black',
-                  save=False,
-                  fig_width=8,
-                  fig_height=6,
+                  ylabel_fontsize=13,
+                  title_fontsize=15,
+                  xticklabel_fontsize=12,
+                  fig_width=5,
+                  fig_height=4,
                   ax=None,
+                  save=False,
+                  show=True,
+                  save_path='./',
                   note=""):
 
     if keys:
@@ -821,11 +854,15 @@ def plot_boxplot (key_values,
                     patch_artist=True,
                     boxprops=dict(facecolor=color))
 
-    ax.set_ylabel(ylabel, color=ycolor)
+    ax.set_ylabel(ylabel,
+                  color=ycolor,
+                  fontsize=ylabel_fontsize)
+        
     ax.tick_params('y', colors=ycolor)
 
     if title:
-        ax.set_title(title)
+        ax.set_title(title,
+                     fontsize=title_fontsize)
 
     ax.set_xticks(range(len(keys)))
 
@@ -837,17 +874,18 @@ def plot_boxplot (key_values,
     ax.set_xticklabels(xticklabels,
                        ha="right",
                        rotation_mode="anchor",
-                       rotation=rotation)
+                       rotation=rotation,
+                       fontsize=xticklabel_fontsize)
 
     ax.set_xlim([-0.5, len(keys)-0.5])
     ax.set_ylim(ylim)
     
     if make_fig:
         if save:
-            plt.savefig("boxplot_" + note + ".svg",
+            plt.savefig(save_path + "boxplot_%s.svg" % (note),
                         format='svg',
                         bbox_inches='tight')
-        else:
+        if show:
             plt.tight_layout()
             plt.show()    
         plt.close()
@@ -873,10 +911,12 @@ def plot_boxplot_pair (key_values1,
                        legend_loc='upper right',
                        rotation=None,
                        sharey = False,
-                       fig_width=8,
-                       fig_height=6,
-                       save=False,
+                       fig_width=5,
+                       fig_height=4,
                        axes=None,
+                       save=False,
+                       show=True,
+                       save_path='./',
                        note=""):
 
     if keys:
@@ -957,10 +997,10 @@ def plot_boxplot_pair (key_values1,
 
     if make_fig:
         if save:
-            plt.savefig("boxplot_pair" + note + ".svg",
+            plt.savefig(save_path + "boxplot_pair_%s.svg" % (note),
                         format='svg',
                         bbox_inches='tight')
-        else:
+        if show:
             plt.tight_layout()
             plt.show()    
         plt.close()
@@ -979,12 +1019,17 @@ def plot_boxplot_multiple (key_values_list,
                            title=None,
                            rotation=None,
                            ylim=[None, None],
+                           median_color='red',
                            colors=[],
                            ycolor='black',
                            labels=[],
                            legend_loc='best',
+                           fig_width=5,
+                           fig_height=4,
                            ax=None,
                            save=False,
+                           show=True,
+                           save_path='./',
                            note=""):
 
     common_keys = set([])
@@ -1014,7 +1059,7 @@ def plot_boxplot_multiple (key_values_list,
     offset = 0.6/len(key_values_list)
 
     if not ax:
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(fig_width, fig_height))
         make_fig = True
     else:
         make_fig = False
@@ -1037,7 +1082,7 @@ def plot_boxplot_multiple (key_values_list,
 
     for bp in bp_list:
         for median in bp['medians']:
-            median.set_color('red')
+            median.set_color(median_color)
 
 
     xtick_locs = [k + 0.5*offset*(len(key_values_list)-1) for k in range(len(keys))]
@@ -1070,10 +1115,10 @@ def plot_boxplot_multiple (key_values_list,
 
     if make_fig:
         if save:
-            plt.savefig("boxplot_multi" + note + ".svg",
+            plt.savefig(save_path + "boxplot_multi_%s.svg" % (note),
                         format='svg',
                         bbox_inches='tight')
-        else:
+        if show:
             plt.tight_layout()
             plt.show()    
         plt.close()
@@ -1098,6 +1143,8 @@ def plot_profile (profile,
                   fig_width=5,
                   fig_height=3.5,
                   save=False,
+                  show=True,
+                  save_path='./',
                   note=''):
 
     if not ax:
@@ -1131,10 +1178,10 @@ def plot_profile (profile,
 
     if make_fig:
         if save:
-            plt.savefig("profile" + note + ".svg",
+            plt.savefig(save_path + "profile_%s.svg" % (note),
                         format='svg',
                         bbox_inches='tight')
-        else:
+        if show:
             plt.tight_layout()
             plt.show()    
         plt.close()
@@ -1169,6 +1216,8 @@ def plot_profile_pair (profile1,
                        fig_width=5,
                        fig_height=3.5,
                        save=False,
+                       show=True,
+                       save_path='./',
                        note=''):
 
     assert len(profile1) == len(profile2)
@@ -1227,10 +1276,10 @@ def plot_profile_pair (profile1,
 
     if make_fig:
         if save:
-            plt.savefig("profile_pair" + note + ".svg",
+            plt.savefig(save_path + "profile_pair_%s.svg" % (note),
                         format='svg',
                         bbox_inches='tight')
-        else:
+        if show:
             plt.tight_layout()
             plt.show()    
         plt.close()
@@ -1261,6 +1310,8 @@ def plot_profile_multiple (profiles,
                            fig_width=5,
                            fig_height=3.5,
                            save=False,
+                           show=True,
+                           save_path='./',
                            note=''):
 
     profile_len = len(profiles[0])
@@ -1313,10 +1364,10 @@ def plot_profile_multiple (profiles,
 
     if make_fig:
         if save:
-            plt.savefig("profile_multiple" + note + ".svg",
+            plt.savefig(save_path + "profile_multiple_%s.svg" % (note),
                         format='svg',
                         bbox_inches='tight')
-        else:
+        if show:
             plt.tight_layout()
             plt.show()    
         plt.close()
@@ -1341,6 +1392,8 @@ def plot_profile_heatmap (profiles,
                           fig_height=5,
                           aspect='auto',
                           save=False,
+                          show=True,
+                          save_path='./',
                           note=''):
 
     profile_len = len(profiles[0])
@@ -1395,10 +1448,10 @@ def plot_profile_heatmap (profiles,
 
     if make_fig:
         if save:
-            plt.savefig("profile_heatmap" + note + ".svg",
+            plt.savefig(save_path + "profile_heatmap_%s.svg" % (note),
                         format='svg',
                         bbox_inches='tight')
-        else:
+        if show:
             plt.tight_layout()
             plt.show()    
         plt.close()
@@ -1415,6 +1468,8 @@ def plot_dendrogram(Z,
                     fig_height=8,
                     ax=None,
                     save=False,
+                    show=True,
+                    save_path='./',
                     note=''):
     
     if not ax:
@@ -1446,10 +1501,10 @@ def plot_dendrogram(Z,
 
     if make_fig:
         if save:
-            plt.savefig("dendrogram_%s.svg" % (note),
+            plt.savefig(save_path + "dendrogram_%s.svg" % (note),
                         format='svg',
                         bbox_inches='tight')
-        else:
+        if show:
             plt.tight_layout()
             plt.show()    
         plt.close()
@@ -1466,6 +1521,8 @@ def plot_GSEA (gene_value,
                fig_height=5,
                fontsize=10,
                save=False,
+               show=True,
+               save_path='./',
                note=''):
 
     min_value = min(gene_value.values())
@@ -1494,7 +1551,8 @@ def plot_GSEA (gene_value,
                 # plot ranked values
                 axes[i][j].bar(range(len(gene_value)),
                                sorted(gene_value.values(), reverse=True),
-                               color='k')
+                               color='k',
+                               width=1)
                 axes[i][j].set_xlim([0, len(gene_value)-1])
 
             if i > 0:
@@ -1581,10 +1639,10 @@ def plot_GSEA (gene_value,
                 axes[i][j].spines['right'].set_visible(False)
 
     if save:
-        plt.savefig("GSEA_%s.png" % (note),
+        plt.savefig(save_path + "GSEA_%s.png" % (note),
                     dpi=500,
                     bbox_inches='tight')
-    else:
+    if show:
         plt.tight_layout()
         plt.show()    
     plt.close()
@@ -1605,6 +1663,8 @@ def plot_partition (ID_value,
                     fig_height=2,
                     ax=None,
                     save=False,
+                    show=True,
+                    save_path='./',
                     note=''):
 
     if not ax:
@@ -1656,10 +1716,15 @@ def plot_partition (ID_value,
 
     if make_fig:
         if save:
-            plt.savefig("partition_%s.svg" % (note),
-                        format='svg',
+            #plt.savefig(save_path + "partition_%s.svg" % (note),
+            #            format='svg',
+            #            bbox_inches='tight')
+
+            plt.savefig(save_path + "partition_%s.png" % (note),
+                        dpi=500,
                         bbox_inches='tight')
-        else:
+            
+        if show:
             plt.tight_layout()
             plt.show()    
         plt.close()
@@ -1677,6 +1742,8 @@ def plot_partition_heatmap (img,
                             cmap='coolwarm',
                             ax=None,
                             save=False,
+                            show=True,
+                            save_path='./',
                             note=''):
 
     if not ax:
@@ -1710,10 +1777,10 @@ def plot_partition_heatmap (img,
 
     if make_fig:
         if save:
-            plt.savefig("partition_heatmap_%s.svg" % (note),
+            plt.savefig(save_path + "partition_heatmap_%s.svg" % (note),
                         format='svg',
                         bbox_inches='tight')
-        else:
+        if show:
             plt.tight_layout()
             plt.show()    
         plt.close()
@@ -1731,6 +1798,8 @@ def plot_partition_heatmap_multiple (img_list,
                                      cmap='coolwarm',
                                      axes=None,
                                      save=False,
+                                     show=True,
+                                     save_path='./',
                                      note=''):
 
     if not axes:
@@ -1761,6 +1830,16 @@ def plot_partition_heatmap_multiple (img_list,
                                 cmap=cmap,
                                 ax=axes[i])
 
+    if make_fig:
+        if save:
+            plt.savefig(save_path + "partition_heatmap_multi_%s.svg" % (note),
+                        format='svg',
+                        bbox_inches='tight')
+        if show:
+            plt.tight_layout()
+            plt.show()    
+        plt.close()
+
     return axes
 
 def plot_ATGC_periodicity (AT_sig,
@@ -1777,6 +1856,8 @@ def plot_ATGC_periodicity (AT_sig,
                            fig_height=2,
                            axes=None,
                            save=False,
+                           show=True,
+                           save_path='./',
                            note=''):
 
     if not axes:
@@ -1800,18 +1881,18 @@ def plot_ATGC_periodicity (AT_sig,
     
     ax1.set_ylabel(AT_ylabel, color='r', fontsize=8)
     ax2.set_ylabel(GC_ylabel, color='b', fontsize=8)
-    ax1.tick_params('y', colors='r', labelsize=8)
-    ax2.tick_params('y', colors='b', labelsize=8)
+    ax1.tick_params('y', colors='r', labelsize=5)
+    ax2.tick_params('y', colors='b', labelsize=5)
     ax1.set_xticks([NCPlen/2 + 10*i for i in SHL_xticks])
-    ax1.set_xticklabels([str(10*i) for i in SHL_xticks], fontsize=5)
+    ax1.set_xticklabels([str(10*i) for i in SHL_xticks], fontsize=6)
     ax1.set_xlabel(xlabel, fontsize=8)
 
     if make_fig:
         if save:
-            plt.savefig("ATGCperiod_" + note + ".svg",
+            plt.savefig(save_path + "ATGCperiod_%s.svg" % (note),
                         format='svg',
                         bbox_inches='tight')
-        else:
+        if show:
             plt.tight_layout()
             plt.show()    
         plt.close()
@@ -1837,6 +1918,8 @@ def plot_ATGC_periodicity_multiple (AT_sigs,
                                     GC_legend_loc='lower right',
                                     axes=None,
                                     save=False,
+                                    show=True,
+                                    save_path='./',
                                     note=''):
 
     if not axes:
@@ -1894,10 +1977,10 @@ def plot_ATGC_periodicity_multiple (AT_sigs,
 
     if make_fig:
         if save:
-            plt.savefig("ATGCperiod_multi_" + note + ".svg",
+            plt.savefig(save_path + "ATGCperiod_multi_%s.svg" % (note),
                         format='svg',
                         bbox_inches='tight')
-        else:
+        if show:
             plt.tight_layout()
             plt.show()    
         plt.close()
@@ -1926,7 +2009,9 @@ def plot_polar (phases,
                 title=None,
                 ax=None,
                 note='',
-                save=False):
+                save=False,
+                show=True,
+                save_path='./'):
 
     if not ax:
         fig, ax = plt.subplots(nrows=1,
@@ -2025,10 +2110,10 @@ def plot_polar (phases,
 
     if make_fig:
         if save:
-            plt.savefig("polar_%s.svg" % (note),
+            plt.savefig(save_path + "polar_%s.svg" % (note),
                         format='svg',
                         bbox_inches='tight')
-        else:
+        if show:
             plt.tight_layout()
             plt.show()    
         plt.close()
@@ -2039,15 +2124,18 @@ def plot_rlen_dist (rlen_counts,
                     colors=None,
                     labels=None,
                     alphas=None,
-                    fig_width=3,
-                    fig_height=2,
+                    fig_width=6,
+                    fig_height=4,
                     xlim=[None, None],
                     xticks=range(0, 500, 50),
                     xlabel="Read length (bp)",
                     ylabel="Read counts",
                     title="Read length distribution",
                     legend_loc='best',
+                    ax=None,
                     save=False,
+                    show=True,
+                    save_path='./',
                     note=''):
 
     if ax == None:
@@ -2085,7 +2173,7 @@ def plot_rlen_dist (rlen_counts,
                 alpha=alpha)
 
     ax.set_xlim(xlim)
-    ax.set_grid(True)
+    ax.grid(True)
     
     ax.set_xticks(xticks)
     ax.set_xticklabels([str(xtick) for xtick in xticks])
@@ -2101,10 +2189,10 @@ def plot_rlen_dist (rlen_counts,
 
     if make_fig:
         if save:
-            plt.savefig("_".join(['rlen', note]) + ".svg",
+            plt.savefig(save_path + "rlen_%s.svg" % (note),
                         format='svg',
                         bbox_inches='tight')
-        else:
+        if show:
             plt.tight_layout()
             plt.show()    
         plt.close()
@@ -2123,6 +2211,8 @@ def plot_NMF_basis_matrix (basis_matrix,
                            fig_height=6,
                            ax=None,
                            save=False,
+                           show=True,
+                           save_path='./',
                            note=''):
 
     if not ax:
@@ -2195,10 +2285,10 @@ def plot_NMF_basis_matrix (basis_matrix,
 
     if make_fig:
         if save:
-            plt.savefig("NMF_basis_matrix_%s.svg" % (note),
+            plt.savefig(save_path + "NMF_basis_matrix_%s.svg" % (note),
                         format='svg',
                         bbox_inches='tight')
-        else:
+        if show:
             plt.tight_layout()
             plt.show()    
         plt.close()
@@ -2206,23 +2296,29 @@ def plot_NMF_basis_matrix (basis_matrix,
     return ax
 
 
-# plot p-value matrix for pair-wise pvalue data
-def plot_pvalue_matrix (pair_pvalue,
-                        keys=None,
-                        key_label=None,
-                        take_neglog10=False,
-                        dummy=0.0,
-                        rotation=45,
-                        cmap='viridis',
-                        vmin=None,
-                        vmax=None,
-                        cbar=True,
-                        cbar_label=None,
-                        fig_width=5,
-                        fig_height=5,
-                        save=False,
-                        note='',
-                        ax=None):
+# plot matrix heatmap for pair-wise values
+def plot_matrix (pair_value,
+                 keys=None,
+                 key_label=None,
+                 log_scale=False,
+                 dummy=0.0,
+                 rotation=45,
+                 cmap='viridis',
+                 vmin=None,
+                 vmax=None,
+                 cbar=True,
+                 cbar_label='',
+                 fig_width=5,
+                 fig_height=5,
+                 text=False,
+                 text_color='k',
+                 text_fontsize=5,
+                 decimal_pt=1,
+                 save=False,
+                 show=True,
+                 save_path='./',
+                 note='',
+                 ax=None):
 
     if not ax:        
         fig, ax = plt.subplots(nrows=1,
@@ -2233,7 +2329,7 @@ def plot_pvalue_matrix (pair_pvalue,
         make_fig = False
 
     if not keys:
-        keys = sorted(pair_pvalue.keys())
+        keys = sorted(pair_value.keys())
 
     if not key_label:
         labels = keys
@@ -2245,12 +2341,20 @@ def plot_pvalue_matrix (pair_pvalue,
 
     for i in range(len(keys)-1):
         for j in range(i+1, len(keys)):
-            pvalue = pair_pvalue[keys[i]][keys[j]]
-            if take_neglog10:
-                value = -np.log10(pvalue + dummy)
-            else:
-                value = pvalue
+            value = pair_value[keys[i]][keys[j]]
+            value += dummy
 
+            if log_scale == '-log2':
+                value = -np.log2(value)
+            elif log_scale == '-log10':
+                value = -np.log10(value)
+            elif log_scale == 'log10':
+                value = np.log10(value)
+            elif log_scale == 'log10':
+                value = np.log10(value)
+            else:
+                value
+ 
             matrix[i][j] = value
             matrix[j][i] = value
 
@@ -2258,6 +2362,17 @@ def plot_pvalue_matrix (pair_pvalue,
                     cmap=cmap,
                     vmin=vmin,
                     vmax=vmax)
+
+    if text:
+        for i in range(len(keys)-1):
+            for j in range(i+1, len(keys)):
+                ax.text(j, i,
+                        round(matrix[i][j], decimal_pt),
+                        ha="center",
+                        va="center",
+                        fontsize=text_fontsize,
+                        color=text_color,
+                        weight='bold')
 
     ax.set_xticks(range(len(labels)))
     ax.set_xticklabels(labels,
@@ -2268,26 +2383,196 @@ def plot_pvalue_matrix (pair_pvalue,
     ax.set_yticks(range(len(labels)))
     ax.set_yticklabels(labels)
 
-    if cbar:
-        if cbar_label == None:
-            if take_neglog10:
-                cbar_label = '-log10 p-value'
-            else:
-                cbar_label = 'p-value'
-                
+    if cbar:                
         cbar = plt.colorbar(img,
                             shrink=0.6)
 
-        cbar.ax.set_ylabel(cbar_label,
-                           rotation=-90,
-                           va="bottom")
+        if cbar_label != '':
+            if log_scale:
+                cbar_label = log_scale + ' ' + cbar_label
+
+            cbar.ax.set_ylabel(cbar_label,
+                               rotation=-90,
+                               va="bottom")
 
     if make_fig:
         if save:
-            plt.savefig("pvalue_matrix_%s.svg" % (note),
+            plt.savefig(save_path + "value_matrix_%s.svg" % (note),
                         format='svg',
                         bbox_inches='tight')
-        else:
+        if show:
+            plt.tight_layout()
+            plt.show()    
+        plt.close()
+
+    return ax
+
+
+# plot dual matrix heatmap for pair-wise values
+def plot_matrix_dual (pair_value1,
+                      pair_value2,
+                      keys=None,
+                      key_label=None,
+                      log_scale1=False,
+                      log_scale2=False,
+                      dummy1=0.0,
+                      dummy2=0.0,
+                      rotation=45,
+                      cmap1='Reds',
+                      cmap2='Blues',
+                      vmin1=None,
+                      vmax1=None,
+                      vmin2=None,
+                      vmax2=None,
+                      cbar1=True,
+                      cbar2=True,
+                      cbar_label1='',
+                      cbar_label2='',
+                      fig_width=5,
+                      fig_height=5,
+                      text1=False,
+                      text_color1='k',
+                      text_fontsize1=5,
+                      decimal_pt1=1,
+                      text2=False,
+                      text_color2='k',
+                      text_fontsize2=5,
+                      decimal_pt2=1,
+                      save=False,
+                      show=True,
+                      save_path='./',
+                      note='',
+                      ax=None):
+
+    if not ax:        
+        fig, ax = plt.subplots(nrows=1,
+                               ncols=1,
+                               figsize=(fig_width, fig_height))
+        make_fig = True
+    else:
+        make_fig = False
+
+    if not keys:
+        keys = sorted(pair_value1.keys())
+
+    if not key_label:
+        labels = keys
+    else:
+        labels = [key_label[key] for key in keys]
+
+    matrix1 = np.zeros((len(keys), len(keys)))
+    matrix1[:] = np.nan
+
+    matrix2 = np.zeros((len(keys), len(keys)))
+    matrix2[:] = np.nan
+
+    for i in range(len(keys)-1):
+        for j in range(i+1, len(keys)):
+            value1 = pair_value1[keys[i]][keys[j]]
+            value1 += dummy1
+
+            if log_scale1 == '-log2':
+                value1 = -np.log2(value1)
+            elif log_scale1 == '-log10':
+                value1 = -np.log10(value1)
+            elif log_scale1 == 'log10':
+                value1 = np.log10(value1)
+            elif log_scale1 == 'log10':
+                value1 = np.log10(value1)
+            else:
+                value1
+ 
+            matrix1[i][j] = value1
+
+            value2 = pair_value2[keys[i]][keys[j]]
+            value2 += dummy2
+
+            if log_scale2 == '-log2':
+                value2 = -np.log2(value2)
+            elif log_scale2 == '-log10':
+                value2 = -np.log10(value2)
+            elif log_scale2 == 'log10':
+                value2 = np.log10(value2)
+            elif log_scale2 == 'log10':
+                value2 = np.log10(value2)
+            else:
+                value2
+ 
+            matrix2[j][i] = value2
+
+            
+    img1 = ax.imshow(matrix1,
+                     cmap=cmap1,
+                     vmin=vmin1,
+                     vmax=vmax1)
+
+    if text1:
+        for i in range(len(keys)-1):
+            for j in range(i+1, len(keys)):
+                ax.text(j, i,
+                        round(matrix1[i][j], decimal_pt1),
+                        ha="center",
+                        va="center",
+                        fontsize=text_fontsize1,
+                        color=text_color1,
+                        weight='bold')
+
+    img2 = ax.imshow(matrix2,
+                     cmap=cmap2,
+                     vmin=vmin2,
+                     vmax=vmax2)
+
+    if text2:
+        for i in range(len(keys)-1):
+            for j in range(i+1, len(keys)):
+                ax.text(i, j,
+                        round(matrix2[j][i], decimal_pt2),
+                        ha="center",
+                        va="center",
+                        fontsize=text_fontsize2,
+                        color=text_color2,
+                        weight='bold')
+    
+
+    ax.set_xticks(range(len(labels)))
+    ax.set_xticklabels(labels,
+                       ha="right",
+                       rotation_mode="anchor",
+                       rotation=rotation)
+
+    ax.set_yticks(range(len(labels)))
+    ax.set_yticklabels(labels)
+
+    if cbar1:
+        cbar1 = plt.colorbar(img1,
+                             shrink=0.6)
+
+        if cbar_label1 != '':
+            if log_scale1:
+                cbar_label1 = log_scale1 + ' ' + cbar_label1
+
+            cbar1.ax.set_ylabel(cbar_label1,
+                                rotation=-90,
+                                va="bottom")
+
+    if cbar2:
+        cbar2 = plt.colorbar(img2,
+                             shrink=0.6)
+
+        if cbar_label2 != '':
+            if log_scale2:
+                cbar_label2 = log_scale2 + ' ' + cbar_label2
+
+            cbar2.ax.set_ylabel(cbar_label2,
+                                rotation=-90,
+                                va="bottom")
+
+    if make_fig:
+        if save:
+            plt.savefig(save_path + "value_matrix_%s.svg" % (note),
+                        format='svg',
+                        bbox_inches='tight')
+        if show:
             plt.tight_layout()
             plt.show()    
         plt.close()
