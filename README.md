@@ -180,7 +180,7 @@ Peak calling for each nucleosome positions
   python NCPpeak.py AlignedReads.bam -x ref_genome --chr chromosome -o out_fname --skip
   ```
 
-**Positional Arguments:** <br/>  
+**Positional Arguments:** <br/>
 `-f` SAM/BAM filenames (last file used as control)  
 
 **Optional Arguments:** <br/>
