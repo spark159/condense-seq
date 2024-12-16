@@ -183,7 +183,7 @@ Peak calling for each nucleosome positions
 **Positional Arguments:** <br/>  
 `-f` SAM/BAM filenames (last file used as control)  
 
-**Optional Arguments:** <br/>  
+**Optional Arguments:** <br/>
 `-m` Mismatch cut-off in bp  
 `--min` Minimum length for selection in bp (default: 126bp)  
 `--max` Maximum length for selection in bp (default: 184bp)  
@@ -205,11 +205,11 @@ Compute coverage area under each nucleosome peaks
   python NCPcov.py NCPpeakFile_peak.gtab CoverageFile_cov.gtab --chr chromosome -o out_fname
   ```
 
-**Positional Arguments:** <br/>  
+**Positional Arguments:** <br/>
 `--peak` Peak gtab file  
 `--cov` Coverage gtab file  
 
-**Optional Arguments:** <br/>  
+**Optional Arguments:** <br/>
 `--peak-choice` NCP peak data choice (default: input control only, "all": all data)  
 `--Nlen` Mono-nucleosomal window in bp  
 `--chr` Target chromosome list  
@@ -227,11 +227,11 @@ Compute coverage area for each sliding window along genome
   python bindata.py CoverageFile_cov.gtab -x ref_genome --Bsize bin_size --Bstep Bin_step --chr chromosome -o out_fname
   ```
 
-**Positional Arguments:** <br/>  
+**Positional Arguments:** <br/>
 `-f` Data gtab file  
 `-x` Reference sequence filename  
 
-**Optional Arguments:** <br/>  
+**Optional Arguments:** <br/>
 `--Bsize` Bin window in bp  
 `--Bstep` Bin moving step in bp  
 `--Bvalue` Binning value choice (sum/mean)  
@@ -252,10 +252,10 @@ Using reads coverage/counts and titration file, estimate molecular number of nuc
   python NCPnum.py BincountFile_bin.gtab | NCPcoverageFile_Ncov.gtab | BinnedDataFile_Bdata.gtab -t TitrationFile.csv --tnum TitrationNumber --chr chromosome -o out_fname
   ```
 
-**Positional Arguments:** <br/>  
+**Positional Arguments:** <br/>
 `-f` Ncov/bin/Bdata.gtab file list  
 
-**Optional Arguments:** <br/>  
+**Optional Arguments:** <br/>
 `-t` Titration filename  
 `--tnum` Titration number of each data  
 `--mscale` Total molecule number scale of input  
@@ -274,10 +274,10 @@ Compute the condensability score, which is a negative log of molecular number ra
   python NCPscore.py BincountFile_bin.gtab | NCPcoverageFile_Ncov.gtab | BinnedDataFile_Bdata.gtab -t TitrationFile.csv --tnum TitrationNumber --chr chromosome -o out_fname
   ```
 
-**Positional Arguments:** <br/>  
+**Positional Arguments:** <br/>
 `-f` Ncov/bin/Bdata.gtab file list  
 
-**Optional Arguments:** <br/>  
+**Optional Arguments:** <br/>
 `-i` Input control files (in same order of data files)  
 `-t` Titration filename  
 `--tnum` Titration number for each data (in same order of data files)  
@@ -298,10 +298,10 @@ Fit the logistic curves to molecular number changes over titrations for each gen
   python logistic_fit.py NCPnumFile_num.gtab -t TitrationFile.csv --tnum TitrationNumber -m FittingModel -o out_fname
   ```
 
-**Positional Arguments:** <br/>  
+**Positional Arguments:** <br/>
 `-f` Concatenated num.gtab file list  
 
-**Options:** <br/>  
+**Options:** <br/>
 `-t` Titration filename  
 `--tnum` Titration number of each column in num data  
 `--min_tnum` Minimum titration data number for fitting  
