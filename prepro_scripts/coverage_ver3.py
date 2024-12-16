@@ -200,7 +200,7 @@ if __name__ == '__main__':
             raise argparse.ArgumentTypeError('Boolean value expected.')
 
     parser = ArgumentParser(description='Calculate coverage along the genome')
-    parser.add_argument(metavar='-f1',
+    parser.add_argument(metavar='-f',
                         dest="fnames",
                         type=str,
                         nargs='+',
