@@ -331,3 +331,6 @@ All raw FASTQ files and processed data from the publication [1] have been deposi
 ## Publication
 
 [1] https://www.biorxiv.org/content/10.1101/2023.12.08.570828v1
+
+[![DOI](https://zenodo.org/badge/115639009.svg)](https://doi.org/10.5281/zenodo.15036148)
+
